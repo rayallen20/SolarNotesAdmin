@@ -1,0 +1,32 @@
+{
+  "name": "solarnotesadmin",
+  "version": "1.0.0",
+  "main": "index.js",
+  "directories": {
+    "doc": "doc"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@element-plus/icons-vue": "2.3.2",
+    "@vue/devtools-api": "8.2.1",
+    "axios": "1.21.0",
+    "element-plus": "2.14.7",
+    "pinia": "4.1.0",
+    "vue": "3.5.44",
+    "vue-router": "5.4.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "6.0.10",
+    "sass": "1.107.1",
+    "vite": "8.3.5"
+  }
+}

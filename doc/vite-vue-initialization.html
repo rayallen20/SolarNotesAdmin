@@ -1,0 +1,983 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="参考 feng-huo-lun-backend 的工程结构，使用 Vite、Vue 3、Vue Router、Pinia、Element Plus、Axios 和 Sass 初始化 SolarNotesAdmin。"
+    />
+    <title>SolarNotesAdmin · Vite 初始化指南</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+          "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+        color: #273147;
+        background: #f5f6fb;
+        line-height: 1.8;
+        font-size: 16px;
+        --primary: #5964d6;
+        --border: #e3e7f0;
+        --muted: #657089;
+      }
+
+      * { box-sizing: border-box; }
+      body { margin: 0; }
+      main { max-width: 1000px; margin: 48px auto; padding: 0 28px; }
+      article {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 48px 56px;
+        box-shadow: 0 12px 40px rgb(39 49 71 / 4%);
+      }
+      header { padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+      .eyebrow {
+        margin: 0 0 12px;
+        color: var(--primary);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+      }
+      h1 { margin: 0 0 16px; font-size: 32px; line-height: 1.4; }
+      h2 { margin: 40px 0 16px; font-size: 23px; line-height: 1.5; }
+      h3 { margin: 26px 0 10px; font-size: 17px; }
+      p { margin: 12px 0; }
+      a { color: var(--primary); text-underline-offset: 3px; }
+      a:hover { color: #3d46ab; }
+      a:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; }
+      strong { color: #172137; }
+      .subtitle, .source, footer { color: var(--muted); }
+      .stack { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+      .stack span {
+        border-radius: 6px;
+        background: #f0f1fd;
+        color: #4d57ba;
+        padding: 3px 10px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      nav {
+        margin: 28px 0;
+        padding: 18px 24px;
+        background: #f8f9fc;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+      }
+      nav ol { margin: 8px 0 0; padding-left: 24px; }
+      nav a { text-decoration: none; }
+      section { scroll-margin-top: 24px; }
+      code {
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-size: 0.88em;
+      }
+      :not(pre) > code {
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: #f0f2f7;
+        overflow-wrap: anywhere;
+      }
+      .code-label {
+        margin: 18px 0 0;
+        padding: 8px 16px;
+        color: #d1d7ed;
+        background: #29334c;
+        border-radius: 9px 9px 0 0;
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 12px;
+        overflow-wrap: anywhere;
+      }
+      pre {
+        margin: 14px 0 20px;
+        padding: 18px 20px;
+        overflow-x: auto;
+        border-radius: 9px;
+        background: #1d263b;
+        color: #edf0fb;
+        line-height: 1.7;
+        tab-size: 2;
+      }
+      .code-label + pre { margin-top: 0; border-radius: 0 0 9px 9px; }
+      pre code { font-size: 13px; }
+      .note {
+        margin: 20px 0;
+        padding: 14px 18px;
+        border-left: 3px solid #727cf5;
+        border-radius: 0 8px 8px 0;
+        background: #f2f3fe;
+      }
+      .note p { margin: 0; }
+      .table-wrap { overflow-x: auto; margin: 18px 0; }
+      table { width: 100%; border-collapse: collapse; font-size: 14px; }
+      th, td { padding: 12px 14px; text-align: left; border: 1px solid var(--border); }
+      th { background: #f7f8fc; color: #35405b; }
+      .source { font-size: 13px; }
+      footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 13px; }
+
+      @media (max-width: 640px) {
+        main { margin: 16px auto; padding: 0 12px; }
+        article { padding: 28px 20px; border-radius: 12px; }
+        h1 { font-size: 25px; }
+        h2 { font-size: 21px; }
+        pre { padding: 14px; }
+        nav { padding: 14px 18px; }
+      }
+
+      @media print {
+        :root { background: #fff; font-size: 11pt; }
+        main { max-width: none; margin: 0; padding: 0; }
+        article { border: 0; border-radius: 0; padding: 0; box-shadow: none; }
+        nav { display: none; }
+        h1, h2, h3, .code-label { break-after: avoid; }
+        pre {
+          white-space: pre-wrap;
+          overflow-wrap: anywhere;
+          background: #f5f6f8;
+          color: #172137;
+          border: 1px solid #ddd;
+          break-inside: avoid;
+        }
+        .code-label { background: #e9ecf3; color: #273147; }
+        a { color: inherit; }
+        tr { break-inside: avoid; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <article>
+        <header>
+          <p class="eyebrow">SOLARNOTESADMIN / 开发文档</p>
+          <h1>使用 Vite 初始化 Vue 管理后台</h1>
+          <p class="subtitle">
+            参考旧工程的目录分层，继续使用 JavaScript，
+            采用 Vite 构建，并使用 Pinia 管理跨组件共享的状态。
+          </p>
+          <div class="stack" aria-label="工程技术栈">
+            <span>Vite</span><span>Vue 3</span><span>Vue Router 5</span>
+            <span>Pinia 4</span><span>Element Plus</span><span>Axios</span><span>Sass</span>
+          </div>
+        </header>
+
+        <nav aria-label="文档目录">
+          <strong>操作顺序</strong>
+          <ol>
+            <li><a href="#structure">工程结构与状态管理调整</a></li>
+            <li><a href="#dependencies">安装依赖</a></li>
+            <li><a href="#scripts">配置启动命令</a></li>
+            <li><a href="#vite-config">配置 Vite、端口与路径别名</a></li>
+            <li><a href="#html-entry">创建 HTML 入口</a></li>
+            <li><a href="#application">接入 Router、Pinia 和 Element Plus</a></li>
+            <li><a href="#environment-theme">调整环境变量和主题</a></li>
+            <li><a href="#run">启动与打包</a></li>
+            <li><a href="#lan-access">在局域网内访问</a></li>
+          </ol>
+        </nav>
+
+        <section id="structure">
+          <h2>工程结构与状态管理调整</h2>
+          <p>参考工程：<code>/Users/roach/Desktop/各种杂项/以前做过的项目/frontend/feng-huo-lun-backend</code>。</p>
+          <p>
+            旧工程使用 <strong>Vue 3 + Vue Router 4 + Vuex 4 + Element Plus + Axios + Sass</strong>，
+            构建工具是 Vue CLI。新工程使用 <strong>Vite + @vitejs/plugin-vue</strong> 构建，
+            状态管理改为 <strong>Pinia</strong>，其余业务库继续沿用并选择稳定新版。
+          </p>
+          <p>旧工程的主要分层如下：</p>
+          <pre><code>src/
+├── api/                  # 按业务封装接口
+├── assets/               # 图片等资源
+├── router/index.js       # 路由
+├── store/
+│   ├── index.js          # Vuex 入口
+│   └── modules/user.js   # 用户信息、Token
+├── styles/               # 全局样式、Element Plus 主题
+├── utils/
+│   └── request.js        # Axios 实例、请求与响应拦截器
+├── views/                # 登录、后台布局、业务页面
+├── App.vue
+└── main.js</code></pre>
+          <p>新工程保留业务分层，将 Vuex 的模块组织改为 Pinia 的独立 Store：</p>
+          <pre><code>SolarNotesAdmin/
+├── doc/                  # 工程文档
+├── public/               # 原样提供的静态资源
+├── src/
+│   ├── api/              # 按业务封装接口
+│   ├── assets/
+│   ├── router/index.js
+│   ├── stores/
+│   │   ├── index.js      # 创建并导出共享的 Pinia 实例
+│   │   └── user.js       # 用户信息与 Token
+│   ├── styles/
+│   ├── utils/request.js  # Axios 封装，从 Pinia 读取 Token
+│   ├── views/LoginPage.vue
+│   ├── App.vue
+│   └── main.js
+├── .env.development
+├── .env.production
+├── index.html
+├── jsconfig.json
+├── package.json
+└── vite.config.js</code></pre>
+          <p>
+            Pinia 按业务定义 Store，保留 <code>state</code>、<code>getters</code> 和 <code>actions</code>，
+            原 Vuex <code>mutations</code> 中的修改逻辑可以移入 actions。
+            下面以 <code>/Users/roach/Desktop/SolarNotesAdmin</code> 为新工程目录进行初始化。
+          </p>
+          <p class="source">参考：<a href="https://pinia.vuejs.org/cookbook/migration-vuex.html">从 Vuex 迁移到 Pinia</a>。</p>
+        </section>
+
+        <section id="dependencies">
+          <h2>1. 安装依赖</h2>
+          <p>当前目录已经有 <code>doc</code> 等内容，可以手动初始化，无须重新生成整个目录：</p>
+          <p>如果已经存在 <code>package.json</code>，跳过下面的 <code>npm init -y</code>，保留现有工程字段即可。</p>
+          <div class="code-label">终端</div>
+          <pre><code class="language-bash">cd /Users/roach/Desktop/SolarNotesAdmin
+
+npm init -y
+
+npm install --save-exact \
+  vue@latest vue-router@latest pinia@latest \
+  "@vue/devtools-api@^8.2.1" \
+  element-plus@latest @element-plus/icons-vue@latest axios@latest
+
+npm install -D --save-exact vite@latest @vitejs/plugin-vue@latest sass@latest</code></pre>
+          <p>
+            新工程使用 Pinia 替代 Vuex，其余业务库沿用原工程的选择，初始化时采用稳定新版。
+            <code>@latest</code> 使用发布者标记为 latest 的版本；<code>--save-exact</code>
+            将实际安装的精确版本写入 <code>package.json</code>。
+          </p>
+          <p>
+            当前 Pinia 稳定版为 <strong>4.1.0</strong>，要求 Vue <code>^3.5.11</code>，
+            并将 <code>@vue/devtools-api</code> 列为必须提供的配套依赖，版本要求为 <code>^8.2.1</code>。
+            上面的命令已包含该依赖；本指南版本记录中的 Vue 3.5.44 满足要求。
+          </p>
+          <p class="source">
+            参考：<a href="https://pinia.vuejs.org/getting-started.html">Pinia 安装说明</a>、
+            <a href="https://github.com/vuejs/pinia/blob/v4/packages/pinia/package.json">Pinia 版本与配套依赖声明</a>。
+          </p>
+          <p>如果此前已经安装 Vuex，改用本方案时先运行 <code>npm uninstall vuex</code>，再执行上面的安装命令。</p>
+          <aside class="note">
+            <p>
+              旧版指南中的 <code>vue@3</code> 表示安装 3.x 范围内的最新稳定版，并不是固定安装 3.0.0。
+              不过 <code>vue-router@4</code> 会限制在 4.x，无法安装已经发布的 Router 5。
+              本指南已将新工程的安装命令更新为 <code>@latest</code>。
+            </p>
+          </aside>
+          <h3>版本核对记录</h3>
+          <p>
+            核对日期：<time datetime="2026-11-03">2026 年 11 月 3 日</time>。
+            下表列出旧工程声明与新工程采用的依赖，其中状态管理由 Vuex 改为 Pinia。
+            旧工程的版本范围不代表锁文件中实际安装的精确版本；
+            右列为本次从 npm 或官方发布记录查询到的稳定版本。执行安装命令时，实际版本可能继续更新。
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th scope="col">库</th><th scope="col">旧工程版本声明</th><th scope="col">本次查询到的稳定版本</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Vue</td><td><code>^3.2.13</code></td><td><a href="https://registry.npmjs.org/vue/latest">3.5.44</a></td></tr>
+                <tr><td>Vue Router</td><td><code>^4.5.1</code></td><td><a href="https://github.com/vuejs/router/releases/tag/v5.4.0">5.4.0</a></td></tr>
+                <tr><td>Pinia</td><td>原来使用 Vuex <code>^4.1.0</code></td><td><a href="https://www.npmjs.com/package/pinia?activeTab=versions">4.1.0</a></td></tr>
+                <tr><td>Element Plus</td><td><code>^2.10.0</code></td><td><a href="https://github.com/element-plus/element-plus/releases/tag/2.14.7">2.14.7</a></td></tr>
+                <tr><td>@element-plus/icons-vue</td><td><code>^2.3.1</code></td><td><a href="https://www.npmjs.com/package/%40element-plus/icons-vue?activeTab=versions">2.3.2</a></td></tr>
+                <tr><td>Axios</td><td><code>^1.9.0</code></td><td><a href="https://registry.npmjs.org/axios/latest">1.21.0</a></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            旧工程使用手写路由，没有引入 <code>unplugin-vue-router</code>。
+            官方迁移指南说明，这种用法从 Router 4 升到 5 不需要修改业务代码；
+            本文的 <code>createRouter</code>、<code>createWebHistory</code> 示例可以继续使用。
+          </p>
+          <p class="source">参考：<a href="https://router.vuejs.org/guide/migration/v4-to-v5.html">Vue Router 4 升级到 5</a>。</p>
+          <p>
+            本工程统一使用 Pinia 管理状态，登录、退出和请求拦截器均通过同一个用户 Store 读写会话。
+            各 Store 按需导入，无须像 Vuex 一样集中注册 modules。
+          </p>
+          <p>
+            初始化后将 <code>package.json</code> 和 <code>package-lock.json</code> 一起提交。
+            后续在其他环境安装时运行 <code>npm ci</code>，复现已经验证过的依赖版本；
+            需要升级时再主动更新并检查页面与接口。
+          </p>
+          <p class="source">参考：<a href="https://docs.npmjs.com/cli/v11/commands/npm-install/">npm 安装、版本标签与锁文件说明</a>。</p>
+          <p>相比旧项目，依赖调整如下：</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th scope="col">依赖</th><th scope="col">处理方式</th></tr></thead>
+              <tbody>
+                <tr><td>Vue、Router、Element Plus、Axios</td><td>保留原有库，初始化时采用稳定新版</td></tr>
+                <tr><td>Vuex</td><td>由 Pinia 替代，按业务定义独立 Store</td></tr>
+                <tr><td><code>@vue/devtools-api</code></td><td>按 Pinia 4 的配套依赖要求安装</td></tr>
+                <tr><td>Sass</td><td>保留，放在开发依赖中</td></tr>
+                <tr><td><code>sass-loader</code></td><td>Vite 不需要</td></tr>
+                <tr><td><code>@vue/cli-*</code>、原 Babel 构建配置</td><td>由 Vite 构建配置替代</td></tr>
+                <tr><td><code>core-js</code></td><td>默认现代浏览器方案下不用主动安装</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <aside class="note">
+            <p>
+              编写指南时检查到当前 Node 为 <code>20.20.1</code>，满足 Vite 文档列出的
+              <code>20.19+</code> 要求。旧工程 README 中的 Node 16 不适用于这套初始化方案。
+            </p>
+          </aside>
+          <p class="source">参考：<a href="https://vite.dev/guide/">Vite 安装要求</a>。</p>
+        </section>
+
+        <section id="scripts">
+          <h2>2. 配置启动命令</h2>
+          <p>在生成的 <code>package.json</code> 中加入或修改以下字段，保留安装后生成的依赖：</p>
+          <div class="code-label">package.json · 相关字段</div>
+          <pre><code class="language-json">{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  }
+}</code></pre>
+          <p>以后启动开发服务使用 <code>npm run dev</code>。</p>
+          <aside class="note">
+            <p>
+              <strong>本工程的开发服务统一使用 5062 端口。</strong>
+              在下一节的 <code>vite.config.js</code> 中设置 <code>server.port</code>，
+              此处 <code>scripts.dev</code> 保持 <code>vite</code> 即可。
+            </p>
+          </aside>
+        </section>
+
+        <section id="vite-config">
+          <h2>3. 配置 Vite、端口与路径别名</h2>
+          <p>在工程根目录创建 <code>vite.config.js</code>，配置 Vue 插件、局域网监听地址、开发服务端口 <strong>5062</strong> 和旧代码广泛使用的 <code>@</code> 别名：</p>
+          <div class="code-label">vite.config.js</div>
+          <pre><code class="language-javascript">import { fileURLToPath, URL } from 'node:url'
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+
+export default defineConfig({
+  plugins: [vue()],
+  server: {
+    host: '0.0.0.0',
+    port: 5062,
+    strictPort: true,
+  },
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
+})</code></pre>
+          <p>
+            <code>server.host: '0.0.0.0'</code> 让开发服务监听所有 IPv4 网卡地址，支持通过局域网 IP 访问。
+            <code>server.port: 5062</code> 指定 <code>npm run dev</code> 使用 5062 端口。
+            <code>strictPort: true</code> 表示端口被占用时直接报错，避免自动切换到其他端口。
+            修改配置后，重新运行 <code>npm run dev</code>。
+          </p>
+          <p class="source">参考：<a href="https://vite.dev/config/server-options#server-host">Vite 监听地址配置</a>。</p>
+          <p class="source">参考：<a href="https://vite.dev/config/server-options#server-port">Vite 开发服务端口配置</a>。</p>
+          <p>
+            <code>npm run preview</code> 使用独立的 <code>preview.port</code> 配置，默认端口为 4173；
+            本节的 <code>server.port</code> 用于开发服务。
+          </p>
+          <p class="source">参考：<a href="https://vite.dev/config/preview-options#preview-port">Vite 预览服务端口配置</a>。</p>
+          <p>如果希望编辑器也识别 <code>@/</code>，在根目录创建 <code>jsconfig.json</code>：</p>
+          <div class="code-label">jsconfig.json</div>
+          <pre><code class="language-json">{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  "include": ["src/**/*.js", "src/**/*.vue"]
+}</code></pre>
+        </section>
+
+        <section id="html-entry">
+          <h2>4. 创建根目录的 index.html</h2>
+          <p>
+            Vite 的入口 HTML 放在<strong>工程根目录</strong>，需要显式引入 <code>src/main.js</code>。
+            旧项目 <code>public/index.html</code> 中的 <code>&lt;%= ... %&gt;</code> 模板写法需要移除。
+          </p>
+          <div class="code-label">index.html</div>
+          <pre><code class="language-html">&lt;!doctype html&gt;
+&lt;html lang="zh-CN"&gt;
+  &lt;head&gt;
+    &lt;meta charset="UTF-8" /&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0" /&gt;
+    &lt;title&gt;SolarNotes 管理后台&lt;/title&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;div id="app"&gt;&lt;/div&gt;
+    &lt;script type="module" src="/src/main.js"&gt;&lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</code></pre>
+          <p class="source">参考：<a href="https://vite.dev/guide/#index-html-and-project-root">Vite HTML 入口说明</a>。</p>
+        </section>
+
+        <section id="application">
+          <h2>5. 接入 Router、Pinia 和 Element Plus</h2>
+          <p>先创建共享的 Pinia 实例，再在 <code>src/main.js</code> 中注册，并定义用户 Store。</p>
+          <h3>创建共享的 Pinia 实例</h3>
+          <div class="code-label">src/stores/index.js</div>
+          <pre><code class="language-javascript">import { createPinia } from 'pinia'
+
+/**
+ * 应用共享的 Pinia 实例，供入口和组件外的请求工具使用。
+ * @type {import('pinia').Pinia}
+ */
+const pinia = createPinia()
+
+export default pinia</code></pre>
+          <h3>注册应用插件</h3>
+          <div class="code-label">src/main.js</div>
+          <pre><code class="language-javascript">import { createApp } from 'vue'
+import ElementPlus from 'element-plus'
+
+import App from './App.vue'
+import router from './router'
+import pinia from './stores'
+
+import 'element-plus/dist/index.css'
+
+createApp(App)
+  .use(pinia)
+  .use(ElementPlus)
+  .use(router)
+  .mount('#app')</code></pre>
+          <p>Element Plus 使用全量注册即可，与旧工程保持一致。</p>
+          <p class="source">参考：<a href="https://element-plus.org/en-US/guide/quickstart">Element Plus 快速开始</a>。</p>
+          <p>
+            中文语言包统一在下方的 <code>src/App.vue</code> 中通过 <code>ElConfigProvider</code> 配置，
+            因此这里注册 Element Plus 时只传入插件本身。
+            这是官方支持的国际化配置方式，也可避开部分 IDE 对 <code>app.use()</code> 第二个参数的类型误报。
+          </p>
+          <p class="source">参考：<a href="https://element-plus.org/en-US/guide/i18n.html">Element Plus 国际化配置</a>。</p>
+
+          <h3>定义用户 Store</h3>
+          <p>用一个独立的用户 Store 管理 Token 和用户名，并提供登录成功、退出登录时调用的 actions：</p>
+          <div class="code-label">src/stores/user.js</div>
+          <pre><code class="language-javascript">import { defineStore } from 'pinia'
+
+/**
+ * 用户状态。
+ * @typedef {Object} UserState
+ * @property {string} token 当前登录凭证；未登录时为空字符串。
+ * @property {string} username 当前用户名；未登录时为空字符串。
+ */
+
+/**
+ * 用户 Store 公开的会话操作，供 IDE 直接解析方法签名。
+ * @typedef {Object} UserStoreActions
+ * @property {function(string, string): void} setSession 更新会话，依次传入 Token 和用户名。
+ * @property {function(): void} clearSession 清空用户会话。
+ */
+
+/**
+ * 用户 Store 实例类型，包含 Pinia 标准能力和显式声明的业务成员。
+ * @typedef {import('pinia').Store&lt;'user', UserState, typeof userStoreOptions.getters, typeof userStoreOptions.actions&gt; &amp; UserStoreActions} UserStore
+ */
+
+/**
+ * Token 在本地存储中的键名。
+ * @type {string}
+ */
+const TOKEN_KEY = 'solar-notes-admin-token'
+
+/**
+ * 用户名在本地存储中的键名。
+ * @type {string}
+ */
+const USERNAME_KEY = 'solar-notes-admin-username'
+
+/**
+ * 用户 Store 的配置对象，作为 defineStore 的第二个实参。
+ * 包含初始状态、计算属性和会话操作。
+ * @constant
+ */
+const userStoreOptions = {
+  /**
+   * 从浏览器本地存储恢复用户状态。
+   * @returns {UserState} 包含 Token 和用户名的初始状态。
+   */
+  state: function () {
+    let token = localStorage.getItem(TOKEN_KEY)
+    let username = localStorage.getItem(USERNAME_KEY)
+
+    if (token === null || token === undefined) {
+      token = ''
+    }
+
+    if (username === null || username === undefined) {
+      username = ''
+    }
+
+    return {
+      token: token,
+      username: username,
+    }
+  },
+  getters: {
+    /**
+     * 判断当前状态中是否保存了 Token。
+     * @param {UserState} state 用户状态。
+     * @returns {boolean} 存在非空 Token 时为 true。
+     */
+    isLoggedIn: function (state) {
+      return state.token !== ''
+    },
+  },
+  actions: {
+    /**
+     * 更新用户会话，并同步保存到本地存储。
+     * @this {UserState}
+     * @param {string} token 登录凭证，不能为空字符串。
+     * @param {string} username 用户名，不能为空字符串。
+     * @returns {void}
+     * @throws {TypeError} 任一参数不是非空字符串时抛出。
+     */
+    setSession: function (token, username) {
+      if (typeof token !== 'string' || token === '') {
+        throw new TypeError('token 必须是非空字符串')
+      }
+
+      if (typeof username !== 'string' || username === '') {
+        throw new TypeError('username 必须是非空字符串')
+      }
+
+      this.token = token
+      this.username = username
+      localStorage.setItem(TOKEN_KEY, this.token)
+      localStorage.setItem(USERNAME_KEY, this.username)
+    },
+    /**
+     * 清空用户会话，并删除本地存储中的登录信息。
+     * @this {UserState}
+     * @returns {void}
+     */
+    clearSession: function () {
+      this.token = ''
+      this.username = ''
+      localStorage.removeItem(TOKEN_KEY)
+      localStorage.removeItem(USERNAME_KEY)
+    },
+  },
+}
+
+/**
+ * 获取用户 Store 实例的函数；同一个 Pinia 实例内会复用该 Store。
+ * 组件内调用 useUserStore()，组件外可调用 useUserStore(pinia)。
+ * @type {import('pinia').StoreDefinition&lt;'user', UserState, typeof userStoreOptions.getters, typeof userStoreOptions.actions&gt;}
+ */
+const useUserStore = defineStore('user', userStoreOptions)
+
+export default useUserStore</code></pre>
+          <p>
+            <code>userStoreOptions</code> 单独保存配置对象，再作为 <code>defineStore()</code> 的第二个实参。
+            JSDoc 使用 <code>@type {类型}</code> 标注常量类型，使用 <code>@param</code> 与 <code>@returns</code>
+            说明函数参数和返回值；<code>@this</code> 说明 actions 中访问的用户状态。
+          </p>
+          <p>
+            <code>useUserStore</code> 保存的是 <code>defineStore()</code> 返回的函数，
+            因此使用 <code>@type</code> 标注其 <code>StoreDefinition</code> 类型。
+            调用 <code>useUserStore()</code> 后取得的用户状态实例，类型才是 <code>Store</code>。
+            <code>state</code>、<code>setSession</code> 等直接定义的函数，继续使用
+            <code>@param</code> 和 <code>@returns</code> 描述参数与返回值。
+          </p>
+          <p>
+            用户 Store 模块先定义 <code>useUserStore</code>，再通过 <code>export default useUserStore</code> 默认导出。
+            页面和请求工具使用 <code>import useUserStore from '@/stores/user'</code> 导入。
+          </p>
+          <p>
+            页面和请求工具在 <code>useUserStore()</code> 调用表达式上使用
+            <code>/** @type {import('@/stores/user').UserStore} */ (useUserStore())</code> 进行 JSDoc 类型断言。
+            <code>UserStoreActions</code> 显式列出会话操作的方法签名，<code>UserStore</code> 同时保留 Pinia 标准能力。
+            这种写法减少了 IDE 在调用处通过 <code>ReturnType</code> 和 Pinia 条件类型逐层解析业务成员的需要。
+            修改 Store 的公开成员时，同步维护这些声明。
+          </p>
+          <p>
+            类型断言将调用表达式直接标注为已声明的 <code>UserStore</code>，
+            用于兼容 IDE 对 Pinia 复杂返回类型的解析；方法参数和返回值仍按显式签名检查。
+          </p>
+          <p>
+            <code>setSession(token, username)</code> 的两个参数都必须是非空字符串。
+            函数会先完成两个参数的校验，再修改用户状态和本地存储；参数缺失、为 null、类型错误或为空字符串时，
+            抛出 <code>TypeError</code>。清空会话由 <code>clearSession()</code> 负责。
+          </p>
+          <p>
+            Pinia 本身不会自动把状态保存到浏览器。本示例沿用旧工程的 localStorage 方式，
+            在初始化时恢复会话，在 <code>setSession</code> 与 <code>clearSession</code> 中同步保存和清除。
+            首次访问时，本地存储中可能没有会话记录，因此 <code>state</code> 工厂中仍保留空值处理。
+            本方案面向浏览器端单页应用。
+          </p>
+
+          <h3>登录页面占位示例</h3>
+          <p>
+            创建简洁的 <code>LoginPage.vue</code>，用于展示登录表单并验证页面路由和 Element Plus。
+            点击登录按钮时显示占位提示，后续在 <code>handleLogin()</code> 中接入登录接口。
+          </p>
+          <div class="code-label">src/views/LoginPage.vue</div>
+          <pre><code class="language-vue">&lt;template&gt;
+  &lt;main class="login-page"&gt;
+    &lt;el-card class="login-card"&gt;
+      &lt;template #header&gt;SolarNotes 管理后台登录&lt;/template&gt;
+      &lt;el-form :model="loginForm" label-width="60px"&gt;
+        &lt;el-form-item label="用户名"&gt;
+          &lt;el-input v-model="loginForm.username" placeholder="请输入用户名" /&gt;
+        &lt;/el-form-item&gt;
+        &lt;el-form-item label="密码"&gt;
+          &lt;el-input
+            v-model="loginForm.password"
+            type="password"
+            placeholder="请输入密码"
+            show-password
+            @keyup.enter="handleLogin"
+          /&gt;
+        &lt;/el-form-item&gt;
+        &lt;el-form-item&gt;
+          &lt;el-button type="primary" @click="handleLogin"&gt;登录&lt;/el-button&gt;
+        &lt;/el-form-item&gt;
+      &lt;/el-form&gt;
+    &lt;/el-card&gt;
+  &lt;/main&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { ref } from 'vue'
+import { ElMessage } from 'element-plus'
+
+/**
+ * 登录表单中的用户名和密码。
+ * @type {import('vue').Ref&lt;{username: string, password: string}&gt;}
+ */
+const loginForm = ref({
+  username: '',
+  password: '',
+})
+
+/**
+ * 显示占位提示，后续在此接入登录表单校验和登录请求。
+ * @returns {void}
+ */
+function handleLogin() {
+  ElMessage.info('当前为登录占位页，后续接入登录接口')
+}
+&lt;/script&gt;
+
+&lt;style scoped&gt;
+.login-page {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+}
+
+.login-card {
+  width: 360px;
+  max-width: calc(100vw - 32px);
+}
+&lt;/style&gt;</code></pre>
+          <p>
+            后续取得真实登录接口返回的 Token 和用户名后，依次将它们传给 <code>setSession(token, username)</code>。
+            以下函数可补充到登录页面的 <code>script setup</code> 中，并在登录请求成功后调用；字段按实际接口映射：
+          </p>
+          <div class="code-label">登录页面 · script setup 中的登录成功回调</div>
+          <pre><code class="language-javascript">import useUserStore from '@/stores/user'
+
+/**
+ * 登录页面使用的用户 Store 实例。
+ */
+const userStore = /** @type {import('@/stores/user').UserStore} */ (useUserStore())
+
+/**
+ * 将登录接口返回的会话数据保存到用户 Store。
+ * @param {string} token 登录凭证，不能为空字符串。
+ * @param {string} username 用户名，不能为空字符串。
+ * @returns {void}
+ * @throws {TypeError} 会话参数不合法时由 setSession 抛出。
+ */
+function onLoginSuccess(token, username) {
+  userStore.setSession(token, username)
+}</code></pre>
+          <p>
+            通过 <code>useUserStore()</code> 获取 Store 后，可以读取 <code>userStore.token</code> 和
+            <code>userStore.isLoggedIn</code>。需要解构状态或 getters 时，使用 <code>storeToRefs()</code> 保持响应性。
+            会话修改集中在 actions 中，让内存状态和 localStorage 同步更新。
+          </p>
+
+          <h3>路由入口</h3>
+          <p>参照旧工程，先单独定义 <code>routes</code>，再定义 <code>option</code>，然后创建 <code>router</code>，最后导出路由实例：</p>
+          <div class="code-label">src/router/index.js</div>
+          <pre><code class="language-javascript">import { createRouter, createWebHistory } from 'vue-router'
+
+/**
+ * 应用的页面路由列表。
+ * @type {import('vue-router').RouteRecordRaw[]}
+ */
+const routes = [
+  {
+    path: '/',
+    redirect: '/login',
+  },
+  {
+    path: '/login',
+    name: 'login',
+    /**
+     * 异步加载登录占位页面。
+     * @returns {Promise&lt;{default: import('vue').Component}&gt;} 登录页面组件模块。
+     */
+    component: function () {
+      return import('@/views/LoginPage.vue')
+    },
+  },
+]
+
+/**
+ * 路由配置，包含页面路由和浏览器历史记录模式。
+ * @type {import('vue-router').RouterOptions}
+ */
+const option = {
+  routes: routes,
+  history: createWebHistory(import.meta.env.BASE_URL),
+}
+
+/**
+ * 根据路由配置创建的应用路由实例。
+ * @type {import('vue-router').Router}
+ */
+const router = createRouter(option)
+
+export default router</code></pre>
+          <p>
+            路由模块默认导出已创建的 <code>router</code> 实例。
+            上方 <code>src/main.js</code> 示例通过 <code>import router from './router'</code>
+            直接导入，再通过 <code>.use(router)</code> 注册到应用中。
+            访问根路径 <code>/</code> 时会自动跳转到 <code>/login</code>，显示上述登录占位页面。
+          </p>
+
+          <h3>应用入口</h3>
+          <div class="code-label">src/App.vue</div>
+          <pre><code class="language-vue">&lt;template&gt;
+  &lt;ElConfigProvider :locale="zhCn"&gt;
+    &lt;RouterView /&gt;
+  &lt;/ElConfigProvider&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { ElConfigProvider } from 'element-plus'
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
+
+defineOptions({
+  name: 'App',
+})
+&lt;/script&gt;
+
+&lt;style scoped&gt;
+&lt;/style&gt;</code></pre>
+          <p>
+            <code>ElConfigProvider</code> 为路由页面及其后代组件提供中文配置。
+            语言包使用带有类型声明的 <code>element-plus/es/locale/lang/zh-cn</code> 入口。
+          </p>
+          <h3>复用旧代码时的对应关系</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th scope="col">旧工程的 Vuex 写法</th><th scope="col">新工程的 Pinia 写法</th></tr></thead>
+              <tbody>
+                <tr><td><code>store/modules/user.js</code></td><td><code>stores/user.js</code></td></tr>
+                <tr><td><code>useStore()</code></td><td><code>useUserStore()</code></td></tr>
+                <tr><td><code>store.state.user.token</code></td><td><code>userStore.token</code></td></tr>
+                <tr><td>提交用户 Token、用户名的 mutations</td><td><code>userStore.setSession(token, username)</code></td></tr>
+                <tr><td>清空用户会话</td><td><code>userStore.clearSession()</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="environment-theme">
+          <h2>6. 调整环境变量和主题</h2>
+          <h3>环境变量</h3>
+          <p>旧工程中需要特别修改的是 <code>src/utils/request.js</code>：</p>
+          <div class="code-label">src/utils/request.js · 环境变量替换示例</div>
+          <pre><code class="language-javascript">// 移除旧写法：const baseURL = process.env.VUE_APP_API_BASE_URL
+
+/**
+ * 当前环境的后端接口基础地址，替换旧的环境变量读取方式。
+ * @type {string|undefined}
+ */
+const baseURL = import.meta.env.VITE_API_BASE_URL</code></pre>
+          <p><code>.env.development</code> 和 <code>.env.production</code> 里的变量名也相应改成：</p>
+          <div class="code-label">.env.development / .env.production</div>
+          <pre><code class="language-dotenv">VITE_API_BASE_URL=http://localhost:8080</code></pre>
+          <p>
+            这里的地址替换成对应环境的后端地址。保留 <code>api/</code> 分层，
+            将 Axios 拦截器中的 Token 来源改为 Pinia 用户 Store。
+          </p>
+          <p class="source">参考：<a href="https://vite.dev/guide/env-and-mode">Vite 环境变量说明</a>。</p>
+
+          <h3>在 Axios 拦截器中读取 Pinia 状态</h3>
+          <p>
+            Axios 拦截器位于组件外部，导入 <code>stores/index.js</code> 中创建的同一个实例，
+            在请求回调内通过 <code>useUserStore(pinia)</code> 获取用户 Store。
+            这样每次请求都会读取当前 Token，也不依赖组件上下文的自动注入。
+          </p>
+          <div class="code-label">src/utils/request.js</div>
+          <pre><code class="language-javascript">import axios from 'axios'
+import pinia from '@/stores'
+import useUserStore from '@/stores/user'
+
+/**
+ * 统一配置接口基础地址、超时和拦截器的 Axios 实例。
+ * @type {import('axios').AxiosInstance}
+ */
+const request = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+  timeout: 5000,
+})
+
+request.interceptors.request.use(
+  /**
+   * 读取最新的用户 Token，并添加到请求头。
+   * @param {import('axios').InternalAxiosRequestConfig} config 请求配置。
+   * @returns {import('axios').InternalAxiosRequestConfig} 已附加登录凭证的请求配置。
+   */
+  (config) =&gt; {
+    /**
+     * 与应用入口共享同一个 Pinia 实例的用户 Store。
+     */
+    const userStore = /** @type {import('@/stores/user').UserStore} */ (useUserStore(pinia))
+
+    if (userStore.token !== '') {
+      config.headers.Authorization = `Bearer ${userStore.token}`
+    }
+
+    return config
+  }
+)
+
+request.interceptors.response.use(
+  /**
+   * 按业务响应码解包接口结果，失败时返回被拒绝的 Promise。
+   * @param {import('axios').AxiosResponse} response Axios 响应对象。
+   * @returns {*} 成功时返回业务数据，失败时返回拒绝的 Promise。
+   */
+  (response) =&gt; {
+    /**
+     * 后端返回的业务响应体。
+     * @type {{code: number, data: *}}
+     */
+    const payload = response.data
+
+    if (payload.code === 200) {
+      return payload.data
+    }
+
+    return Promise.reject(payload)
+  }
+)
+
+export default request</code></pre>
+          <p>
+            响应拦截器沿用旧工程的 <code>{ code, data }</code> 协议，后端返回结构不同时按实际接口调整。
+            Store 的会话保存逻辑和 Axios 请求封装各自独立，无须互相导入。
+          </p>
+          <p class="source">参考：<a href="https://pinia.vuejs.org/core-concepts/outside-component-usage.html">在组件外使用 Pinia Store</a>。</p>
+
+          <h3>保留旧工程的紫色主题</h3>
+          <p>新建 <code>src/styles/element.scss</code>：</p>
+          <div class="code-label">src/styles/element.scss</div>
+          <pre><code class="language-scss">@forward 'element-plus/theme-chalk/src/common/var.scss' with (
+  $colors: (
+    'primary': (
+      'base': #727cf5,
+    ),
+  )
+);
+
+@use 'element-plus/theme-chalk/src/index.scss' as *;
+
+body {
+  margin: 0;
+  background: #fafbfe;
+}</code></pre>
+          <p>然后把 <code>main.js</code> 中的默认样式导入：</p>
+          <pre><code class="language-javascript">import 'element-plus/dist/index.css'</code></pre>
+          <p>替换为：</p>
+          <pre><code class="language-javascript">import './styles/element.scss'</code></pre>
+          <p>这样会在编译 Element Plus 样式前应用主题变量，适合旧工程的全量引入方式。</p>
+          <p class="source">参考：<a href="https://element-plus.org/en-US/guide/theming.html">Element Plus 自定义主题</a>。</p>
+        </section>
+
+        <section id="run">
+          <h2>启动与打包</h2>
+          <p>完成上述文件配置后，启动开发服务：</p>
+          <pre><code class="language-bash">npm run dev</code></pre>
+          <p>
+            启动成功后，本机使用浏览器访问 <code>http://localhost:5062/</code>。
+            其他机器通过本机的局域网 IP 访问，具体见<a href="#lan-access">局域网访问说明</a>。
+          </p>
+          <p>开发完成后打包：</p>
+          <pre><code class="language-bash">npm run build</code></pre>
+          <p>
+            新工程沿用旧工程的路由、接口和请求工具分层，状态管理统一使用 <code>stores/</code> 下的 Pinia Store。
+            入口、组件与 Axios 拦截器均按上述示例接入同一个 Pinia 实例。
+          </p>
+        </section>
+
+        <section id="lan-access">
+          <h2>在局域网内访问</h2>
+          <p>
+            按上面的配置设置 <code>server.host: '0.0.0.0'</code>，并重新运行 <code>npm run dev</code>。
+            本次检查到开发机的 <code>en0</code> 网卡地址为 <code>192.168.1.131</code>，访问方式如下：
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th scope="col">访问位置</th><th scope="col">浏览器地址</th></tr></thead>
+              <tbody>
+                <tr><td>运行工程的这台 Mac</td><td><code>http://localhost:5062/</code></td></tr>
+                <tr><td>同一局域网中可互通的其他机器</td><td><code>http://192.168.1.131:5062/</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            <code>0.0.0.0</code> 是监听地址；浏览器中填写开发机实际的局域网 IP。
+            局域网 IP 可能随网络变化，请以当前网卡地址或 Vite 启动输出中的 <code>Network</code> 地址为准。
+            macOS 可运行以下命令，查看 <code>inet</code> 所在行的 IPv4 地址：
+          </p>
+          <div class="code-label">终端 · 查看 en0 网卡地址</div>
+          <pre><code class="language-bash">ifconfig en0</code></pre>
+          <p>
+            直接通过 IP 访问时，Vite 默认的 <code>allowedHosts</code> 配置已允许 IP 地址，使用默认值即可。
+          </p>
+          <p class="source">参考：<a href="https://vite.dev/config/server-options#server-allowedhosts">Vite 主机名校验配置</a>。</p>
+
+          <h3>其他机器无法打开页面时</h3>
+          <ul>
+            <li>确认两台机器的网络可以互通；访客 Wi-Fi 或路由器的客户端隔离可能阻止设备之间连接。</li>
+            <li>确认开发服务仍在运行，并且 Vite 启动输出中的端口为 <code>5062</code>。</li>
+            <li>如果 macOS 防火墙阻止连接，在“系统设置 → 网络 → 防火墙 → 选项”中允许运行 Vite 的 Node.js 进程接收传入连接。</li>
+          </ul>
+          <p class="source">参考：<a href="https://support.apple.com/zh-cn/guide/mac-help/mh34041/27/mac/27">Apple 防火墙访问设置</a>。</p>
+
+          <h3>页面打开后，接口地址也需要可达</h3>
+          <p>
+            浏览器中的 <code>localhost</code> 指访问者自己的机器。
+            如果 <code>VITE_API_BASE_URL</code> 仍为 <code>http://localhost:8080</code>，
+            其他机器会向自身的 8080 端口发送请求。
+          </p>
+          <p>
+            直接访问后端时，将该变量设为其他机器可达的后端地址；例如后端也运行在这台 Mac 的 8080 端口，
+            可使用 <code>http://192.168.1.131:8080</code>，并让后端允许局域网连接及对应前端来源的跨域请求。
+            另一种方式是使用 Vite 的 <code>server.proxy</code> 转发请求，前端统一使用相对路径访问接口。
+          </p>
+          <p class="source">参考：<a href="https://vite.dev/config/server-options#server-proxy">Vite 开发代理配置</a>。</p>
+        </section>
+
+        <footer>
+          文档位置：<code>doc/vite-vue-initialization.html</code>。本页为初始化操作说明，示例文件需按步骤创建。
+        </footer>
+      </article>
+    </main>
+  </body>
+</html>
