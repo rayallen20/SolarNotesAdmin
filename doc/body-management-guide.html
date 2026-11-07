@@ -1,0 +1,1221 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SolarNotesAdmin 天体管理页面实现参考：列表、添加抽屉、表单校验、路由和菜单同步修改，附完整 Vue 示例及独立交互预览。">
+    <title>SolarNotesAdmin · 天体管理页面实现参考</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+          "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+        color: #273147;
+        background: #f5f6fb;
+        line-height: 1.8;
+        font-size: 16px;
+        --primary: #5964d6;
+        --border: #e3e7f0;
+        --muted: #657089;
+      }
+
+      * { box-sizing: border-box; }
+      body { margin: 0; }
+      main { max-width: 1000px; margin: 48px auto; padding: 0 28px; }
+      article {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 48px 56px;
+        box-shadow: 0 12px 40px rgb(39 49 71 / 4%);
+      }
+      header { padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+      .eyebrow {
+        margin: 0 0 12px;
+        color: var(--primary);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+      }
+      h1 { margin: 0 0 16px; font-size: 32px; line-height: 1.4; }
+      h2 { margin: 40px 0 16px; font-size: 23px; line-height: 1.5; }
+      h3 { margin: 26px 0 10px; font-size: 17px; }
+      p { margin: 12px 0; }
+      a { color: var(--primary); text-underline-offset: 3px; }
+      a:hover { color: #3d46ab; }
+      a:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; }
+      strong { color: #172137; }
+      .subtitle, .source, footer { color: var(--muted); }
+      .stack { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+      .stack span {
+        border-radius: 6px;
+        background: #f0f1fd;
+        color: #4d57ba;
+        padding: 3px 10px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      nav {
+        margin: 28px 0;
+        padding: 18px 24px;
+        background: #f8f9fc;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+      }
+      nav ol { margin: 8px 0 0; padding-left: 24px; }
+      nav a { text-decoration: none; }
+      section { scroll-margin-top: 24px; }
+      code {
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-size: 0.88em;
+      }
+      :not(pre) > code {
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: #f0f2f7;
+        overflow-wrap: anywhere;
+      }
+      .code-label {
+        margin: 18px 0 0;
+        padding: 8px 16px;
+        color: #d1d7ed;
+        background: #29334c;
+        border-radius: 9px 9px 0 0;
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 12px;
+        overflow-wrap: anywhere;
+      }
+      pre {
+        margin: 14px 0 20px;
+        padding: 18px 20px;
+        overflow-x: auto;
+        border-radius: 9px;
+        background: #1d263b;
+        color: #edf0fb;
+        line-height: 1.7;
+        tab-size: 2;
+      }
+      .code-label + pre { margin-top: 0; border-radius: 0 0 9px 9px; }
+      pre code { font-size: 13px; }
+      .note {
+        margin: 20px 0;
+        padding: 14px 18px;
+        border-left: 3px solid #727cf5;
+        border-radius: 0 8px 8px 0;
+        background: #f2f3fe;
+      }
+      .note p { margin: 0; }
+      .table-wrap { overflow-x: auto; margin: 18px 0; }
+      table { width: 100%; border-collapse: collapse; font-size: 14px; }
+      th, td { padding: 12px 14px; text-align: left; border: 1px solid var(--border); }
+      th { background: #f7f8fc; color: #35405b; }
+      .source { font-size: 13px; }
+      footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 13px; }
+
+      @media (max-width: 640px) {
+        main { margin: 16px auto; padding: 0 12px; }
+        article { padding: 28px 20px; border-radius: 12px; }
+        h1 { font-size: 25px; }
+        h2 { font-size: 21px; }
+        pre { padding: 14px; }
+        nav { padding: 14px 18px; }
+      }
+
+      @media print {
+        :root { background: #fff; font-size: 11pt; }
+        main { max-width: none; margin: 0; padding: 0; }
+        article { border: 0; border-radius: 0; padding: 0; box-shadow: none; }
+        nav { display: none; }
+        h1, h2, h3, .code-label { break-after: avoid; }
+        pre {
+          white-space: pre-wrap;
+          overflow-wrap: anywhere;
+          background: #f5f6f8;
+          color: #172137;
+          border: 1px solid #ddd;
+          break-inside: avoid;
+        }
+        .code-label { background: #e9ecf3; color: #273147; }
+        a { color: inherit; }
+        tr { break-inside: avoid; }
+      }
+
+    article { min-width: 0; }
+    .code-block { margin: 20px 0; min-width: 0; }
+    .code-block summary { display: flex; justify-content: space-between; gap: 12px; padding: 10px 16px; border-radius: 8px; color: #e3e8f8; background: #29334c; font-family: monospace; font-size: 13px; cursor: pointer; overflow-wrap: anywhere; }
+    .code-block summary span { flex-shrink: 0; font-family: inherit; font-size: 11px; color: #b4bed7; }
+    .code-block[open] summary { border-radius: 8px 8px 0 0; }
+    .code-block pre { margin: 0; border-radius: 0 0 8px 8px; max-height: 780px; }
+    .pill { display: inline-block; padding: 2px 9px; color: #5964d6; background: #f0f1fd; border-radius: 5px; font-size: 13px; }
+    .flow-steps { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 18px; border: 1px solid var(--border); border-radius: 10px; background: #fafbfe; }
+    .flow-steps span { padding: 5px 10px; border-radius: 6px; background: #eef0fe; color: #4d57ba; font-size: 14px; }
+    .preview-shell { display: grid; grid-template-columns: 160px minmax(0, 1fr); min-height: 360px; margin-top: 20px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .preview-sidebar { background: #2d3a4b; color: #b9c3d2; }
+    .preview-brand { display: flex; align-items: center; justify-content: center; height: 60px; color: #fff; font-size: 14px; font-weight: 600; }
+    .preview-menu { display: flex; align-items: center; gap: 10px; padding: 15px 18px; font-size: 14px; }
+    .preview-menu.active { background: #727cf5; color: #fff; }
+    .preview-menu svg { flex-shrink: 0; width: 20px; height: 20px; }
+    .preview-workspace { min-width: 0; background: #fafbfe; }
+    .preview-topbar { display: flex; justify-content: space-between; gap: 10px; padding: 18px; height: 60px; border-bottom: 1px solid var(--border); background: #fff; font-size: 13px; }
+    .preview-main { padding: 20px; }
+    .preview-card { border: 1px solid var(--border); background: #fff; border-radius: 8px; }
+    .preview-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 14px; border-bottom: 1px solid var(--border); }
+    .preview-toolbar strong { font-size: 15px; }
+    .preview-toolbar small { color: var(--muted); font-size: 12px; }
+    .preview-table-wrap { overflow: auto; margin: 0; }
+    .preview-table { font-size: 12px; min-width: 440px; }
+    .preview-table th, .preview-table td { border: 0; border-bottom: 1px solid var(--border); padding: 10px; vertical-align: top; }
+    .preview-table td { white-space: pre-wrap; overflow-wrap: anywhere; }
+    .preview-table th:first-child { width: 55px; }
+    .preview-table th:nth-child(2) { width: 85px; }
+    .preview-empty { padding: 50px 15px; color: #7c8699; font-size: 13px; text-align: center; }
+    .preview-status { min-height: 24px; color: #23734f; font-size: 13px; }
+    .preview-caption { color: var(--muted); font-size: 13px; }
+    button { font: inherit; cursor: pointer; }
+    .primary-button, .secondary-button { padding: 8px 15px; border: 1px solid transparent; border-radius: 6px; font-size: 13px; }
+    .primary-button { color: #fff; background: #5964d6; }
+    .secondary-button { color: #35405b; background: #fff; border-color: var(--border); }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    button:focus-visible, summary:focus-visible { outline: 2px solid #a9afff; outline-offset: 3px; }
+    .preview-drawer { position: fixed; inset: 0 0 0 auto; width: min(520px, 100vw); max-width: 100vw; height: 100vh; height: 100dvh; max-height: 100dvh; margin: 0; padding: 0; border: 0; color: #273147; box-shadow: -12px 0 60px rgb(29 38 59 / 16%); }
+    .preview-drawer::backdrop { background: rgb(29 38 59 / 40%); }
+    .drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid var(--border); }
+    .drawer-header h3 { margin: 0; }
+    .close-button { padding: 4px 8px; border: 0; background: transparent; color: #657089; font-size: 25px; }
+    .drawer-body { padding: 20px 24px; }
+    .drawer-body label { display: block; margin-bottom: 7px; font-size: 14px; font-weight: 600; }
+    .drawer-body select, .drawer-body input, .drawer-body textarea { width: 100%; padding: 9px 12px; border: 1px solid #dce1ec; border-radius: 6px; color: #273147; background: #fff; font: inherit; font-size: 14px; }
+    .drawer-body textarea { resize: vertical; }
+    .preview-field { margin-bottom: 20px; }
+    .preview-help { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+    .drawer-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+    .preview-error { color: #b53c3c; font-size: 13px; }
+    [hidden] { display: none !important; }
+    @media (max-width: 720px) {
+        .preview-shell { grid-template-columns: 56px minmax(0, 1fr); }
+        .preview-sidebar .menu-label, .preview-brand .brand-label { display: none; }
+        .preview-menu { justify-content: center; padding: 15px 8px; }
+        .preview-main { padding: 12px; }
+        .preview-user { display: none; }
+        .code-block summary { flex-direction: column; gap: 3px; }
+    }
+    @media print {
+        .code-block pre { max-height: none; }
+        .preview-drawer, .preview-reset { display: none; }
+    }
+</style>
+</head>
+<body>
+<main>
+<article>
+    <header>
+        <p class="eyebrow">SOLARNOTESADMIN / 页面实现参考</p>
+        <h1>天体管理：列表与添加表单</h1>
+        <p class="subtitle">把第一个业务入口从“工作台”替换为“天体管理”，沿用卡片列表与右侧抽屉的组织方式，先完成可独立验证的前端交互。</p>
+        <div class="stack"><span>Vue 3 · JavaScript</span><span>Element Plus</span><span>Vue Router</span><span>完整 JSDoc</span></div>
+        <p class="source">编写日期：2026 年 11 月 7 日 · 基于当前工程现有布局 · <a href="admin-layout-guide.html">初始布局参考</a> · <a href="menu-highlight-fix.html">菜单高亮说明</a></p>
+    </header>
+    <nav aria-label="文档目录"><strong>实现顺序</strong><ol><li><a href="#scope">明确范围与字段规则</a></li><li><a href="#preview">体验列表和添加抽屉</a></li><li><a href="#files">查看文件分工</a></li><li><a href="#constants">定义天体选项与长度限制</a></li><li><a href="#data">定义数据类型与演示入口</a></li><li><a href="#icon">创建天体图标</a></li><li><a href="#page">实现列表、表单和提交</a></li><li><a href="#router">更新路由</a></li><li><a href="#layout">更新菜单和品牌链接</a></li><li><a href="#login">更新登录成功跳转</a></li><li><a href="#verify">启动与验收</a></li><li><a href="#api-next">后续接真实 API</a></li></ol></nav>
+
+<section id="scope">
+    <h2>1. 本次实现的页面与边界</h2>
+    <p>沿用现有布局：左侧第一个菜单改为<strong>天体管理</strong>，右侧顶部继续显示当前页面标题及用户信息，右侧内容区展示天体列表。点击卡片右上角的<strong>添加天体</strong>，从右侧打开抽屉，填写后提交。</p>
+    <div class="flow-steps" aria-label="添加流程"><span>选择天体</span>→<span>填写简介</span>→<span>校验并提交</span>→<span>关闭抽屉、刷新列表</span></div>
+    <p>本阶段先完成前端交互。管理端的真实新增接口尚未确认，本文的 <code>src/api/body.js</code> 使用<strong>内存数据</strong>，提供与后续请求一致的异步函数入口。刷新整个浏览器后演示数据会清空；切换菜单再返回仍可看到本次浏览中添加的记录。</p>
+    <div class="note"><p><strong>这里添加的是天体简介记录。</strong>太阳与八大行星的模型已由前台静态配置创建；新增简介不会自动生成新的三维模型。页面术语统一为“天体”，现有数据库表及已核实的列表接口仍采用 <code>planet</code> 命名。</p></div>
+    <p>九个可选标识为 <code>Sun</code>、<code>Mercury</code>、<code>Venus</code>、<code>Earth</code>、<code>Mars</code>、<code>Jupiter</code>、<code>Saturn</code>、<code>Uranus</code>、<code>Neptune</code>。大小写必须与前台的 <code>config.name</code> 完全一致。</p>
+    <div class="table-wrap"><table><thead><tr><th>字段</th><th>页面设计</th><th>依据</th></tr></thead><tbody>
+        <tr><td><code>name</code></td><td>必选下拉框；显示“地球（Earth）”，提交 <code>Earth</code>；已添加项禁选</td><td>前台按 name 精确匹配；数据库有唯一索引 uk_name</td></tr>
+        <tr><td><code>title</code></td><td>本页要求必填，去除首尾空白后 1～20 字符</td><td>数据库字段注释中的业务上限为 20；列容量为 50</td></tr>
+        <tr><td><code>intro</code></td><td>本页要求必填，去除首尾空白后 1～150 字符</td><td>数据库字段注释中的业务上限为 150；列容量为 255</td></tr>
+        <tr><td><code>id</code></td><td>通过服务层取得，表单不填写；示例为 demo-body-* 字符串</td><td>真实数据库为雪花 BIGINT，注释要求程序使用字符串</td></tr>
+    </tbody></table></div>
+    <p class="source">上述必填规则属于本页设计，真实后端校验规则仍需对齐。标题和简介按普通文本展示，使用 Vue 插值，不使用 v-html。</p>
+</section>
+<section id="preview">
+    <h2>2. 先体验列表和添加抽屉</h2>
+    <p>下面是本 HTML 内置的独立交互示意，可直接添加天体、查看列表变化，再打开抽屉观察已添加项被禁用。它与后文 Vue 示例各自维护演示数据。</p>
+    <div class="preview-shell">
+        <aside class="preview-sidebar" aria-label="布局示意">
+            <div class="preview-brand"><span class="brand-label">SolarNotes 后台</span><span aria-hidden="true">☀</span></div>
+            <div class="preview-menu active"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="6.5" stroke="currentColor" stroke-width="1.7"></circle><ellipse cx="12" cy="12" rx="11" ry="3.5" transform="rotate(-28 12 12)" stroke="currentColor" stroke-width="1.7"></ellipse></svg><span class="menu-label">天体管理</span></div>
+            <div class="preview-menu"><span aria-hidden="true">♙</span><span class="menu-label">用户管理</span></div>
+            <div class="preview-menu"><span aria-hidden="true">▤</span><span class="menu-label">笔记管理</span></div>
+        </aside>
+        <div class="preview-workspace">
+            <div class="preview-topbar"><span>天体管理</span><span class="preview-user">预览用户</span></div>
+            <div class="preview-main">
+                <div class="preview-card">
+                    <div class="preview-toolbar"><div><strong>天体列表</strong><br><small id="preview-count">已添加 0 / 9 个天体</small></div><button type="button" class="primary-button" id="preview-add">＋ 添加天体</button></div>
+                    <div class="preview-empty" id="preview-empty">暂无天体，请点击“添加天体”</div>
+                    <div class="preview-table-wrap" id="preview-table-wrap" hidden><table class="preview-table"><thead><tr><th>天体</th><th>匹配标识</th><th>简介标题</th><th>简介内容</th></tr></thead><tbody id="preview-rows"></tbody></table></div>
+                </div>
+                <p id="preview-status" class="preview-status" role="status" aria-live="polite"></p>
+            </div>
+        </div>
+    </div>
+    <p class="preview-caption">预览仅展示本次功能；左侧其他菜单为静态示意。<button class="secondary-button preview-reset" type="button" id="preview-reset">重置预览</button></p>
+    <dialog class="preview-drawer" id="preview-drawer" aria-labelledby="drawer-title">
+        <div class="drawer-header"><h3 id="drawer-title">添加天体</h3><button class="close-button" id="preview-close" type="button" aria-label="关闭添加天体抽屉">×</button></div>
+        <form id="preview-form" class="drawer-body">
+            <div class="preview-field"><label for="preview-name">天体 *</label><select id="preview-name" name="name" required><option value="">请选择天体</option></select><p class="preview-help">已添加的天体不可重复选择。</p></div>
+            <div class="preview-field"><label for="preview-title">简介标题 *</label><input id="preview-title" name="title" maxlength="20" required placeholder="请输入简介标题"><p class="preview-help">最多 20 个字符</p></div>
+            <div class="preview-field"><label for="preview-intro">简介内容 *</label><textarea id="preview-intro" name="intro" maxlength="150" rows="6" required placeholder="请输入简介内容"></textarea><p class="preview-help">最多 150 个字符</p></div>
+            <p id="preview-error" class="preview-error" role="alert"></p>
+            <div class="drawer-actions"><button class="secondary-button" type="button" id="preview-cancel">取消</button><button class="primary-button" type="submit">确认添加</button></div>
+        </form>
+    </dialog>
+</section>
+<section id="files">
+    <h2>3. 文件分工与实现顺序</h2>
+    <p>按下列顺序创建文件，再修改路由、菜单与登录跳转。当前依赖已经包含所需的 Vue、Vue Router、Element Plus 与图标库，无须新增 npm 包。</p>
+    <div class="table-wrap"><table><thead><tr><th>文件</th><th>用途</th><th>操作</th></tr></thead><tbody>
+        <tr><td><code>src/constants/body.js</code></td><td>九个固定天体选项、标题与简介长度上限</td><td>新增</td></tr>
+        <tr><td><code>src/api/body.js</code></td><td>数据类型，以及读取列表、添加记录的异步入口</td><td>新增，先使用演示实现</td></tr>
+        <tr><td><code>src/components/BodyIcon.vue</code></td><td>可继承菜单颜色的行星环 SVG 图标</td><td>新增</td></tr>
+        <tr><td><code>src/views/BodyListPage.vue</code></td><td>列表、抽屉、校验和提交逻辑</td><td>新增</td></tr>
+        <tr><td><code>src/router/index.js</code></td><td>注册 bodyList 路由，更新后台默认入口</td><td>修改</td></tr>
+        <tr><td><code>src/views/LayoutPage.vue</code></td><td>更新品牌链接、第一个菜单、图标导入</td><td>修改指定片段</td></tr>
+        <tr><td><code>src/views/LoginPage.vue</code></td><td>登录成功后跳转到天体管理</td><td>修改指定函数</td></tr>
+    </tbody></table></div>
+    <p>页面状态由 <code>ref</code>、<code>reactive</code>、<code>computed</code> 管理。当前天体数据无需跨多个业务模块共享，因此本页先使用页面状态与数据模块；登录状态继续使用已有 Pinia Store。</p>
+</section>
+
+<section id="constants"><h2>4. 定义固定天体选项和长度限制</h2><p>中文名称用于显示，英文 <code>name</code> 用于匹配。不要将选择框改为可自由创建值的输入框，也不要在提交时把标识转换为小写。</p><details class="code-block" open><summary>src/constants/body.js<span>点击折叠 / 展开</span></summary><pre><code data-file="src/constants/body.js" data-kind="complete">/**
+ * @typedef {Object} BodyOption 可供选择的天体。
+ * @property {string} name 与三维场景 config.name 完全一致的匹配标识。
+ * @property {string} label 天体的中文名称。
+ */
+
+/**
+ * 前端场景中已有的太阳及八大行星，英文标识区分大小写。
+ * @type {BodyOption[]}
+ */
+const bodyOptions = [
+    {name: &#x27;Sun&#x27;, label: &#x27;太阳&#x27;},
+    {name: &#x27;Mercury&#x27;, label: &#x27;水星&#x27;},
+    {name: &#x27;Venus&#x27;, label: &#x27;金星&#x27;},
+    {name: &#x27;Earth&#x27;, label: &#x27;地球&#x27;},
+    {name: &#x27;Mars&#x27;, label: &#x27;火星&#x27;},
+    {name: &#x27;Jupiter&#x27;, label: &#x27;木星&#x27;},
+    {name: &#x27;Saturn&#x27;, label: &#x27;土星&#x27;},
+    {name: &#x27;Uranus&#x27;, label: &#x27;天王星&#x27;},
+    {name: &#x27;Neptune&#x27;, label: &#x27;海王星&#x27;},
+]
+
+/**
+ * 简介标题的长度上限，按数据库字段注释中的业务限制设置。
+ * @type {number}
+ */
+const BODY_TITLE_MAX_LENGTH = 20
+
+/**
+ * 简介内容的长度上限，按数据库字段注释中的业务限制设置。
+ * @type {number}
+ */
+const BODY_INTRO_MAX_LENGTH = 150
+
+export {bodyOptions, BODY_TITLE_MAX_LENGTH, BODY_INTRO_MAX_LENGTH}</code></pre></details></section>
+<section id="data"><h2>5. 定义数据类型与演示数据入口</h2><p>当前模块从空列表开始。通过异步 <code>getBodyList()</code> 和 <code>addBody(form)</code> 隔离页面与数据来源，后续接真实接口时可以保持页面调用方式一致。这里重新检查未知标识、重复添加和字段长度，便于单独验证服务层行为。</p><details class="code-block" open><summary>src/api/body.js<span>点击折叠 / 展开</span></summary><pre><code data-file="src/api/body.js" data-kind="complete">import {
+    bodyOptions,
+    BODY_TITLE_MAX_LENGTH,
+    BODY_INTRO_MAX_LENGTH,
+} from &#x27;@/constants/body&#x27;
+
+/**
+ * @typedef {Object} BodyRecord 天体列表中的一条记录。
+ * @property {string} id 天体 ID；真实接口应将数据库 BIGINT 以字符串传输。
+ * @property {string} name 与三维场景 config.name 一致的匹配标识。
+ * @property {string} title 简介标题。
+ * @property {string} intro 简介内容。
+ */
+
+/**
+ * @typedef {Object} AddBodyForm 添加天体时提交的数据。
+ * @property {string} name 从固定选项中选择的匹配标识。
+ * @property {string} title 简介标题。
+ * @property {string} intro 简介内容。
+ */
+
+/**
+ * 当前页面演示使用的内存数据；刷新整个浏览器后会清空。
+ * @type {BodyRecord[]}
+ */
+const memoryBodies = []
+
+/**
+ * 演示记录的递增序号，仅用于构造列表的字符串 ID。
+ * @type {number}
+ */
+let nextDemoId = 1
+
+/**
+ * 读取天体列表。切换页面后重新进入，仍可读取本次浏览中的演示数据。
+ * @returns {Promise&lt;BodyRecord[]&gt;} 记录的副本，避免页面直接修改数据源。
+ */
+async function getBodyList() {
+    /** @type {BodyRecord[]} 返回给页面的记录列表。 */
+    const result = []
+
+    for (const body of memoryBodies) {
+        result.push({...body})
+    }
+
+    return result
+}
+
+/**
+ * 添加一条天体简介。当前实现仅操作内存，后续用真实请求替换。
+ * @param {AddBodyForm} form 表单数据，三个字段均为必填字符串。
+ * @returns {Promise&lt;void&gt;} 添加完成。
+ * @throws {Error} 天体未知、已存在或简介不符合本页规则时拒绝操作。
+ */
+async function addBody(form) {
+    /** @type {string} 保持原样的匹配标识，不转换大小写或删除空格。 */
+    const name = form.name
+    /** @type {string} 去除首尾空白后的简介标题。 */
+    const title = form.title.trim()
+    /** @type {string} 去除首尾空白后的简介内容。 */
+    const intro = form.intro.trim()
+    /** @type {boolean} 标识是否属于已知天体。 */
+    let isKnownBody = false
+
+    for (const option of bodyOptions) {
+        if (option.name === name) {
+            isKnownBody = true
+            break
+        }
+    }
+
+    if (isKnownBody === false) {
+        throw new Error(&#x27;请选择列表中提供的天体&#x27;)
+    }
+
+    for (const body of memoryBodies) {
+        if (body.name === name) {
+            throw new Error(&#x27;该天体已经添加，请选择其他天体&#x27;)
+        }
+    }
+
+    if (title === &#x27;&#x27; || title.length &gt; BODY_TITLE_MAX_LENGTH) {
+        throw new Error(&#x27;简介标题应为 1 至 20 个字符&#x27;)
+    }
+
+    if (intro === &#x27;&#x27; || intro.length &gt; BODY_INTRO_MAX_LENGTH) {
+        throw new Error(&#x27;简介内容应为 1 至 150 个字符&#x27;)
+    }
+
+    /** @type {BodyRecord} 即将加入内存列表的记录。 */
+    const body = {
+        id: `demo-body-${nextDemoId}`,
+        name,
+        title,
+        intro,
+    }
+
+    memoryBodies.push(body)
+    nextDemoId += 1
+}
+
+export {getBodyList, addBody}</code></pre></details><div class="note"><p><strong>这份代码的添加结果只在内存中。</strong><code>demo-body-*</code> 是演示 ID，不是雪花 ID。页面里的“刷新列表”重新读取内存，浏览器整体刷新会重新初始化该模块。切换为真实 API 时应整体替换演示实现，使用后端生成的 ID。</p></div></section>
+<section id="icon"><h2>6. 创建天体菜单图标</h2><p>使用带行星环的 SVG 作为天体管理图标。通过 <code>currentColor</code> 继承 <code>el-icon</code> 的颜色，菜单选中后可跟随变白。太阳等天体共用这个入口图标。</p><details class="code-block" open><summary>src/components/BodyIcon.vue<span>点击折叠 / 展开</span></summary><pre><code data-file="src/components/BodyIcon.vue" data-kind="complete">&lt;template&gt;
+    &lt;svg
+        viewBox=&quot;0 0 24 24&quot;
+        fill=&quot;none&quot;
+        xmlns=&quot;http://www.w3.org/2000/svg&quot;
+        aria-hidden=&quot;true&quot;
+        focusable=&quot;false&quot;
+    &gt;
+        &lt;circle cx=&quot;12&quot; cy=&quot;12&quot; r=&quot;6.5&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.7&quot;&gt;&lt;/circle&gt;
+        &lt;ellipse
+            cx=&quot;12&quot;
+            cy=&quot;12&quot;
+            rx=&quot;11&quot;
+            ry=&quot;3.5&quot;
+            transform=&quot;rotate(-28 12 12)&quot;
+            stroke=&quot;currentColor&quot;
+            stroke-width=&quot;1.7&quot;
+        &gt;&lt;/ellipse&gt;
+    &lt;/svg&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+defineOptions({
+    name: &#x27;BodyIcon&#x27;,
+})
+&lt;/script&gt;
+
+&lt;style scoped&gt;
+svg {
+    display: block;
+    width: 1em;
+    height: 1em;
+}
+&lt;/style&gt;</code></pre></details></section>
+<section id="page"><h2>7. 实现天体列表和添加抽屉</h2>
+    <p>保存下面完整组件。结构采用 <code>template → script → style</code>；脚本使用普通函数、完整 JSDoc、显式比较。列表使用 <code>el-table</code>，新增表单使用 <code>el-drawer</code> 和 <code>el-form</code>。组件用法可对照 <a href="https://element-plus.org/en-US/component/table.html">Table 官方文档</a>、<a href="https://element-plus.org/en-US/component/drawer.html">Drawer 官方文档</a> 与 <a href="https://element-plus.org/en-US/component/form.html">Form 官方文档</a>。</p>
+    <ul><li>列表读取失败时显示重试提示，并禁用添加，避免依据不完整的列表判断可选天体。</li><li>标题和简介在提交前去除首尾空白；空白文本无法通过校验。</li><li>从校验开始就锁定提交，避免快速重复点击；提交期间禁用取消及关闭操作。</li><li>添加失败保留输入；添加成功关闭抽屉、显示结果并重新读取列表。</li><li>添加成功后的列表刷新若失败，由列表单独显示错误，避免将已成功的添加误报为失败。</li><li>九个天体全部添加后，添加按钮禁用；本阶段不需要分页、编辑或删除按钮。</li></ul>
+<details class="code-block" open><summary>src/views/BodyListPage.vue<span>点击折叠 / 展开</span></summary><pre><code data-file="src/views/BodyListPage.vue" data-kind="complete">&lt;template&gt;
+    &lt;section class=&quot;body-list-page&quot;&gt;
+        &lt;el-breadcrumb :separator-icon=&quot;ArrowRight&quot;&gt;
+            &lt;el-breadcrumb-item&gt;管理后台&lt;/el-breadcrumb-item&gt;
+            &lt;el-breadcrumb-item&gt;天体管理&lt;/el-breadcrumb-item&gt;
+        &lt;/el-breadcrumb&gt;
+
+        &lt;h1&gt;天体管理&lt;/h1&gt;
+        &lt;p class=&quot;page-description&quot;&gt;管理太阳与八大行星的简介标题和内容。&lt;/p&gt;
+
+        &lt;el-alert
+            class=&quot;demo-notice&quot;
+            title=&quot;当前为页面演示，数据仅在本次浏览中保留，刷新整个浏览器后清空。&quot;
+            type=&quot;info&quot;
+            show-icon
+            :closable=&quot;false&quot;
+        &gt;&lt;/el-alert&gt;
+
+        &lt;el-card shadow=&quot;never&quot;&gt;
+            &lt;template #header&gt;
+                &lt;div class=&quot;list-toolbar&quot;&gt;
+                    &lt;div class=&quot;list-heading&quot;&gt;
+                        &lt;strong&gt;天体列表&lt;/strong&gt;
+                        &lt;span&gt;已添加 {{bodyList.length}} / {{bodyOptions.length}} 个天体&lt;/span&gt;
+                    &lt;/div&gt;
+
+                    &lt;div class=&quot;toolbar-actions&quot;&gt;
+                        &lt;el-button
+                            :icon=&quot;Refresh&quot;
+                            :loading=&quot;loading&quot;
+                            :disabled=&quot;loading || submitting&quot;
+                            @click=&quot;loadBodies&quot;
+                        &gt;刷新列表&lt;/el-button&gt;
+                        &lt;el-button
+                            type=&quot;primary&quot;
+                            :icon=&quot;Plus&quot;
+                            :disabled=&quot;loading || loadFailed || submitting || availableBodyCount === 0&quot;
+                            @click=&quot;openAddDrawer&quot;
+                        &gt;添加天体&lt;/el-button&gt;
+                    &lt;/div&gt;
+                &lt;/div&gt;
+            &lt;/template&gt;
+
+            &lt;el-alert
+                v-if=&quot;loadFailed&quot;
+                title=&quot;列表加载失败，请点击“刷新列表”重试。&quot;
+                type=&quot;error&quot;
+                show-icon
+                :closable=&quot;false&quot;
+            &gt;&lt;/el-alert&gt;
+
+            &lt;el-table
+                v-else
+                v-loading=&quot;loading&quot;
+                :data=&quot;bodyList&quot;
+                row-key=&quot;id&quot;
+                stripe
+                empty-text=&quot;暂无天体，请点击“添加天体”&quot;
+                class=&quot;body-table&quot;
+            &gt;
+                &lt;el-table-column label=&quot;天体&quot; width=&quot;100&quot;&gt;
+                    &lt;template #default=&quot;scope&quot;&gt;
+                        {{getBodyLabel(scope.row.name)}}
+                    &lt;/template&gt;
+                &lt;/el-table-column&gt;
+                &lt;el-table-column prop=&quot;name&quot; label=&quot;匹配标识&quot; width=&quot;130&quot;&gt;&lt;/el-table-column&gt;
+                &lt;el-table-column prop=&quot;title&quot; label=&quot;简介标题&quot; min-width=&quot;180&quot;&gt;&lt;/el-table-column&gt;
+                &lt;el-table-column prop=&quot;intro&quot; label=&quot;简介内容&quot; min-width=&quot;280&quot;&gt;&lt;/el-table-column&gt;
+            &lt;/el-table&gt;
+
+            &lt;p v-if=&quot;loadFailed === false &amp;&amp; loading === false &amp;&amp; availableBodyCount === 0&quot; class=&quot;all-added&quot;&gt;
+                太阳与八大行星均已添加。
+            &lt;/p&gt;
+        &lt;/el-card&gt;
+
+        &lt;el-drawer
+            v-model=&quot;drawerVisible&quot;
+            title=&quot;添加天体&quot;
+            direction=&quot;rtl&quot;
+            size=&quot;min(520px, 100vw)&quot;
+            :close-on-click-modal=&quot;false&quot;
+            :close-on-press-escape=&quot;submitting === false&quot;
+            :show-close=&quot;submitting === false&quot;
+            :before-close=&quot;beforeCloseDrawer&quot;
+            @closed=&quot;resetAddForm&quot;
+        &gt;
+            &lt;el-form
+                ref=&quot;addFormRef&quot;
+                :model=&quot;addForm&quot;
+                :rules=&quot;addFormRules&quot;
+                :disabled=&quot;submitting&quot;
+                label-position=&quot;top&quot;
+                @submit.prevent=&quot;submitBody&quot;
+            &gt;
+                &lt;el-form-item label=&quot;天体&quot; prop=&quot;name&quot;&gt;
+                    &lt;el-select
+                        v-model=&quot;addForm.name&quot;
+                        placeholder=&quot;请选择天体&quot;
+                        class=&quot;body-select&quot;
+                    &gt;
+                        &lt;el-option
+                            v-for=&quot;option in bodyOptions&quot;
+                            :key=&quot;option.name&quot;
+                            :label=&quot;option.label + &#x27;（&#x27; + option.name + &#x27;）&#x27;&quot;
+                            :value=&quot;option.name&quot;
+                            :disabled=&quot;isBodyAdded(option.name)&quot;
+                        &gt;&lt;/el-option&gt;
+                    &lt;/el-select&gt;
+                    &lt;p class=&quot;field-help&quot;&gt;已添加的天体不可重复选择。&lt;/p&gt;
+                &lt;/el-form-item&gt;
+
+                &lt;el-form-item label=&quot;简介标题&quot; prop=&quot;title&quot;&gt;
+                    &lt;el-input
+                        v-model=&quot;addForm.title&quot;
+                        placeholder=&quot;请输入简介标题&quot;
+                        :maxlength=&quot;BODY_TITLE_MAX_LENGTH&quot;
+                        show-word-limit
+                    &gt;&lt;/el-input&gt;
+                &lt;/el-form-item&gt;
+
+                &lt;el-form-item label=&quot;简介内容&quot; prop=&quot;intro&quot;&gt;
+                    &lt;el-input
+                        v-model=&quot;addForm.intro&quot;
+                        type=&quot;textarea&quot;
+                        placeholder=&quot;请输入简介内容&quot;
+                        :rows=&quot;6&quot;
+                        :maxlength=&quot;BODY_INTRO_MAX_LENGTH&quot;
+                        show-word-limit
+                    &gt;&lt;/el-input&gt;
+                &lt;/el-form-item&gt;
+            &lt;/el-form&gt;
+
+            &lt;template #footer&gt;
+                &lt;el-button :disabled=&quot;submitting&quot; @click=&quot;closeAddDrawer&quot;&gt;取消&lt;/el-button&gt;
+                &lt;el-button type=&quot;primary&quot; :loading=&quot;submitting&quot; @click=&quot;submitBody&quot;&gt;
+                    确认添加
+                &lt;/el-button&gt;
+            &lt;/template&gt;
+        &lt;/el-drawer&gt;
+    &lt;/section&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import {computed, nextTick, onMounted, reactive, ref} from &#x27;vue&#x27;
+import {ElMessage} from &#x27;element-plus&#x27;
+import {ArrowRight, Plus, Refresh} from &#x27;@element-plus/icons-vue&#x27;
+import {getBodyList, addBody} from &#x27;@/api/body&#x27;
+import {
+    bodyOptions,
+    BODY_TITLE_MAX_LENGTH,
+    BODY_INTRO_MAX_LENGTH,
+} from &#x27;@/constants/body&#x27;
+
+defineOptions({
+    name: &#x27;BodyListPage&#x27;,
+})
+
+/** @type {import(&#x27;vue&#x27;).Ref&lt;import(&#x27;@/api/body&#x27;).BodyRecord[]&gt;} 天体列表。 */
+const bodyList = ref([])
+/** @type {import(&#x27;vue&#x27;).Ref&lt;boolean&gt;} 是否正在读取列表。 */
+const loading = ref(false)
+/** @type {import(&#x27;vue&#x27;).Ref&lt;boolean&gt;} 最近一次读取列表是否失败。 */
+const loadFailed = ref(false)
+/** @type {import(&#x27;vue&#x27;).Ref&lt;boolean&gt;} 添加抽屉是否显示。 */
+const drawerVisible = ref(false)
+/** @type {import(&#x27;vue&#x27;).Ref&lt;boolean&gt;} 是否正在校验或提交添加表单。 */
+const submitting = ref(false)
+/** @type {import(&#x27;vue&#x27;).Ref&lt;import(&#x27;element-plus&#x27;).FormInstance | null&gt;} 表单组件实例。 */
+const addFormRef = ref(null)
+
+/** @type {import(&#x27;@/api/body&#x27;).AddBodyForm} 添加天体的表单数据。 */
+const addForm = reactive({
+    name: &#x27;&#x27;,
+    title: &#x27;&#x27;,
+    intro: &#x27;&#x27;,
+})
+
+/** @type {import(&#x27;element-plus&#x27;).FormRules&lt;import(&#x27;@/api/body&#x27;).AddBodyForm&gt;} 表单校验规则。 */
+const addFormRules = {
+    name: [
+        {required: true, message: &#x27;请选择天体&#x27;, trigger: &#x27;change&#x27;},
+    ],
+    title: [
+        {required: true, whitespace: true, message: &#x27;请输入简介标题&#x27;, trigger: &#x27;blur&#x27;},
+        {max: BODY_TITLE_MAX_LENGTH, message: &#x27;简介标题最多 20 个字符&#x27;, trigger: &#x27;blur&#x27;},
+    ],
+    intro: [
+        {required: true, whitespace: true, message: &#x27;请输入简介内容&#x27;, trigger: &#x27;blur&#x27;},
+        {max: BODY_INTRO_MAX_LENGTH, message: &#x27;简介内容最多 150 个字符&#x27;, trigger: &#x27;blur&#x27;},
+    ],
+}
+
+/** @type {import(&#x27;vue&#x27;).ComputedRef&lt;number&gt;} 尚未添加的天体数量。 */
+const availableBodyCount = computed(getAvailableBodyCount)
+
+/**
+ * 获取用于列表展示的天体中文名称。
+ * @param {string} name 天体的匹配标识。
+ * @returns {string} 对应的中文名称；未知标识直接显示原值。
+ */
+function getBodyLabel(name) {
+    for (const option of bodyOptions) {
+        if (option.name === name) {
+            return option.label
+        }
+    }
+
+    return name
+}
+
+/**
+ * 判断给定天体是否已经出现在当前列表中。
+ * @param {string} name 天体的匹配标识。
+ * @returns {boolean} 已添加时返回 true。
+ */
+function isBodyAdded(name) {
+    for (const body of bodyList.value) {
+        if (body.name === name) {
+            return true
+        }
+    }
+
+    return false
+}
+
+/**
+ * 计算固定选项中尚未添加的数量。
+ * @returns {number} 可继续添加的天体数量。
+ */
+function getAvailableBodyCount() {
+    /** @type {number} 尚未添加的数量。 */
+    let count = 0
+
+    for (const option of bodyOptions) {
+        if (isBodyAdded(option.name) === false) {
+            count += 1
+        }
+    }
+
+    return count
+}
+
+/**
+ * 从错误对象中读取可展示的信息，兼容 Error 与接口业务错误。
+ * @param {unknown} error 捕获到的异常。
+ * @param {string} fallback 没有可用错误信息时显示的文字。
+ * @returns {string} 错误信息。
+ */
+function getErrorMessage(error, fallback) {
+    if (typeof error === &#x27;object&#x27; &amp;&amp; error !== null &amp;&amp; &#x27;message&#x27; in error) {
+        if (typeof error.message === &#x27;string&#x27; &amp;&amp; error.message.trim() !== &#x27;&#x27;) {
+            return error.message
+        }
+    }
+
+    return fallback
+}
+
+/**
+ * 读取列表；失败时保留错误状态并允许重新刷新。
+ * @returns {Promise&lt;void&gt;} 本次读取结束。
+ */
+async function loadBodies() {
+    if (loading.value === true) {
+        return
+    }
+
+    loading.value = true
+    loadFailed.value = false
+
+    try {
+        bodyList.value = await getBodyList()
+    } catch (error) {
+        loadFailed.value = true
+        ElMessage.error(getErrorMessage(error, &#x27;天体列表加载失败&#x27;))
+    } finally {
+        loading.value = false
+    }
+}
+
+/**
+ * 清空表单内容及校验提示，供抽屉关闭或重新打开时使用。
+ * @returns {void}
+ */
+function resetAddForm() {
+    addForm.name = &#x27;&#x27;
+    addForm.title = &#x27;&#x27;
+    addForm.intro = &#x27;&#x27;
+
+    if (addFormRef.value !== null) {
+        addFormRef.value.clearValidate()
+    }
+}
+
+/**
+ * 打开添加抽屉，等待懒加载的表单挂载后清除旧校验信息。
+ * @returns {Promise&lt;void&gt;} 抽屉内容已完成本轮更新。
+ */
+async function openAddDrawer() {
+    if (loading.value === true || loadFailed.value === true || submitting.value === true) {
+        return
+    }
+
+    if (availableBodyCount.value === 0) {
+        return
+    }
+
+    resetAddForm()
+    drawerVisible.value = true
+    await nextTick()
+
+    if (addFormRef.value !== null) {
+        addFormRef.value.clearValidate()
+    }
+}
+
+/**
+ * 响应抽屉关闭动作，在提交期间阻止通过关闭按钮等途径离开。
+ * @param {() =&gt; void} done Element Plus 提供的关闭回调。
+ * @returns {void}
+ */
+function beforeCloseDrawer(done) {
+    if (submitting.value === true) {
+        return
+    }
+
+    done()
+}
+
+/**
+ * 响应取消按钮，提交期间保持抽屉打开。
+ * @returns {void}
+ */
+function closeAddDrawer() {
+    if (submitting.value === true) {
+        return
+    }
+
+    drawerVisible.value = false
+}
+
+/**
+ * 校验表单并添加天体，成功后关闭抽屉并重新读取列表。
+ * @returns {Promise&lt;void&gt;} 本次提交处理结束。
+ */
+async function submitBody() {
+    if (submitting.value === true || drawerVisible.value === false) {
+        return
+    }
+
+    if (addFormRef.value === null) {
+        return
+    }
+
+    submitting.value = true
+
+    try {
+        addForm.title = addForm.title.trim()
+        addForm.intro = addForm.intro.trim()
+
+        /** @type {boolean} Element Plus 表单校验结果。 */
+        const isValid = await addFormRef.value.validate()
+
+        if (isValid === false) {
+            submitting.value = false
+            return
+        }
+    } catch {
+        // 校验失败时表单项已经显示提示，保留用户输入并解除提交锁。
+        submitting.value = false
+        return
+    }
+
+    try {
+        await addBody({
+            name: addForm.name,
+            title: addForm.title,
+            intro: addForm.intro,
+        })
+    } catch (error) {
+        ElMessage.error(getErrorMessage(error, &#x27;天体添加失败，请重试&#x27;))
+        return
+    } finally {
+        submitting.value = false
+    }
+
+    drawerVisible.value = false
+    ElMessage.success(&#x27;天体添加成功（演示）&#x27;)
+    // 读取失败由 loadBodies() 单独处理，避免误报为添加失败。
+    await loadBodies()
+}
+
+onMounted(loadBodies)
+&lt;/script&gt;
+
+&lt;style scoped lang=&quot;scss&quot;&gt;
+.body-list-page h1 {
+    margin: 20px 0 8px;
+    color: #35405b;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.page-description {
+    margin: 0 0 20px;
+    color: #657089;
+    line-height: 1.6;
+}
+
+.demo-notice {
+    margin-bottom: 20px;
+}
+
+.list-toolbar,
+.list-heading,
+.toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.list-toolbar {
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.list-heading {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+}
+
+.list-heading span,
+.all-added,
+.field-help {
+    color: #657089;
+    font-size: 13px;
+}
+
+.toolbar-actions {
+    flex-wrap: wrap;
+}
+
+.toolbar-actions :deep(.el-button + .el-button) {
+    margin-left: 0;
+}
+
+.body-table {
+    width: 100%;
+}
+
+.body-table :deep(.cell) {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.body-select {
+    width: 100%;
+}
+
+.field-help {
+    margin: 6px 0 0;
+    line-height: 1.6;
+}
+
+.all-added {
+    margin: 16px 0 0;
+}
+
+.body-list-page :deep(.el-card) {
+    border-color: #e8ecf3;
+    border-radius: 8px;
+}
+
+@media (max-width: 640px) {
+    .list-toolbar {
+        align-items: flex-start;
+    }
+
+    .toolbar-actions {
+        width: 100%;
+    }
+}
+&lt;/style&gt;</code></pre></details>
+    <h3>这里几个容易忽略的细节</h3>
+    <p><code>submitBody()</code> 使用两个同级的 <code>try...catch</code>：第一个处理表单校验，第二个处理添加请求。<code>validate()</code> 的 Promise 校验失败可能拒绝，示例捕获后保留表单内的提示，并在提前返回前解除提交锁；请求阶段通过 <code>finally</code> 统一解除提交锁。添加成功后的关闭抽屉、成功提示与列表刷新放在两个块之后，列表刷新失败仍由 <code>loadBodies()</code> 单独处理。</p>
+    <p>抽屉首次打开时表单才挂载，因此通过 <code>nextTick()</code> 等待组件更新，再清除校验消息。关闭后同时清空模型和校验提示，下一次打开从空表单开始。</p>
+    <p><code>size="min(520px, 100vw)"</code> 让抽屉在桌面宽度为 520px，在窄屏占满可用宽度。表格的简介列允许换行；横向空间不足时由表格内部滚动。</p>
+</section>
+<section id="router"><h2>8. 更新路由与后台默认入口</h2><p>下面是完整路由文件：先定义 <code>routes</code>，再定义 <code>option</code>，创建 <code>router</code>，最后导出。每个 <code>component</code> 继续使用没有额外 JSDoc 的动态导入箭头函数。</p><p>天体管理的名称为 <code>bodyList</code>，子路径为 <code>bodies</code>，最终地址为 <code>/admin/bodies</code>。原工作台路由被这个业务页面替代。</p><details class="code-block" open><summary>src/router/index.js<span>点击折叠 / 展开</span></summary><pre><code data-file="src/router/index.js" data-kind="complete">import {createRouter, createWebHistory} from &#x27;vue-router&#x27;
+
+/** @type {import(&#x27;vue-router&#x27;).RouteRecordRaw[]} 路由列表。 */
+const routes = [
+    {
+        path: &#x27;/&#x27;,
+        redirect: &#x27;/login&#x27;,
+    },
+    {
+        path: &#x27;/login&#x27;,
+        name: &#x27;login&#x27;,
+        component: () =&gt; import(&#x27;@/views/LoginPage.vue&#x27;),
+    },
+    {
+        path: &#x27;/admin&#x27;,
+        component: () =&gt; import(&#x27;@/views/LayoutPage.vue&#x27;),
+        redirect: {name: &#x27;bodyList&#x27;},
+        children: [
+            {
+                path: &#x27;bodies&#x27;,
+                name: &#x27;bodyList&#x27;,
+                component: () =&gt; import(&#x27;@/views/BodyListPage.vue&#x27;),
+                meta: {
+                    title: &#x27;天体管理&#x27;,
+                    description: &#x27;管理太阳与八大行星的简介信息&#x27;,
+                },
+            },
+            {
+                path: &#x27;users&#x27;,
+                name: &#x27;userList&#x27;,
+                component: () =&gt; import(&#x27;@/views/PlaceholderPage.vue&#x27;),
+                meta: {
+                    title: &#x27;用户管理&#x27;,
+                    description: &#x27;查看与管理用户信息&#x27;,
+                },
+            },
+            {
+                path: &#x27;notes&#x27;,
+                name: &#x27;noteList&#x27;,
+                component: () =&gt; import(&#x27;@/views/PlaceholderPage.vue&#x27;),
+                meta: {
+                    title: &#x27;笔记管理&#x27;,
+                    description: &#x27;查看和管理笔记内容&#x27;,
+                },
+            },
+        ],
+    },
+]
+
+/** @type {import(&#x27;vue-router&#x27;).RouterOptions} 路由配置。 */
+const option = {
+    routes,
+    history: createWebHistory(import.meta.env.BASE_URL),
+}
+
+/** @type {import(&#x27;vue-router&#x27;).Router} 路由实例。 */
+const router = createRouter(option)
+
+export default router</code></pre></details></section>
+<section id="layout"><h2>9. 修改左侧菜单和品牌链接</h2>
+    <p>以下均为 <code>LayoutPage.vue</code> 的局部替换片段，逐处修改。当前已经修复的菜单高亮计算继续沿用，让菜单 index 与当前路由都根据名称解析规范路径。</p>
+    <h3>9.1 将品牌链接目标改为天体管理</h3><details class="code-block" open><summary>src/views/LayoutPage.vue · 品牌链接<span>点击折叠 / 展开</span></summary><pre><code data-file="src/views/LayoutPage.vue · 品牌链接" data-kind="fragment">&lt;RouterLink
+    class=&quot;brand&quot;
+    :to=&quot;{name: &#x27;bodyList&#x27;}&quot;
+    aria-label=&quot;SolarNotes 天体管理&quot;
+&gt;
+    &lt;el-icon class=&quot;brand-icon&quot;&gt;
+        &lt;Sunny&gt;&lt;/Sunny&gt;
+    &lt;/el-icon&gt;
+    &lt;span class=&quot;brand-name&quot;&gt;SolarNotes 管理后台&lt;/span&gt;
+&lt;/RouterLink&gt;</code></pre></details>
+    <h3>9.2 将第一个菜单改为天体管理</h3><details class="code-block" open><summary>src/views/LayoutPage.vue · 第一个菜单<span>点击折叠 / 展开</span></summary><pre><code data-file="src/views/LayoutPage.vue · 第一个菜单" data-kind="fragment">&lt;el-menu-item
+    :index=&quot;getMenuPath(&#x27;bodyList&#x27;)&quot;
+    title=&quot;天体管理&quot;
+    aria-label=&quot;天体管理&quot;
+&gt;
+    &lt;el-icon&gt;
+        &lt;BodyIcon&gt;&lt;/BodyIcon&gt;
+    &lt;/el-icon&gt;
+    &lt;span&gt;天体管理&lt;/span&gt;
+&lt;/el-menu-item&gt;</code></pre></details>
+    <h3>9.3 调整图标导入</h3><p>将原来的图标库导入行替换为以下两行；<code>HomeFilled</code> 已由自定义 <code>BodyIcon</code> 替代。</p><details class="code-block" open><summary>src/views/LayoutPage.vue · script setup 的图标导入<span>点击折叠 / 展开</span></summary><pre><code data-file="src/views/LayoutPage.vue · script setup 的图标导入" data-kind="fragment">import {Document, Sunny, SwitchButton, User} from &#x27;@element-plus/icons-vue&#x27;
+import BodyIcon from &#x27;@/components/BodyIcon.vue&#x27;</code></pre></details>
+    <p>上述片段对应两个 <code>dashboard</code> 引用：品牌链接与菜单。<code>activeMenuPath</code>、<code>getActiveMenuPath()</code>、<code>getMenuPath()</code>、用户名和退出逻辑继续使用工程中现有实现。顶部标题会从新路由的 <code>meta.title</code> 自动取得“天体管理”。</p>
+</section>
+<section id="login"><h2>10. 修改登录成功后的跳转</h2>
+    <p>在现有 <code>LoginPage.vue</code> 中更新 <code>onLoginSuccess()</code>，使其与新的默认业务页面一致。已有的 <code>userStore</code> 和 <code>router</code> 定义可直接使用。</p><details class="code-block" open><summary>src/views/LoginPage.vue · onLoginSuccess()<span>点击折叠 / 展开</span></summary><pre><code data-file="src/views/LoginPage.vue · onLoginSuccess()" data-kind="fragment">/**
+ * 保存登录成功后的会话并进入天体管理。
+ * @param {string} token 服务端发放的登录凭证。
+ * @param {string} username 用户名。
+ * @returns {Promise&lt;void&gt;} 保存会话并完成路由跳转。
+ * @throws {TypeError} 会话参数类型或内容不符合用户 Store 的要求时抛出。
+ */
+async function onLoginSuccess(token, username) {
+    userStore.setSession(token, username)
+    await router.replace({name: &#x27;bodyList&#x27;})
+}</code></pre></details>
+    <p>目前 <code>login()</code> 仍显示占位提示；仅修改这个回调不会自动接通登录接口。调试天体页面时，可以直接打开下一节给出的页面地址。</p>
+</section>
+<section id="verify"><h2>11. 启动与验收</h2>
+    <p>完成所有文件后，在项目根目录启动：</p><details class="code-block" open><summary>终端 · 启动<span>点击折叠 / 展开</span></summary><pre><code data-file="终端 · 启动" data-kind="fragment">npm run dev</code></pre></details>
+    <p>本机访问 <code>http://localhost:5062/admin/bodies</code>。当前 Vite 已配置 <code>host: '0.0.0.0'</code>，局域网其他设备可用本机的局域网 IP 和同一端口访问。</p>
+    <div class="table-wrap"><table><thead><tr><th>检查动作</th><th>预期结果</th></tr></thead><tbody>
+        <tr><td>直接打开 /admin 或 /admin/bodies</td><td>显示天体管理，左侧菜单选中，顶部标题正确</td></tr>
+        <tr><td>打开 /admin/bodies/ 或带查询参数的地址</td><td>天体管理菜单仍然高亮</td></tr>
+        <tr><td>初次进入页面</td><td>空列表、计数 0/9，添加按钮可用</td></tr>
+        <tr><td>打开抽屉，直接确认添加</td><td>三个必填项显示提示，抽屉保持打开</td></tr>
+        <tr><td>标题或简介只输入空格</td><td>无法提交；去除首尾空白后进行必填校验</td></tr>
+        <tr><td>选择地球，填写简介并提交</td><td>提示添加成功、关闭抽屉、列表增加 Earth，计数 1/9</td></tr>
+        <tr><td>再次打开抽屉</td><td>表单清空；地球选项禁用；其他选项仍可选</td></tr>
+        <tr><td>填写后取消，再打开</td><td>没有新增记录，表单和旧校验信息已清空</td></tr>
+        <tr><td>切换用户管理后返回</td><td>演示列表仍存在；菜单高亮跟随路由切换</td></tr>
+        <tr><td>点击“刷新列表”</td><td>重新读取本次浏览中的演示列表</td></tr>
+        <tr><td>九个天体全部添加</td><td>计数 9/9，添加按钮禁用并提示全部添加完毕</td></tr>
+        <tr><td>窄屏打开抽屉、查看长简介</td><td>抽屉适应屏幕；简介换行，表格可在内部横向滚动</td></tr>
+        <tr><td>刷新整个浏览器</td><td>演示数据重新变为空列表；接真实 API 后应从服务端恢复</td></tr>
+    </tbody></table></div>
+    <h3>开发时可临时模拟失败分支</h3>
+    <p>若要检查列表失败提示，可在 <code>getBodyList()</code> 开头临时抛出 <code>new Error('模拟列表加载失败')</code>；若要检查添加失败后保留表单，可在 <code>addBody()</code> 开头临时抛出异常。验证后删除模拟语句。</p>
+    <p>最后搜索仍指向旧页面的引用，并检查构建：</p><details class="code-block" open><summary>终端 · 收尾检查<span>点击折叠 / 展开</span></summary><pre><code data-file="终端 · 收尾检查" data-kind="fragment">rg -n &#x27;dashboard|工作台|HomeFilled&#x27; src
+npm run build</code></pre></details>
+    <p>按本文完整调整后，搜索应没有业务源码匹配项；<code>rg</code> 无匹配时退出码为 1 属于正常行为。<code>doc/</code> 中旧布局教程仍记录初始版本，因此搜索只针对 <code>src/</code>。</p>
+</section>
+<section id="api-next"><h2>12. 后续接真实 API 时如何衔接</h2>
+    <p>目前已核实的是前台工程 <code>SolarNotesFrontend/src/api/planet.js</code> 使用 <code>GET /v1/planet/list</code>。它的响应拦截器先返回业务响应的 <code>data</code>，业务函数取得其中的 <code>planets</code> 数组，再按记录的 <code>name</code> 与场景配置匹配。管理端是否复用该接口以及鉴权规则，接入时再确认。</p>
+    <div class="table-wrap"><table><thead><tr><th>模块入口</th><th>接入真实接口时的约定</th></tr></thead><tbody>
+        <tr><td><code>getBodyList()</code></td><td>继续返回 <code>Promise&lt;BodyRecord[]&gt;</code>。若复用已有列表接口，在 API 模块中把解包后的 <code>{planets: [...]}</code> 转成数组返回给页面。</td></tr>
+        <tr><td><code>addBody(form)</code></td><td>确认新增接口的路径、方法、请求体嵌套方式和业务成功码后再封装；继续返回 <code>Promise&lt;void&gt;</code>，添加失败时拒绝 Promise。</td></tr>
+        <tr><td>Axios 入口</td><td>复用工程的 <code>@/utils/request</code>；该实例已经返回业务 <code>payload.data</code>，避免再误读一层 Axios <code>response.data</code>。</td></tr>
+        <tr><td>错误与重复控制</td><td>按后端错误消息字段调整 <code>getErrorMessage()</code>；服务端仍须校验已知 name、业务长度和唯一性，处理并发重复添加。</td></tr>
+        <tr><td>ID 与记录时间</td><td>ID 由后端生成；BIGINT 在 JSON 中以字符串提供。记录时间按服务端与数据库约定管理。</td></tr>
+        <tr><td>页面提示</td><td>接通真实接口后移除演示数据提示，将成功文字改为“天体添加成功”。</td></tr>
+    </tbody></table></div>
+    <p>新增接口路径和返回格式尚未确认，因此本文没有把推测的新增 URL 写成现成接口。前端页面只依赖这两个异步入口，后续可以集中替换数据模块。</p>
+    <p class="source">核对依据：当前管理工程源码、参考工程 <code>feng-huo-lun-backend/src/views/AircraftListPage.vue</code> 的列表与抽屉结构、前台的 <code>applyBodyMeta.js</code> 与天体配置，以及此前读取到的 <code>solar_notes.planet</code> 表结构。</p>
+</section>
+    <footer>本文是供手工实现的参考文档。完整文件代码可直接保存到对应路径；标记为局部片段的代码应替换现有文件中的对应部分。</footer>
+</article>
+</main>
+<script>
+/** @type {{name: string, label: string}[]} HTML 独立预览的固定天体选项。 */
+const previewOptions = [
+    {name: 'Sun', label: '太阳'}, {name: 'Mercury', label: '水星'},
+    {name: 'Venus', label: '金星'}, {name: 'Earth', label: '地球'},
+    {name: 'Mars', label: '火星'}, {name: 'Jupiter', label: '木星'},
+    {name: 'Saturn', label: '土星'}, {name: 'Uranus', label: '天王星'},
+    {name: 'Neptune', label: '海王星'},
+]
+/** @type {{name: string, label: string, title: string, intro: string}[]} HTML 预览的临时列表。 */
+const previewBodies = []
+/** @type {HTMLDialogElement} 原生抽屉示意。 */
+const previewDrawer = document.getElementById('preview-drawer')
+/** @type {HTMLFormElement} 预览表单。 */
+const previewForm = document.getElementById('preview-form')
+/** @type {HTMLSelectElement} 预览天体选择框。 */
+const previewName = document.getElementById('preview-name')
+/** @type {HTMLInputElement} 预览简介标题。 */
+const previewTitle = document.getElementById('preview-title')
+/** @type {HTMLTextAreaElement} 预览简介内容。 */
+const previewIntro = document.getElementById('preview-intro')
+
+/** @returns {void} 打开预览并同步不可选项。 */
+function openPreviewDrawer() {
+    previewForm.reset()
+    document.getElementById('preview-error').textContent = ''
+    previewName.replaceChildren(new Option('请选择天体', ''))
+
+    for (const item of previewOptions) {
+        /** @type {HTMLOptionElement} 当前天体选项。 */
+        const option = new Option(item.label + '（' + item.name + '）', item.name)
+
+        for (const body of previewBodies) {
+            if (body.name === item.name) {
+                option.disabled = true
+                break
+            }
+        }
+
+        previewName.append(option)
+    }
+
+    previewDrawer.showModal()
+}
+
+/** @returns {void} 关闭预览抽屉。 */
+function closePreviewDrawer() {
+    previewDrawer.close()
+}
+
+/** @returns {void} 根据当前预览记录重新绘制表格。 */
+function renderPreview() {
+    /** @type {HTMLElement} 表格主体。 */
+    const rows = document.getElementById('preview-rows')
+    rows.replaceChildren()
+
+    for (const body of previewBodies) {
+        /** @type {HTMLTableRowElement} 当前记录对应的表格行。 */
+        const row = document.createElement('tr')
+
+        for (const value of [body.label, body.name, body.title, body.intro]) {
+            /** @type {HTMLTableCellElement} 当前文本单元格。 */
+            const cell = document.createElement('td')
+            cell.textContent = value
+            row.append(cell)
+        }
+
+        rows.append(row)
+    }
+
+    document.getElementById('preview-empty').hidden = previewBodies.length !== 0
+    document.getElementById('preview-table-wrap').hidden = previewBodies.length === 0
+    document.getElementById('preview-count').textContent = '已添加 ' + previewBodies.length + ' / 9 个天体'
+    document.getElementById('preview-add').disabled = previewBodies.length === previewOptions.length
+}
+
+/**
+ * 提交独立 HTML 预览中的添加表单。
+ * @param {SubmitEvent} event 表单提交事件。
+ * @returns {void}
+ */
+function submitPreview(event) {
+    event.preventDefault()
+    /** @type {string} 提交的规范标识。 */
+    const name = previewName.value
+    /** @type {string} 去除首尾空白的标题。 */
+    const title = previewTitle.value.trim()
+    /** @type {string} 去除首尾空白的简介。 */
+    const intro = previewIntro.value.trim()
+    /** @type {{name: string, label: string} | undefined} 当前选择的天体。 */
+    let selected
+
+    for (const option of previewOptions) {
+        if (option.name === name) {
+            selected = option
+            break
+        }
+    }
+
+    if (selected === undefined || title === '' || intro === '') {
+        document.getElementById('preview-error').textContent = '请选择天体并填写非空白的标题与简介。'
+        return
+    }
+
+    if (title.length > 20 || intro.length > 150) {
+        document.getElementById('preview-error').textContent = '标题最多 20 个字符，简介最多 150 个字符。'
+        return
+    }
+
+    for (const body of previewBodies) {
+        if (body.name === name) {
+            document.getElementById('preview-error').textContent = '该天体已经添加。'
+            return
+        }
+    }
+
+    previewBodies.push({name, label: selected.label, title, intro})
+    renderPreview()
+    previewDrawer.close()
+    document.getElementById('preview-status').textContent = selected.label + '添加成功（HTML 预览）'
+}
+
+/** @returns {void} 清空 HTML 预览记录。 */
+function resetPreview() {
+    previewBodies.length = 0
+    renderPreview()
+    document.getElementById('preview-status').textContent = '预览已重置'
+}
+
+document.getElementById('preview-add').addEventListener('click', openPreviewDrawer)
+document.getElementById('preview-close').addEventListener('click', closePreviewDrawer)
+document.getElementById('preview-cancel').addEventListener('click', closePreviewDrawer)
+document.getElementById('preview-reset').addEventListener('click', resetPreview)
+previewForm.addEventListener('submit', submitPreview)
+</script>
+</body>
+</html>

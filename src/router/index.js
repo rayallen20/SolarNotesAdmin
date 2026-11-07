@@ -18,16 +18,16 @@ const routes = [
         path: '/admin',
         component: () => import('@/views/LayoutPage.vue'),
         redirect: {
-            name: 'dashboard'
+            name: 'bodyList'
         },
         children: [
             {
-                path: 'dashboard',
-                name: 'dashboard',
-                component: () => import('@/views/PlaceholderPage.vue'),
+                path: 'bodies',
+                name: 'bodyList',
+                component: () => import('@/views/BodyListPage.vue'),
                 meta: {
-                    title: '工作台',
-                    description: '查看后台概况与常用功能'
+                    title: '天体管理',
+                    description: '管理太阳与八大行星的简介信息',
                 },
             },
             {

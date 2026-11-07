@@ -74,7 +74,7 @@ function login() {
  * */
 async function onLoginSuccess(token, username) {
     userStore.setSession(token, username)
-    await router.replace({name: "dashboard"})
+    await router.replace({name: "bodyList"})
 }
 </script>
 

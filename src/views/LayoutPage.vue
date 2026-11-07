@@ -4,8 +4,8 @@
         <el-aside class="layout-sidebar">
             <RouterLink
                 class="brand"
-                :to="{name: 'dashboard'}"
-                aria-label="SolarNotes 工作台"
+                :to="{name: 'bodyList'}"
+                aria-label="SolarNotes 天体管理"
             >
                 <el-icon class="brand-icon">
                     <Sunny></Sunny>
@@ -24,14 +24,14 @@
                     class="sidebar-menu"
                 >
                     <el-menu-item
-                        :index="getMenuPath('dashboard')"
-                        title="工作台"
-                        aria-label="工作台"
+                        :index="getMenuPath('bodyList')"
+                        title="天体管理"
+                        aria-label="天体管理"
                     >
                         <el-icon>
-                            <HomeFilled></HomeFilled>
+                            <BodyIcon></BodyIcon>
                         </el-icon>
-                        <span>工作台</span>
+                        <span>天体管理</span>
                     </el-menu-item>
 
                     <el-menu-item
@@ -104,10 +104,11 @@
 </template>
 
 <script setup>
-import {Document, HomeFilled, Sunny, SwitchButton, User} from "@element-plus/icons-vue";
+import {Document, Sunny, SwitchButton, User} from "@element-plus/icons-vue";
 import {useRoute, useRouter} from "vue-router";
 import useUserStore from "@/stores/user";
 import {computed} from "vue";
+import BodyIcon from "@/components/BodyIcon.vue";
 
 defineOptions({
     name: 'LayoutPage',
