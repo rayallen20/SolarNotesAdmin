@@ -8,6 +8,12 @@
 
 @use 'element-plus/theme-chalk/src/index.scss' as *;
 
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
 body {
   margin: 0;
   background: #fafbfe;

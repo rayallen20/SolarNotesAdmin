@@ -1,0 +1,974 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="参考旧工程搭建 SolarNotes 管理后台的左侧导航、顶部用户栏和右侧内容区，附三个菜单的交互预览与 Vue 代码示例。" />
+    <title>SolarNotesAdmin · 后台布局搭建参考</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+          "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+        color: #273147;
+        background: #f5f6fb;
+        line-height: 1.8;
+        font-size: 16px;
+        --primary: #5964d6;
+        --border: #e3e7f0;
+        --muted: #657089;
+      }
+
+      * { box-sizing: border-box; }
+      body { margin: 0; }
+      main { max-width: 1000px; margin: 48px auto; padding: 0 28px; }
+      article {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 48px 56px;
+        box-shadow: 0 12px 40px rgb(39 49 71 / 4%);
+      }
+      header { padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+      .eyebrow {
+        margin: 0 0 12px;
+        color: var(--primary);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+      }
+      h1 { margin: 0 0 16px; font-size: 32px; line-height: 1.4; }
+      h2 { margin: 40px 0 16px; font-size: 23px; line-height: 1.5; }
+      h3 { margin: 26px 0 10px; font-size: 17px; }
+      p { margin: 12px 0; }
+      a { color: var(--primary); text-underline-offset: 3px; }
+      a:hover { color: #3d46ab; }
+      a:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; }
+      strong { color: #172137; }
+      .subtitle, .source, footer { color: var(--muted); }
+      .stack { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+      .stack span {
+        border-radius: 6px;
+        background: #f0f1fd;
+        color: #4d57ba;
+        padding: 3px 10px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      nav {
+        margin: 28px 0;
+        padding: 18px 24px;
+        background: #f8f9fc;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+      }
+      nav ol { margin: 8px 0 0; padding-left: 24px; }
+      nav a { text-decoration: none; }
+      section { scroll-margin-top: 24px; }
+      code {
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-size: 0.88em;
+      }
+      :not(pre) > code {
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: #f0f2f7;
+        overflow-wrap: anywhere;
+      }
+      .code-label {
+        margin: 18px 0 0;
+        padding: 8px 16px;
+        color: #d1d7ed;
+        background: #29334c;
+        border-radius: 9px 9px 0 0;
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 12px;
+        overflow-wrap: anywhere;
+      }
+      pre {
+        margin: 14px 0 20px;
+        padding: 18px 20px;
+        overflow-x: auto;
+        border-radius: 9px;
+        background: #1d263b;
+        color: #edf0fb;
+        line-height: 1.7;
+        tab-size: 2;
+      }
+      .code-label + pre { margin-top: 0; border-radius: 0 0 9px 9px; }
+      pre code { font-size: 13px; }
+      .note {
+        margin: 20px 0;
+        padding: 14px 18px;
+        border-left: 3px solid #727cf5;
+        border-radius: 0 8px 8px 0;
+        background: #f2f3fe;
+      }
+      .note p { margin: 0; }
+      .table-wrap { overflow-x: auto; margin: 18px 0; }
+      table { width: 100%; border-collapse: collapse; font-size: 14px; }
+      th, td { padding: 12px 14px; text-align: left; border: 1px solid var(--border); }
+      th { background: #f7f8fc; color: #35405b; }
+      .source { font-size: 13px; }
+      footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 13px; }
+
+      @media (max-width: 640px) {
+        main { margin: 16px auto; padding: 0 12px; }
+        article { padding: 28px 20px; border-radius: 12px; }
+        h1 { font-size: 25px; }
+        h2 { font-size: 21px; }
+        pre { padding: 14px; }
+        nav { padding: 14px 18px; }
+      }
+
+      @media print {
+        :root { background: #fff; font-size: 11pt; }
+        main { max-width: none; margin: 0; padding: 0; }
+        article { border: 0; border-radius: 0; padding: 0; box-shadow: none; }
+        nav { display: none; }
+        h1, h2, h3, .code-label { break-after: avoid; }
+        pre {
+          white-space: pre-wrap;
+          overflow-wrap: anywhere;
+          background: #f5f6f8;
+          color: #172137;
+          border: 1px solid #ddd;
+          break-inside: avoid;
+        }
+        .code-label { background: #e9ecf3; color: #273147; }
+        a { color: inherit; }
+        tr { break-inside: avoid; }
+      }
+    
+      .doc-nav { margin-bottom: 32px; }
+      .preview-shell { display: grid; grid-template-columns: 240px minmax(0, 1fr); height: 390px; overflow: hidden; border: 1px solid var(--border); border-radius: 12px; }
+      .preview-sidebar { display: flex; flex-direction: column; background: #2d3a4b; color: #fff; }
+      .preview-brand { display: flex; align-items: center; justify-content: center; gap: 10px; height: 60px; white-space: nowrap; font-size: 16px; font-weight: 600; }
+      .preview-brand-mark { color: #a9afff; font-size: 26px; line-height: 1; }
+      .preview-menu { display: grid; gap: 4px; margin: 16px 12px; padding: 0; border: 0; background: transparent; }
+      .preview-menu button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 15px 18px; border: 0; border-radius: 6px; color: #b9c3d2; background: transparent; font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
+      .preview-menu button:hover { background: #39485c; color: #fff; }
+      .preview-menu button[aria-pressed="true"] { color: #fff; background: #727cf5; }
+      .menu-icon { display: inline-flex; justify-content: center; width: 20px; font-size: 20px; }
+      .sidebar-caption { margin: auto 0 20px; color: #aeb8c7; font-size: 12px; text-align: center; }
+      .preview-workspace { display: flex; flex-direction: column; min-width: 0; background: #fafbfe; }
+      .preview-topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 60px; padding: 0 20px; border-bottom: 1px solid #edf0f5; background: #fff; font-size: 14px; }
+      .preview-user { display: flex; align-items: center; gap: 10px; white-space: nowrap; color: #657089; }
+      .preview-avatar { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; color: #fff; background: #727cf5; font-size: 12px; }
+      .preview-logout { padding: 4px 0 4px 8px; border: 0; background: transparent; color: #657089; font: inherit; font-size: 13px; cursor: pointer; }
+      .preview-main { padding: 22px; overflow: auto; }
+      .preview-heading { margin: 0; font-size: 21px; color: #35405b; }
+      .preview-description { margin: 6px 0 18px; font-size: 13px; color: #657089; }
+      .preview-card { display: grid; place-content: center; gap: 12px; min-height: 180px; border: 1px solid #e8ecf3; border-radius: 8px; background: #fff; text-align: center; }
+      .empty-mark { color: #d4d9e5; font-size: 40px; line-height: 1; }
+      .preview-card p { margin: 0; font-size: 13px; color: #7c8699; }
+      .preview-caption { font-size: 13px; color: #657089; }
+      .preview-login { display: grid; place-content: center; gap: 16px; height: 390px; border: 1px solid var(--border); border-radius: 12px; background: #fafbfe; text-align: center; }
+      .preview-login h3 { margin: 0; }
+      .preview-login p { margin: 0; color: #657089; font-size: 14px; }
+      .primary-button { padding: 10px 20px; border: 0; border-radius: 6px; background: #727cf5; color: #fff; font: inherit; cursor: pointer; }
+      .secondary-button { padding: 10px 20px; border: 1px solid var(--border); border-radius: 6px; background: #fff; color: #35405b; font: inherit; cursor: pointer; }
+      .preview-dialog { max-width: calc(100vw - 40px); padding: 24px; border: 1px solid var(--border); border-radius: 12px; color: #273147; box-shadow: 0 20px 80px rgb(0 0 0 / 20%); }
+      .preview-dialog::backdrop { background: rgb(29 38 59 / 35%); }
+      .preview-dialog h3 { margin-top: 0; }
+      .dialog-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; }
+      .preview-menu button:focus-visible, button:focus-visible { outline: 2px solid #a9afff; outline-offset: 3px; }
+      .preview-shell[hidden], .preview-login[hidden] { display: none; }
+      .file-list code { white-space: nowrap; }
+      @media (max-width: 900px) {
+        .preview-shell { grid-template-columns: 72px minmax(0, 1fr); }
+        .preview-brand-name, .menu-label, .sidebar-caption { display: none; }
+        .preview-menu { margin: 16px 8px; }
+        .preview-menu button { justify-content: center; padding: 15px 0; }
+      }
+      @media (max-width: 640px) {
+        .preview-topbar { padding: 0 12px; }
+        .preview-main { padding: 16px; }
+        .preview-username { display: none; }
+        .preview-user { gap: 6px; }
+        .preview-heading { font-size: 19px; }
+      }
+      @media print {
+        .preview-shell { grid-template-columns: 180px minmax(0, 1fr); print-color-adjust: exact; }
+        .preview-brand-name, .menu-label { display: initial; }
+        .preview-menu button { justify-content: flex-start; padding: 12px; }
+        .preview-brand { font-size: 13px; }
+        .preview-caption { color: #35405b; }
+      }
+</style>
+</head>
+<body>
+<main>
+<article>
+    <header>
+        <p class="eyebrow">SOLARNOTESADMIN / 布局参考文档</p>
+        <h1>先搭好后台的三块布局</h1>
+        <p class="subtitle">参考旧工程的“品字形”框架：左侧导航占满高度，右侧分为顶部用户栏和页面内容区。先放三个菜单占位，后续再调整业务页面。</p>
+        <div class="stack"><span>Vue 3</span><span>Element Plus</span><span>Vue Router</span><span>Pinia</span></div>
+        <p class="source">编写日期：2026 年 11 月 6 日 · 配套文档：<a href="vite-vue-initialization.html">Vite 初始化指南</a></p>
+    </header>
+
+    <nav class="doc-nav" aria-label="文档目录">
+        <strong>阅读顺序</strong>
+        <ol>
+            <li><a href="#preview">查看布局预览</a></li>
+            <li><a href="#structure">明确页面结构与文件分工</a></li>
+            <li><a href="#layout">创建 LayoutPage.vue</a></li>
+            <li><a href="#placeholder">创建三个菜单共用的占位页</a></li>
+            <li><a href="#router">配置嵌套路由</a></li>
+            <li><a href="#entry">补充预览入口与基础样式</a></li>
+            <li><a href="#session">后续衔接登录与退出</a></li>
+            <li><a href="#verification">实现后检查这些行为</a></li>
+        </ol>
+    </nav>
+
+    <section id="preview">
+        <h2>1. 查看布局预览</h2>
+        <p>点击左侧三个菜单，可以预览高亮、顶部标题和内容区切换。点击“退出登录”可体验确认流程；这里的交互只作用于本文档。</p>
+        <div class="preview-shell" id="preview-shell">
+            <aside class="preview-sidebar" aria-label="预览侧边栏">
+                <div class="preview-brand"><span class="preview-brand-mark" aria-hidden="true">☀</span><span class="preview-brand-name">SolarNotes 管理后台</span></div>
+                <nav class="preview-menu" aria-label="布局预览菜单">
+                    <button type="button" data-preview-page="dashboard" aria-pressed="true" aria-label="工作台" title="工作台"><span class="menu-icon" aria-hidden="true">⌂</span><span class="menu-label">工作台</span></button>
+                    <button type="button" data-preview-page="users" aria-pressed="false" aria-label="用户管理" title="用户管理"><span class="menu-icon" aria-hidden="true">♙</span><span class="menu-label">用户管理</span></button>
+                    <button type="button" data-preview-page="notes" aria-pressed="false" aria-label="笔记管理" title="笔记管理"><span class="menu-icon" aria-hidden="true">▤</span><span class="menu-label">笔记管理</span></button>
+                </nav>
+                <p class="sidebar-caption">SolarNotes Admin</p>
+            </aside>
+            <div class="preview-workspace">
+                <div class="preview-topbar">
+                    <span id="preview-current-page">工作台</span>
+                    <div class="preview-user"><span class="preview-avatar" aria-hidden="true">管</span><span class="preview-username">预览用户</span><button type="button" class="preview-logout" id="preview-logout">退出登录</button></div>
+                </div>
+                <div class="preview-main" aria-live="polite" aria-atomic="true">
+                    <h3 class="preview-heading" id="preview-page-title">工作台</h3>
+                    <p class="preview-description" id="preview-page-description">查看后台概况与常用功能。</p>
+                    <div class="preview-card"><span class="empty-mark" aria-hidden="true">▱</span><p id="preview-empty-description">工作台内容待完善</p></div>
+                </div>
+            </div>
+        </div>
+        <div class="preview-login" id="preview-login" hidden>
+            <h3>SolarNotes 管理后台登录</h3>
+            <p>你已退出本文档中的布局预览。</p>
+            <button class="primary-button" id="preview-enter" type="button">重新进入布局预览</button>
+        </div>
+        <dialog class="preview-dialog" id="preview-logout-dialog" aria-labelledby="preview-logout-title">
+            <h3 id="preview-logout-title">确定退出登录吗？</h3>
+            <p>本次操作只切换文档中的预览界面。</p>
+            <div class="dialog-actions"><button class="secondary-button" id="preview-cancel-logout" type="button" autofocus>取消</button><button class="primary-button" id="preview-confirm-logout" type="button">确认退出</button></div>
+        </dialog>
+        <noscript><p class="note">启用 JavaScript 后，可以切换上方三个菜单。下方代码示例可直接阅读。</p></noscript>
+        <p class="preview-caption">桌面布局参考旧工程的 240px 深色侧边栏、60px 白色顶栏及浅色内容区。文档在较窄窗口内会压缩预览侧栏；Vue 示例在屏幕宽度小于 768px 时显示图标导航。</p>
+    </section>
+
+    <section id="structure">
+        <h2>2. 页面结构与文件分工</h2>
+        <p>参考文件：<code>/Users/roach/Desktop/各种杂项/以前做过的项目/frontend/feng-huo-lun-backend/src/views/LayoutPage.vue</code> 及同工程的 <code>src/router/index.js</code>。</p>
+        <div class="table-wrap"><table>
+            <thead><tr><th scope="col">区域</th><th scope="col">职责</th><th scope="col">切换菜单时</th></tr></thead>
+            <tbody>
+                <tr><td>左侧菜单栏</td><td>显示品牌、三个菜单及当前选中项</td><td>保持显示，更新高亮</td></tr>
+                <tr><td>右上用户栏</td><td>显示页面标题、用户名和退出入口</td><td>保持显示，更新标题</td></tr>
+                <tr><td>右下内容区</td><td>通过二级 <code>RouterView</code> 渲染页面</td><td>更新当前页面内容</td></tr>
+            </tbody>
+        </table></div>
+        <pre><code>App.vue                         一级路由出口；继续保留 ElConfigProvider
+├── LoginPage.vue               独立登录页
+└── LayoutPage.vue              后台公共布局
+    ├── 左侧菜单
+    ├── 顶部用户栏
+    └── RouterView              二级路由出口
+        └── PlaceholderPage.vue 三个菜单暂时共用的占位组件</code></pre>
+        <p>下方示例使用 <code>/admin</code> 作为后台路由前缀；访问根路径 <code>/</code> 仍跳转到登录页。三个菜单名称先用于占位，后续可以同时调整菜单与对应子路由。</p>
+        <div class="table-wrap file-list"><table>
+            <thead><tr><th scope="col">文件</th><th scope="col">后续实施时的操作</th></tr></thead>
+            <tbody>
+                <tr><td><code>src/views/LayoutPage.vue</code></td><td>新建，承载公共布局</td></tr>
+                <tr><td><code>src/views/PlaceholderPage.vue</code></td><td>新建，展示当前菜单的占位内容</td></tr>
+                <tr><td><code>src/router/index.js</code></td><td>补充布局路由与三个子路由</td></tr>
+                <tr><td><code>src/views/LoginPage.vue</code></td><td>可增加独立的后台预览入口</td></tr>
+                <tr><td><code>src/styles/element.scss</code></td><td>保留主题，确认全局页面边距已清零</td></tr>
+            </tbody>
+        </table></div>
+        <p class="source">参考：<a href="https://element-plus.org/zh-CN/component/container.html">Element Plus 布局容器</a>、<a href="https://router.vuejs.org/guide/essentials/nested-routes.html">Vue Router 嵌套路由</a>。</p>
+    </section>
+
+    <section id="layout">
+        <h2>3. 创建后台布局页</h2>
+        <p>使用现有 Element Plus 组件和图标库。菜单通过路由名称解析完整路径，绑定到 <code>:index</code>，避免在菜单中重复填写路径。通过 <code>:default-active="activeMenuPath"</code> 匹配按当前路由名称解析出的路径，确保刷新页面或访问带结尾斜杠的地址时仍能高亮当前菜单。</p>
+<div class="code-label">src/views/LayoutPage.vue · 完整示例</div><pre><code id="code-layout" class="language-vue">&lt;template&gt;
+    &lt;el-container class=&quot;layout-page&quot;&gt;
+        &lt;!-- 左侧：品牌与菜单 --&gt;
+        &lt;el-aside class=&quot;layout-sidebar&quot;&gt;
+            &lt;RouterLink class=&quot;brand&quot; :to=&quot;{ name: &#x27;dashboard&#x27; }&quot; aria-label=&quot;SolarNotes 工作台&quot;&gt;
+                &lt;el-icon class=&quot;brand-icon&quot;&gt;&lt;Sunny /&gt;&lt;/el-icon&gt;
+                &lt;span class=&quot;brand-name&quot;&gt;SolarNotes 管理后台&lt;/span&gt;
+            &lt;/RouterLink&gt;
+
+            &lt;nav aria-label=&quot;后台导航&quot;&gt;
+                &lt;el-menu
+                    router
+                    :default-active=&quot;activeMenuPath&quot;
+                    background-color=&quot;#2D3A4B&quot;
+                    text-color=&quot;#AEB8C7&quot;
+                    active-text-color=&quot;#FFFFFF&quot;
+                    class=&quot;sidebar-menu&quot;
+                &gt;
+                    &lt;el-menu-item :index=&quot;getMenuPath(&#x27;dashboard&#x27;)&quot; title=&quot;工作台&quot; aria-label=&quot;工作台&quot;&gt;
+                        &lt;el-icon&gt;&lt;HomeFilled /&gt;&lt;/el-icon&gt;
+                        &lt;span&gt;工作台&lt;/span&gt;
+                    &lt;/el-menu-item&gt;
+                    &lt;el-menu-item :index=&quot;getMenuPath(&#x27;userList&#x27;)&quot; title=&quot;用户管理&quot; aria-label=&quot;用户管理&quot;&gt;
+                        &lt;el-icon&gt;&lt;User /&gt;&lt;/el-icon&gt;
+                        &lt;span&gt;用户管理&lt;/span&gt;
+                    &lt;/el-menu-item&gt;
+                    &lt;el-menu-item :index=&quot;getMenuPath(&#x27;noteList&#x27;)&quot; title=&quot;笔记管理&quot; aria-label=&quot;笔记管理&quot;&gt;
+                        &lt;el-icon&gt;&lt;Document /&gt;&lt;/el-icon&gt;
+                        &lt;span&gt;笔记管理&lt;/span&gt;
+                    &lt;/el-menu-item&gt;
+                &lt;/el-menu&gt;
+            &lt;/nav&gt;
+        &lt;/el-aside&gt;
+
+        &lt;!-- 右侧：顶部用户栏与页面内容 --&gt;
+        &lt;el-container direction=&quot;vertical&quot; class=&quot;layout-workspace&quot;&gt;
+            &lt;el-header class=&quot;layout-header&quot;&gt;
+                &lt;span class=&quot;current-page&quot;&gt;{{ pageTitle }}&lt;/span&gt;
+
+                &lt;div class=&quot;user-area&quot;&gt;
+                    &lt;el-avatar :size=&quot;32&quot;&gt;
+                        &lt;el-icon&gt;&lt;User /&gt;&lt;/el-icon&gt;
+                    &lt;/el-avatar&gt;
+                    &lt;span class=&quot;username&quot;&gt;{{ username }}&lt;/span&gt;
+                    &lt;el-popconfirm
+                        title=&quot;确定退出登录吗？&quot;
+                        confirm-button-text=&quot;确认&quot;
+                        cancel-button-text=&quot;取消&quot;
+                        :width=&quot;220&quot;
+                        @confirm=&quot;logout&quot;
+                    &gt;
+                        &lt;template #reference&gt;
+                            &lt;el-button text class=&quot;logout-button&quot; aria-label=&quot;退出登录&quot;&gt;
+                                &lt;el-icon&gt;&lt;SwitchButton /&gt;&lt;/el-icon&gt;
+                                &lt;span class=&quot;logout-label&quot;&gt;退出登录&lt;/span&gt;
+                            &lt;/el-button&gt;
+                        &lt;/template&gt;
+                    &lt;/el-popconfirm&gt;
+                &lt;/div&gt;
+            &lt;/el-header&gt;
+
+            &lt;el-main class=&quot;layout-main&quot;&gt;
+                &lt;!-- 只有这里随二级路由切换 --&gt;
+                &lt;RouterView /&gt;
+            &lt;/el-main&gt;
+        &lt;/el-container&gt;
+    &lt;/el-container&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { computed } from &#x27;vue&#x27;
+import { useRoute, useRouter } from &#x27;vue-router&#x27;
+import { Document, HomeFilled, Sunny, SwitchButton, User } from &#x27;@element-plus/icons-vue&#x27;
+import useUserStore from &#x27;@/stores/user&#x27;
+
+defineOptions({
+    name: &#x27;LayoutPage&#x27;,
+})
+
+/**
+ * 当前路由信息，供菜单高亮和页面标题使用。
+ * @type {import(&#x27;vue-router&#x27;).RouteLocationNormalizedLoaded}
+ */
+const route = useRoute()
+
+/**
+ * 路由实例，用于解析菜单路径和退出后返回登录页。
+ * @type {import(&#x27;vue-router&#x27;).Router}
+ */
+const router = useRouter()
+
+/**
+ * 根据路由名称获取菜单对应的完整路径。
+ * @param {string} routeName 路由配置中唯一的名称。
+ * @returns {string} 根据当前路由配置解析出的完整路径。
+ * @throws {Error} 路由名称不存在或缺少必填路径参数时抛出。
+ */
+function getMenuPath(routeName) {
+    return router.resolve({ name: routeName }).path
+}
+
+/**
+ * 当前选中菜单的规范路径，与菜单项 index 使用相同的解析规则。
+ * @type {import(&#x27;vue&#x27;).ComputedRef&lt;string&gt;}
+ */
+const activeMenuPath = computed(getActiveMenuPath)
+
+/**
+ * 根据当前路由名称计算应高亮的菜单路径。
+ * @returns {string} 当前路由的规范路径；没有字符串路由名称时返回空字符串。
+ */
+function getActiveMenuPath() {
+    if (typeof route.name === &#x27;string&#x27;) {
+        return getMenuPath(route.name)
+    }
+
+    return &#x27;&#x27;
+}
+
+/** 与登录页共享的用户 Store 实例。 */
+const userStore = /** @type {import(&#x27;@/stores/user&#x27;).UserStore} */ (useUserStore())
+
+/**
+ * 当前页面的标题。
+ * @type {import(&#x27;vue&#x27;).ComputedRef&lt;string&gt;}
+ */
+const pageTitle = computed(getPageTitle)
+
+/**
+ * 获取当前路由配置的标题。
+ * @returns {string} 当前页面标题或默认标题。
+ */
+function getPageTitle() {
+    if (typeof route.meta.title === &#x27;string&#x27;) {
+        return route.meta.title
+    }
+
+    return &#x27;管理后台&#x27;
+}
+
+/**
+ * 当前用户名；尚未接入登录时，显示预览身份。
+ * @type {import(&#x27;vue&#x27;).ComputedRef&lt;string&gt;}
+ */
+const username = computed(getUsername)
+
+/**
+ * 获取当前用户名，空字符串时使用预览身份。
+ * @returns {string} 当前用户名或预览身份名称。
+ */
+function getUsername() {
+    if (userStore.username !== &#x27;&#x27;) {
+        return userStore.username
+    }
+
+    return &#x27;预览用户&#x27;
+}
+
+/**
+ * 清空本地用户会话，并返回登录页。
+ * 后续若有服务端退出接口，在这里接入对应调用。
+ * @returns {Promise&lt;void&gt;}
+ */
+async function logout() {
+    userStore.clearSession()
+    await router.replace({ name: &#x27;login&#x27; })
+}
+&lt;/script&gt;
+
+&lt;style scoped lang=&quot;scss&quot;&gt;
+.layout-page {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+}
+
+.layout-sidebar {
+    width: 240px;
+    background: #2d3a4b;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    height: 60px;
+    color: #fff;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.brand-icon {
+    color: #a9afff;
+    font-size: 24px;
+}
+
+.brand-name {
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.sidebar-menu {
+    margin-top: 16px;
+    border-right: none;
+}
+
+.sidebar-menu :deep(.el-menu-item.is-active) {
+    background: #727cf5;
+}
+
+.layout-workspace {
+    min-width: 0;
+    min-height: 0;
+}
+
+.layout-header {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    height: 60px;
+    padding: 0 24px;
+    border-bottom: 1px solid #edf0f5;
+    background: #fff;
+}
+
+.current-page {
+    overflow: hidden;
+    color: #35405b;
+    font-size: 15px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.user-area {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 12px;
+    color: #657089;
+}
+
+.user-area :deep(.el-avatar) {
+    background: #727cf5;
+}
+
+.username {
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.logout-button {
+    color: #657089;
+}
+
+.logout-label {
+    margin-left: 6px;
+}
+
+.layout-main {
+    min-height: 0;
+    padding: 24px;
+    overflow: auto;
+    background: #fafbfe;
+}
+
+@media (max-width: 767px) {
+    .layout-sidebar {
+        width: 72px;
+    }
+
+    .brand-name,
+    .username,
+    .logout-label {
+        display: none;
+    }
+
+    .sidebar-menu :deep(.el-menu-item) {
+        justify-content: center;
+        padding: 0 !important;
+    }
+
+    .sidebar-menu :deep(.el-menu-item &gt; span) {
+        display: none;
+    }
+
+    .sidebar-menu :deep(.el-menu-item .el-icon) {
+        margin-right: 0;
+    }
+
+    .layout-header {
+        padding: 0 16px;
+    }
+
+    .layout-main {
+        padding: 16px;
+    }
+}
+&lt;/style&gt;</code></pre>
+        <h3>路径变化时，菜单如何跟随更新</h3>
+        <p>
+            <code>getMenuPath('userList')</code> 使用 <code>router.resolve({ name: 'userList' }).path</code>
+            从路由配置解析完整路径。它只计算目标地址，不执行跳转；点击菜单时，
+            <code>el-menu</code> 的 <code>router</code> 模式会使用解析出的 <code>index</code> 进行跳转。
+        </p>
+        <div class="table-wrap"><table>
+            <thead><tr><th scope="col">路由配置</th><th scope="col">修改前</th><th scope="col">修改后</th></tr></thead>
+            <tbody>
+                <tr><td>父路由 <code>path</code></td><td><code>/admin</code></td><td><code>/manage</code></td></tr>
+                <tr><td>用户页子路由 <code>path</code></td><td><code>users</code></td><td><code>members</code></td></tr>
+                <tr><td>用户页路由 <code>name</code></td><td><code>userList</code></td><td><code>userList</code></td></tr>
+                <tr><td>自动生成的菜单 <code>index</code></td><td><code>/admin/users</code></td><td><code>/manage/members</code></td></tr>
+            </tbody>
+        </table></div>
+        <p>
+            只要路由的 <code>name</code> 保持不变，修改父路径或子路径后，菜单模板就可以继续使用
+            <code>:index="getMenuPath('userList')"</code>。当前三个菜单对应的名称分别是
+            <code>dashboard</code>、<code>userList</code> 和 <code>noteList</code>；名称须与路由配置对应且保持唯一。
+            高亮值 <code>activeMenuPath</code> 也按当前路由的 <code>name</code> 解析，
+            与菜单项的 <code>index</code> 使用同一规则，避免 <code>/admin/users/</code>
+            与 <code>/admin/users</code> 的字符串差异导致菜单未选中。
+        </p>
+        <p>原因分析、分步修改和验证地址见：<a href="menu-highlight-fix.html">菜单高亮修复文档</a>。</p>
+        <p class="source">参考：<a href="https://router.vuejs.org/guide/essentials/named-routes.html">Vue Router 命名路由</a>、<a href="https://router.vuejs.org/api/interfaces/routerclassic#resolve">router.resolve()</a>。</p>
+        <p>样式限定在布局组件内部，固定整体视口高度，由右下内容区独立滚动。<code>min-width: 0</code> 避免内容把右侧区域撑出屏幕；窄屏时保留图标、隐藏菜单文字。</p>
+        <p>这里位于组件的 <code>setup</code> 上下文中，可以调用 <code>useUserStore()</code>。用户名通过 <code>userStore.username !== ''</code> 明确判断；同一个 Pinia 实例内会与登录页共享用户状态。</p>
+        <p class="source">参考：<a href="https://element-plus.org/en-US/component/menu.html">Element Plus 菜单</a>、<a href="https://pinia.vuejs.org/core-concepts/outside-component-usage.html">Pinia Store 的使用上下文</a>。</p>
+    </section>
+
+    <section id="placeholder">
+        <h2>4. 创建三个菜单共用的占位页</h2>
+        <p>此时只确认布局与导航，三个菜单共用同一个组件。标题和说明从路由的 <code>meta</code> 中读取，不填充模拟用户、笔记或统计数据。</p>
+<div class="code-label">src/views/PlaceholderPage.vue · 完整示例</div><pre><code id="code-placeholder" class="language-vue">&lt;template&gt;
+    &lt;section class=&quot;placeholder-page&quot;&gt;
+        &lt;h1&gt;{{ pageTitle }}&lt;/h1&gt;
+        &lt;p class=&quot;page-description&quot;&gt;{{ pageDescription }}&lt;/p&gt;
+
+        &lt;el-card shadow=&quot;never&quot;&gt;
+            &lt;el-empty :description=&quot;pageTitle + &#x27;内容待完善&#x27;&quot; /&gt;
+        &lt;/el-card&gt;
+    &lt;/section&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { computed } from &#x27;vue&#x27;
+import { useRoute } from &#x27;vue-router&#x27;
+
+defineOptions({
+    name: &#x27;PlaceholderPage&#x27;,
+})
+
+/**
+ * 当前路由信息。
+ * @type {import(&#x27;vue-router&#x27;).RouteLocationNormalizedLoaded}
+ */
+const route = useRoute()
+
+/**
+ * 当前占位页的标题。
+ * @type {import(&#x27;vue&#x27;).ComputedRef&lt;string&gt;}
+ */
+const pageTitle = computed(getPageTitle)
+
+/**
+ * 获取当前占位页的标题。
+ * @returns {string} 当前菜单标题或默认标题。
+ */
+function getPageTitle() {
+    if (typeof route.meta.title === &#x27;string&#x27;) {
+        return route.meta.title
+    }
+
+    return &#x27;管理页面&#x27;
+}
+
+/**
+ * 当前占位页的说明。
+ * @type {import(&#x27;vue&#x27;).ComputedRef&lt;string&gt;}
+ */
+const pageDescription = computed(getPageDescription)
+
+/**
+ * 获取当前占位页的说明文案。
+ * @returns {string} 当前菜单说明或默认说明。
+ */
+function getPageDescription() {
+    if (typeof route.meta.description === &#x27;string&#x27;) {
+        return route.meta.description
+    }
+
+    return &#x27;请选择左侧菜单。&#x27;
+}
+&lt;/script&gt;
+
+&lt;style scoped&gt;
+.placeholder-page h1 {
+    margin: 0 0 8px;
+    color: #35405b;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.page-description {
+    margin: 0 0 24px;
+    color: #657089;
+    line-height: 1.6;
+}
+
+.placeholder-page :deep(.el-card) {
+    border-color: #e8ecf3;
+    border-radius: 8px;
+}
+&lt;/style&gt;</code></pre>
+        <p>后续实现业务页面时，为相应菜单新建页面组件，再替换该子路由的 <code>component</code> 即可，公共布局继续复用。</p>
+    </section>
+
+    <section id="router">
+        <h2>5. 配置嵌套路由</h2>
+        <p>沿用先定义路由列表、再定义 <code>option</code>、创建 <code>router</code>、最后默认导出的写法。子路由的 <code>path</code> 不以 <code>/</code> 开头，由父路径 <code>/admin</code> 拼出完整地址。</p>
+<div class="code-label">src/router/index.js · 完整示例</div><pre><code id="code-router" class="language-javascript">import { createRouter, createWebHistory } from &#x27;vue-router&#x27;
+
+/**
+ * 路由列表：登录页独立，后台布局下挂载三个子路由。
+ * @type {import(&#x27;vue-router&#x27;).RouteRecordRaw[]}
+ */
+const routes = [
+    {
+        path: &#x27;/&#x27;,
+        redirect: &#x27;/login&#x27;,
+    },
+    {
+        path: &#x27;/login&#x27;,
+        name: &#x27;login&#x27;,
+        component: () =&gt; import(&#x27;@/views/LoginPage.vue&#x27;),
+    },
+    {
+        path: &#x27;/admin&#x27;,
+        component: () =&gt; import(&#x27;@/views/LayoutPage.vue&#x27;),
+        redirect: { name: &#x27;dashboard&#x27; },
+        children: [
+            {
+                path: &#x27;dashboard&#x27;,
+                name: &#x27;dashboard&#x27;,
+                component: () =&gt; import(&#x27;@/views/PlaceholderPage.vue&#x27;),
+                meta: {
+                    title: &#x27;工作台&#x27;,
+                    description: &#x27;查看后台概况与常用功能。&#x27;,
+                },
+            },
+            {
+                path: &#x27;users&#x27;,
+                name: &#x27;userList&#x27;,
+                component: () =&gt; import(&#x27;@/views/PlaceholderPage.vue&#x27;),
+                meta: {
+                    title: &#x27;用户管理&#x27;,
+                    description: &#x27;查看和管理用户信息。&#x27;,
+                },
+            },
+            {
+                path: &#x27;notes&#x27;,
+                name: &#x27;noteList&#x27;,
+                component: () =&gt; import(&#x27;@/views/PlaceholderPage.vue&#x27;),
+                meta: {
+                    title: &#x27;笔记管理&#x27;,
+                    description: &#x27;查看和管理笔记内容。&#x27;,
+                },
+            },
+        ],
+    },
+]
+
+/**
+ * 路由配置。
+ * @type {import(&#x27;vue-router&#x27;).RouterOptions}
+ */
+const option = {
+    routes,
+    history: createWebHistory(import.meta.env.BASE_URL),
+}
+
+/**
+ * 应用共用的路由实例。
+ * @type {import(&#x27;vue-router&#x27;).Router}
+ */
+const router = createRouter(option)
+
+export default router</code></pre>
+        <div class="table-wrap"><table>
+            <thead><tr><th scope="col">访问路径</th><th scope="col">结果</th></tr></thead>
+            <tbody>
+                <tr><td><code>/</code></td><td>跳转到 <code>/login</code></td></tr>
+                <tr><td><code>/login</code></td><td>独立登录页</td></tr>
+                <tr><td><code>/admin</code></td><td>跳转到 <code>/admin/dashboard</code></td></tr>
+                <tr><td><code>/admin/dashboard</code></td><td>布局 + 工作台占位</td></tr>
+                <tr><td><code>/admin/users</code></td><td>布局 + 用户管理占位</td></tr>
+                <tr><td><code>/admin/notes</code></td><td>布局 + 笔记管理占位</td></tr>
+            </tbody>
+        </table></div>
+        <p class="source">参考：<a href="https://router.vuejs.org/guide/essentials/nested-routes.html">Vue Router 嵌套路由</a>。</p>
+    </section>
+
+    <section id="entry">
+        <h2>6. 补充预览入口与基础样式</h2>
+        <p>按上述示例实施后，运行 <code>npm run dev</code>，直接访问 <a href="http://localhost:5062/admin">http://localhost:5062/admin</a> 即可查看框架。此阶段尚未设置登录拦截，便于先完成页面布局。</p>
+        <p>如果希望从登录页进入，可以在现有卡片内的表单后方增加一个独立链接，保留原登录按钮的语义：</p>
+<div class="code-label">src/views/LoginPage.vue · template 内新增片段</div><pre><code id="code-preview-link" class="language-vue">&lt;!-- 放在 LoginPage.vue 的表单下方、登录卡片内部 --&gt;
+&lt;RouterLink class=&quot;layout-preview-link&quot; :to=&quot;{ name: &#x27;dashboard&#x27; }&quot;&gt;
+    预览后台页面
+&lt;/RouterLink&gt;</code></pre><div class="code-label">src/views/LoginPage.vue · 样式补充</div><pre><code id="code-preview-style" class="language-css">/* 补充到 LoginPage.vue 的 &lt;style scoped&gt; 中 */
+.layout-preview-link {
+    display: block;
+    margin-top: 16px;
+    color: #727cf5;
+    text-align: center;
+    text-decoration: none;
+}</code></pre>
+        <p><code>RouterLink</code> 已由当前工程的 <code>app.use(router)</code> 注册，无须为这个链接新增脚本导入。预览入口只负责跳转，不生成 Token，也不写入登录会话。</p>
+        <p>当前 <code>src/styles/element.scss</code> 已有 <code>body { margin: 0; }</code>。后续实施时可保留现有规则，并按需补充下方基础样式，无须重复定义同一个规则：</p>
+<div class="code-label">src/styles/element.scss · 全局基础样式参考</div><pre><code id="code-global-style" class="language-css">/* 补充到 src/styles/element.scss 中，保留原有主题配置 */
+html,
+body,
+#app {
+    min-height: 100%;
+}
+
+body {
+    margin: 0;
+    background: #fafbfe;
+}</code></pre>
+        <p>现有 <code>main.js</code> 继续注册 Pinia、Element Plus 和 Router，并导入主题样式；<code>App.vue</code> 继续使用 <code>ElConfigProvider</code> 包裹一级 <code>RouterView</code>。</p>
+    </section>
+
+    <section id="session">
+        <h2>7. 后续衔接登录与退出</h2>
+        <p>实际登录 API 接入后，继续复用现有 <code>setSession(token, username)</code>，保存会话后再跳转到工作台。下面是对现有 <code>LoginPage.vue</code> 的增补参考，保留原有 <code>userStore</code> 定义，替换原来的同名回调：</p>
+<div class="code-label">src/views/LoginPage.vue · script setup 增补参考</div><pre><code id="code-login-success" class="language-javascript">import { useRouter } from &#x27;vue-router&#x27;
+
+/**
+ * 登录页使用的路由实例。
+ * @type {import(&#x27;vue-router&#x27;).Router}
+ */
+const router = useRouter()
+
+/**
+ * 保存登录接口返回的会话信息，并进入后台工作台。
+ * @param {string} token 服务端发放的非空 Token。
+ * @param {string} username 非空用户名。
+ * @returns {Promise&lt;void&gt;}
+ * @throws {TypeError} 会话参数不是非空字符串时抛出。
+ */
+async function onLoginSuccess(token, username) {
+    userStore.setSession(token, username)
+    await router.replace({ name: &#x27;dashboard&#x27; })
+}</code></pre>
+        <p>布局页中的 <code>logout()</code> 已展示退出步骤：确认后调用 <code>userStore.clearSession()</code>，再通过 <code>router.replace({ name: 'login' })</code> 返回登录页。</p>
+        <p>页面框架确定后，再根据实际登录接口补充路由守卫和会话有效性校验。当前的预览方案保留直接访问后台路径的能力，清空本地会话不会禁止手动重新打开这些占位页。</p>
+    </section>
+
+    <section id="verification">
+        <h2>8. 实现后检查这些行为</h2>
+        <ol>
+            <li>打开 <code>/login</code>，登录页独立显示；打开 <code>/admin</code>，显示后台框架并跳转到工作台。</li>
+            <li>点击三个菜单，地址、菜单高亮、顶部标题和内容区同步更新；左侧菜单栏与顶部用户栏保持显示。</li>
+            <li>刷新 <code>/admin/users</code>，仍显示用户管理并高亮对应菜单。</li>
+            <li>直接打开或刷新 <code>/admin/users/</code>，也应高亮用户管理；结尾斜杠不应影响选中状态。</li>
+            <li>保持路由 <code>name</code> 不变，修改父路由或子路由的 <code>path</code>，菜单应自动使用新地址，跳转和高亮均正常。</li>
+            <li>没有用户会话时显示“预览用户”；登录成功保存会话后显示实际用户名。</li>
+            <li>点击退出并选择取消，保留当前页面；选择确认，清空会话并返回登录页。</li>
+            <li>缩小窗口，左侧保留可点击的图标导航；右侧内容不撑破页面。</li>
+        </ol>
+        <p>这份文档提供布局和导航参考；三个菜单的最终名称、业务内容以及登录接口可以在确认页面结构后逐项调整。</p>
+    </section>
+    <footer>本文档独立于应用运行，仅包含布局交互预览与后续实施示例。原工程源码保持原样。</footer>
+</article>
+</main>
+<script>
+/**
+ * 文档预览中各菜单对应的文案。
+ * @type {Record<string, {title: string, description: string}>}
+ */
+const previewPages = {
+    dashboard: { title: '工作台', description: '查看后台概况与常用功能。' },
+    users: { title: '用户管理', description: '查看和管理用户信息。' },
+    notes: { title: '笔记管理', description: '查看和管理笔记内容。' },
+}
+
+/** @type {NodeListOf<HTMLButtonElement>} 预览菜单按钮。 */
+const previewButtons = document.querySelectorAll('[data-preview-page]')
+
+/**
+ * 切换文档预览中的菜单与页面标题。
+ * @param {Event} event 菜单按钮的点击事件。
+ * @returns {void}
+ */
+function selectPreviewPage(event) {
+    /** @type {HTMLButtonElement} 当前点击的菜单按钮。 */
+    const button = /** @type {HTMLButtonElement} */ (event.currentTarget)
+    /** @type {string} 当前菜单的页面标识。 */
+    const key = button.dataset.previewPage
+    /** @type {{title: string, description: string}} 当前页面的文案。 */
+    const page = previewPages[key]
+
+    for (const item of previewButtons) {
+        if (item === button) {
+            item.setAttribute('aria-pressed', 'true')
+        } else {
+            item.setAttribute('aria-pressed', 'false')
+        }
+    }
+
+    document.getElementById('preview-current-page').textContent = page.title
+    document.getElementById('preview-page-title').textContent = page.title
+    document.getElementById('preview-page-description').textContent = page.description
+    document.getElementById('preview-empty-description').textContent = page.title + '内容待完善'
+}
+
+/**
+ * 绑定文档预览的菜单事件。
+ * @returns {void}
+ */
+function bindPreviewMenus() {
+    for (const button of previewButtons) {
+        button.addEventListener('click', selectPreviewPage)
+    }
+}
+
+/** @type {HTMLDialogElement} 文档预览的退出确认框。 */
+const previewLogoutDialog = /** @type {HTMLDialogElement} */ (document.getElementById('preview-logout-dialog'))
+
+/**
+ * 展示文档预览的退出确认框。
+ * @returns {void}
+ */
+function showPreviewLogout() {
+    previewLogoutDialog.showModal()
+}
+
+/**
+ * 关闭文档预览的退出确认框。
+ * @returns {void}
+ */
+function cancelPreviewLogout() {
+    previewLogoutDialog.close()
+}
+
+/**
+ * 在文档内展示退出后的登录占位界面，不读写应用会话。
+ * @returns {void}
+ */
+function confirmPreviewLogout() {
+    previewLogoutDialog.close()
+    document.getElementById('preview-shell').hidden = true
+    document.getElementById('preview-login').hidden = false
+}
+
+/**
+ * 返回文档内的后台布局预览。
+ * @returns {void}
+ */
+function enterPreview() {
+    document.getElementById('preview-login').hidden = true
+    document.getElementById('preview-shell').hidden = false
+}
+
+bindPreviewMenus()
+document.getElementById('preview-logout').addEventListener('click', showPreviewLogout)
+document.getElementById('preview-cancel-logout').addEventListener('click', cancelPreviewLogout)
+document.getElementById('preview-confirm-logout').addEventListener('click', confirmPreviewLogout)
+document.getElementById('preview-enter').addEventListener('click', enterPreview)
+</script>
+</body>
+</html>

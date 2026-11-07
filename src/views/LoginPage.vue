@@ -36,6 +36,7 @@
 import {ref} from "vue";
 import {ElMessage} from "element-plus";
 import useUserStore from "@/stores/user";
+import {useRouter} from "vue-router";
 
 /**
  * 本常量表示登录表单中用户输入的用户名和密码
@@ -47,9 +48,15 @@ const loginForm = ref({
 })
 
 /**
- * 登录页用户Store实例
+ * 用户Store实例
  * */
 const userStore = /** @type {import('@/stores/user').UserStore} */ (useUserStore())
+
+/**
+ * 路由实例
+ * @type {import('vue-router').Router}
+ */
+const router = useRouter()
 
 /**
  * 本函数用于处理登录请求
@@ -62,11 +69,12 @@ function login() {
  * 本函数用于将登录API响应的token和用户名保存至本地存储
  * @param {string} token 服务端发放的token
  * @param {string} username 用户名
- * @returns {void}
+ * @returns {Promise<void>}
  * @throws {TypeError} 参数类型不为string时抛出此异常
  * */
-function onLoginSuccess(token, username) {
+async function onLoginSuccess(token, username) {
     userStore.setSession(token, username)
+    await router.replace({name: "dashboard"})
 }
 </script>
 

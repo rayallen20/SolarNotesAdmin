@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="修复 SolarNotes 后台访问带结尾斜杠的地址时菜单没有高亮的问题，提供原因分析、最小修改代码和验证清单。" />
+    <title>SolarNotesAdmin · 菜单高亮修复</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+          "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+        color: #273147;
+        background: #f5f6fb;
+        line-height: 1.8;
+        font-size: 16px;
+        --primary: #5964d6;
+        --border: #e3e7f0;
+        --muted: #657089;
+      }
+
+      * { box-sizing: border-box; }
+      body { margin: 0; }
+      main { max-width: 1000px; margin: 48px auto; padding: 0 28px; }
+      article {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 48px 56px;
+        box-shadow: 0 12px 40px rgb(39 49 71 / 4%);
+      }
+      header { padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+      .eyebrow {
+        margin: 0 0 12px;
+        color: var(--primary);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+      }
+      h1 { margin: 0 0 16px; font-size: 32px; line-height: 1.4; }
+      h2 { margin: 40px 0 16px; font-size: 23px; line-height: 1.5; }
+      h3 { margin: 26px 0 10px; font-size: 17px; }
+      p { margin: 12px 0; }
+      a { color: var(--primary); text-underline-offset: 3px; }
+      a:hover { color: #3d46ab; }
+      a:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; }
+      strong { color: #172137; }
+      .subtitle, .source, footer { color: var(--muted); }
+      .stack { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+      .stack span {
+        border-radius: 6px;
+        background: #f0f1fd;
+        color: #4d57ba;
+        padding: 3px 10px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      nav {
+        margin: 28px 0;
+        padding: 18px 24px;
+        background: #f8f9fc;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+      }
+      nav ol { margin: 8px 0 0; padding-left: 24px; }
+      nav a { text-decoration: none; }
+      section { scroll-margin-top: 24px; }
+      code {
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-size: 0.88em;
+      }
+      :not(pre) > code {
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: #f0f2f7;
+        overflow-wrap: anywhere;
+      }
+      .code-label {
+        margin: 18px 0 0;
+        padding: 8px 16px;
+        color: #d1d7ed;
+        background: #29334c;
+        border-radius: 9px 9px 0 0;
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 12px;
+        overflow-wrap: anywhere;
+      }
+      pre {
+        margin: 14px 0 20px;
+        padding: 18px 20px;
+        overflow-x: auto;
+        border-radius: 9px;
+        background: #1d263b;
+        color: #edf0fb;
+        line-height: 1.7;
+        tab-size: 2;
+      }
+      .code-label + pre { margin-top: 0; border-radius: 0 0 9px 9px; }
+      pre code { font-size: 13px; }
+      .note {
+        margin: 20px 0;
+        padding: 14px 18px;
+        border-left: 3px solid #727cf5;
+        border-radius: 0 8px 8px 0;
+        background: #f2f3fe;
+      }
+      .note p { margin: 0; }
+      .table-wrap { overflow-x: auto; margin: 18px 0; }
+      table { width: 100%; border-collapse: collapse; font-size: 14px; }
+      th, td { padding: 12px 14px; text-align: left; border: 1px solid var(--border); }
+      th { background: #f7f8fc; color: #35405b; }
+      .source { font-size: 13px; }
+      footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 13px; }
+
+      @media (max-width: 640px) {
+        main { margin: 16px auto; padding: 0 12px; }
+        article { padding: 28px 20px; border-radius: 12px; }
+        h1 { font-size: 25px; }
+        h2 { font-size: 21px; }
+        pre { padding: 14px; }
+        nav { padding: 14px 18px; }
+      }
+
+      @media print {
+        :root { background: #fff; font-size: 11pt; }
+        main { max-width: none; margin: 0; padding: 0; }
+        article { border: 0; border-radius: 0; padding: 0; box-shadow: none; }
+        nav { display: none; }
+        h1, h2, h3, .code-label { break-after: avoid; }
+        pre {
+          white-space: pre-wrap;
+          overflow-wrap: anywhere;
+          background: #f5f6f8;
+          color: #172137;
+          border: 1px solid #ddd;
+          break-inside: avoid;
+        }
+        .code-label { background: #e9ecf3; color: #273147; }
+        a { color: inherit; }
+        tr { break-inside: avoid; }
+      }
+    
+      .flow { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 12px; align-items: center; margin: 20px 0; }
+      .flow-card { padding: 18px; border: 1px solid var(--border); border-radius: 10px; background: #fafbfe; }
+      .flow-card p { margin: 4px 0; }
+      .flow-card.success { border-color: #b6dcca; background: #f3faf6; }
+      .flow-arrow { color: #727cf5; font-size: 24px; }
+      .state-badge { display: inline-block; padding: 2px 9px; border-radius: 5px; font-size: 13px; font-weight: 600; }
+      .state-badge.bad { color: #ab4d39; background: #fff0e9; }
+      .state-badge.good { color: #23734f; background: #e9f6ee; }
+      .checked { padding: 14px 18px; border-left: 3px solid #4b9b77; background: #f1f9f4; }
+      .checked p { margin: 4px 0; }
+      @media (max-width: 640px) {
+        .flow { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+        .flow-arrow { text-align: center; transform: rotate(90deg); }
+      }
+</style>
+</head>
+<body>
+<main>
+<article>
+    <header>
+        <p class="eyebrow">SOLARNOTESADMIN / 修复参考</p>
+        <h1>修复带结尾斜杠时的菜单高亮</h1>
+        <p class="subtitle">页面能打开，菜单却没有选中：通过路由名称解析当前菜单路径，让高亮值与菜单 index 使用相同的计算规则。</p>
+        <div class="stack"><span>LayoutPage.vue</span><span>Vue Router</span><span>Element Plus</span></div>
+        <p class="source">编写日期：2026 年 11 月 7 日 · 配套文档：<a href="admin-layout-guide.html#layout">后台布局参考文档</a></p>
+    </header>
+
+    <nav aria-label="文档目录">
+        <strong>修改顺序</strong>
+        <ol>
+            <li><a href="#review">确认另外两项修改已经完成</a></li>
+            <li><a href="#cause">理解菜单未选中的原因</a></li>
+            <li><a href="#fix">修改绑定并新增计算属性</a></li>
+            <li><a href="#menu">对照修改后的菜单片段</a></li>
+            <li><a href="#verify">验证地址与预期结果</a></li>
+            <li><a href="#scope">明确适用范围</a></li>
+        </ol>
+    </nav>
+
+    <section id="review">
+        <h2>1. 另外两项修改已确认</h2>
+        <div class="checked">
+            <p><strong>返回类型：</strong><code>LoginPage.vue</code> 的 <code>onLoginSuccess()</code> 已使用 <code>@returns {Promise&lt;void&gt;}</code>，脚本类型检查不再出现之前的 TS1064。</p>
+            <p><strong>重复导入：</strong><code>LayoutPage.vue</code> 中未使用的 <code>import user from '@/stores/user'</code> 已删除，保留正常使用的 <code>useUserStore</code> 导入。</p>
+        </div>
+        <p>下文仅处理当前仍使用 <code>:default-active="route.path"</code> 时的菜单高亮问题。本文提供修改参考，业务源码由你按步骤调整。</p>
+    </section>
+
+    <section id="cause">
+        <h2>2. 为什么页面正常，菜单却没有选中</h2>
+        <p>当前路由配置没有开启 <code>strict: true</code>。默认情况下，Vue Router 允许结尾斜杠，因此 <code>/admin/users</code> 和 <code>/admin/users/</code> 都会匹配用户管理页面。</p>
+        <p>但是，Element Plus 菜单使用激活值匹配菜单项的 <code>index</code>。当前模板直接传入 <code>route.path</code>，它会保留访问地址中的结尾斜杠；菜单项则通过路由名称生成配置中的路径，两者可能不同。</p>
+        <div class="flow" aria-label="修复前的两个不同路径">
+            <div class="flow-card">
+                <p><strong>当前访问地址</strong></p>
+                <p><code>/admin/users/</code></p>
+                <p class="source">route.path 保留结尾斜杠</p>
+            </div>
+            <span class="flow-arrow" aria-hidden="true">≠</span>
+            <div class="flow-card">
+                <p><strong>菜单 index</strong></p>
+                <p><code>/admin/users</code></p>
+                <p class="source">getMenuPath('userList') 的结果</p>
+            </div>
+        </div>
+        <p><span class="state-badge bad">修复前：字符串不同，菜单未选中</span></p>
+        <p>这个问题也存在于早先的布局参考文档中。修复时应让当前高亮路径和菜单项路径都由路由名称解析，使用配置中的同一个路径。</p>
+        <p class="source">依据：<a href="https://router.vuejs.org/guide/essentials/route-matching-syntax.html#sensitive-and-strict-route-options">Vue Router 的 sensitive 与 strict 选项</a>、<a href="https://element-plus.org/en-US/component/menu.html#menu-attributes">Element Plus 的 default-active 与 router 属性</a>。</p>
+    </section>
+
+    <section id="fix">
+        <h2>3. 修改绑定并新增计算属性</h2>
+        <h3>第一步：替换模板中的高亮绑定</h3>
+        <p>在 <code>src/views/LayoutPage.vue</code> 的 <code>el-menu</code> 上，将：</p>
+<div class="code-label">修改前 · template 中的这一行</div><pre><code id="code-before" class="language-vue">:default-active=&quot;route.path&quot;</code></pre>
+        <p>替换为：</p>
+<div class="code-label">修改后 · template 中的这一行</div><pre><code id="code-after" class="language-vue">:default-active=&quot;activeMenuPath&quot;</code></pre>
+        <h3>第二步：在 script setup 中新增以下代码</h3>
+        <p>将下面代码放在已有 <code>const router = useRouter()</code> 之后。当前文件已经导入 <code>computed</code>、定义 <code>route</code> 和 <code>getMenuPath()</code>，继续复用这些内容，无须重复添加它们。</p>
+<div class="code-label">src/views/LayoutPage.vue · script setup 中新增</div><pre><code id="code-addition" class="language-javascript">/**
+ * 当前选中菜单的规范路径，与菜单项 index 使用相同的解析规则。
+ * @type {import(&#x27;vue&#x27;).ComputedRef&lt;string&gt;}
+ */
+const activeMenuPath = computed(getActiveMenuPath)
+
+/**
+ * 根据当前路由名称计算应高亮的菜单路径。
+ * @returns {string} 当前路由的规范路径；没有字符串路由名称时返回空字符串。
+ */
+function getActiveMenuPath() {
+    if (typeof route.name === &#x27;string&#x27;) {
+        return getMenuPath(route.name)
+    }
+
+    return &#x27;&#x27;
+}</code></pre>
+        <p><code>computed</code> 会根据当前路由重新计算高亮值；模板会自动解包计算属性，直接使用 <code>activeMenuPath</code>，不需要写 <code>activeMenuPath.value</code>。</p>
+        <p>只有当前路由名称是字符串时才调用已有函数；否则返回空字符串，表示没有要选中的菜单，避免在当前路由没有名称时继续解析地址。</p>
+        <h3>核对已有 getMenuPath()，无需再定义一次</h3>
+<div class="code-label">LayoutPage.vue 中已有的函数 · 保留</div><pre><code id="code-helper" class="language-javascript">/**
+ * 根据路由名称获取菜单对应的完整路径。
+ * @param {string} routeName 路由配置中唯一的名称。
+ * @returns {string} 根据当前路由配置解析出的完整路径。
+ * @throws {Error} 路由名称不存在或缺少必填路径参数时抛出。
+ */
+function getMenuPath(routeName) {
+    return router.resolve({name: routeName}).path
+}</code></pre>
+        <p><code>router.resolve()</code> 只解析目标路径，不执行跳转。因此访问 <code>/admin/users/</code> 时，地址栏可以继续保留结尾斜杠，菜单也能正常选中。</p>
+        <div class="flow" aria-label="修复后两端使用相同路径">
+            <div class="flow-card success">
+                <p><strong>当前路由 name</strong>：<code>userList</code></p>
+                <p>activeMenuPath → <code>/admin/users</code></p>
+            </div>
+            <span class="flow-arrow" aria-hidden="true">＝</span>
+            <div class="flow-card success">
+                <p><strong>菜单绑定 name</strong>：<code>userList</code></p>
+                <p>index → <code>/admin/users</code></p>
+            </div>
+        </div>
+        <p><span class="state-badge good">修复后：同名路由解析得到同一路径，菜单高亮</span></p>
+        <p class="source">参考：<a href="https://router.vuejs.org/api/interfaces/routerclassic#resolve">router.resolve()</a>。</p>
+    </section>
+
+    <section id="menu">
+        <h2>4. 对照修改后的菜单片段</h2>
+        <p>下方只列出菜单部分。三个菜单项继续调用原来的 <code>getMenuPath()</code>，本次需要替换的模板绑定只有 <code>default-active</code>。</p>
+<div class="code-label">src/views/LayoutPage.vue · 菜单片段</div><pre><code id="code-menu" class="language-vue">&lt;el-menu
+    router
+    :default-active=&quot;activeMenuPath&quot;
+    background-color=&quot;#2D3A4B&quot;
+    text-color=&quot;#AEB8C7&quot;
+    active-text-color=&quot;#FFFFFF&quot;
+    class=&quot;sidebar-menu&quot;
+&gt;
+    &lt;el-menu-item
+        :index=&quot;getMenuPath(&#x27;dashboard&#x27;)&quot;
+        title=&quot;工作台&quot;
+        aria-label=&quot;工作台&quot;
+    &gt;
+        &lt;el-icon&gt;&lt;HomeFilled&gt;&lt;/HomeFilled&gt;&lt;/el-icon&gt;
+        &lt;span&gt;工作台&lt;/span&gt;
+    &lt;/el-menu-item&gt;
+
+    &lt;el-menu-item
+        :index=&quot;getMenuPath(&#x27;userList&#x27;)&quot;
+        title=&quot;用户管理&quot;
+        aria-label=&quot;用户管理&quot;
+    &gt;
+        &lt;el-icon&gt;&lt;User&gt;&lt;/User&gt;&lt;/el-icon&gt;
+        &lt;span&gt;用户管理&lt;/span&gt;
+    &lt;/el-menu-item&gt;
+
+    &lt;el-menu-item
+        :index=&quot;getMenuPath(&#x27;noteList&#x27;)&quot;
+        title=&quot;笔记管理&quot;
+        aria-label=&quot;笔记管理&quot;
+    &gt;
+        &lt;el-icon&gt;&lt;Document&gt;&lt;/Document&gt;&lt;/el-icon&gt;
+        &lt;span&gt;笔记管理&lt;/span&gt;
+    &lt;/el-menu-item&gt;
+&lt;/el-menu&gt;</code></pre>
+        <p>页面标题、用户名、退出逻辑以及样式无需因这次高亮修复而修改；路由名称仍使用 <code>dashboard</code>、<code>userList</code>、<code>noteList</code>。</p>
+    </section>
+
+    <section id="verify">
+        <h2>5. 验证地址与预期结果</h2>
+        <p>保存后运行 <code>npm run dev</code>，将下表路径拼在 <code>http://localhost:5062</code> 后访问。重点检查直接打开和刷新，而不只是点击菜单。</p>
+        <div class="table-wrap"><table>
+            <thead><tr><th scope="col">访问路径</th><th scope="col">预期高亮</th><th scope="col">activeMenuPath</th></tr></thead>
+            <tbody>
+                <tr><td><code>/admin/dashboard</code></td><td>工作台</td><td><code>/admin/dashboard</code></td></tr>
+                <tr><td><code>/admin/dashboard/</code></td><td>工作台</td><td><code>/admin/dashboard</code></td></tr>
+                <tr><td><code>/admin/users</code></td><td>用户管理</td><td><code>/admin/users</code></td></tr>
+                <tr><td><code>/admin/users/</code></td><td>用户管理</td><td><code>/admin/users</code></td></tr>
+                <tr><td><code>/admin/users/?page=2#list</code></td><td>用户管理</td><td><code>/admin/users</code></td></tr>
+                <tr><td><code>/admin/notes/</code></td><td>笔记管理</td><td><code>/admin/notes</code></td></tr>
+            </tbody>
+        </table></div>
+        <ol>
+            <li>直接打开 <code>/admin/users/</code>：用户管理页面显示正常，左侧用户管理高亮。</li>
+            <li>刷新该页面：高亮仍然存在，地址可以继续保留结尾斜杠。</li>
+            <li>切换到工作台、笔记管理，再返回用户管理：地址、标题、内容和高亮同步更新。</li>
+            <li>保留路由 <code>name</code>，修改父路径或子路径：菜单 index 与 activeMenuPath 仍应解析到同一个新路径。</li>
+        </ol>
+        <p>查询参数和 hash 不属于 <code>route.path</code>；此处包含它们的地址用于确认修复不会影响带参数链接的高亮。</p>
+    </section>
+
+    <section id="scope">
+        <h2>6. 适用范围</h2>
+        <p>本修复适用于当前三个菜单与三个字符串命名的静态路由一一对应的结构，并保留了“修改 path 后无须同步修改菜单字符串”的用法。</p>
+        <p>如果后续新增用户详情等页面，并希望详情页也高亮“用户管理”，需要另行约定详情页所属的菜单；仅把详情路由名称解析成详情路径，并不会自动选中列表菜单。</p>
+        <p>原 <a href="admin-layout-guide.html#layout">后台布局参考文档</a> 已同步采用本修复，后续可以直接对照其中的完整示例。</p>
+    </section>
+    <footer>本文档提供手动修复步骤；当前工程的 src 文件未因生成本文档而修改。所有示例使用普通函数和完整 JSDoc，并保留明确的类型判断。</footer>
+</article>
+</main>
+</body>
+</html>

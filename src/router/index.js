@@ -12,10 +12,43 @@ const routes = [
     {
         path: '/login',
         name: 'login',
-        /**
-         * @returns {Promise<{default: import('vue').Component}>} 登录页面
-         * */
         component: () => import('@/views/LoginPage.vue')
+    },
+    {
+        path: '/admin',
+        component: () => import('@/views/LayoutPage.vue'),
+        redirect: {
+            name: 'dashboard'
+        },
+        children: [
+            {
+                path: 'dashboard',
+                name: 'dashboard',
+                component: () => import('@/views/PlaceholderPage.vue'),
+                meta: {
+                    title: '工作台',
+                    description: '查看后台概况与常用功能'
+                },
+            },
+            {
+                path: 'users',
+                name: 'userList',
+                component: () => import('@/views/PlaceholderPage.vue'),
+                meta: {
+                    title: '用户管理',
+                    description: '查看与管理用户信息'
+                },
+            },
+            {
+                path: 'notes',
+                name: 'noteList',
+                component: () => import('@/views/PlaceholderPage.vue'),
+                meta: {
+                    title: '笔记管理',
+                    description: '查看和管理笔记内容',
+                },
+            },
+        ],
     }
 ]
 

@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="通过可切换的手机浏览器示意图，理解 vh 与 dvh 在地址栏展开、收起时的高度差异，以及后台布局中的兼容写法。" />
+    <title>SolarNotesAdmin · vh 与 dvh 图解</title>
+    <style>
+        :root {
+            color-scheme: light;
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+            font-size: 16px;
+            line-height: 1.8;
+            color: #273147;
+            background: #f5f6fb;
+            --border: #e3e7f0;
+            --muted: #657089;
+            --purple: #636bd6;
+            --green: #16816b;
+        }
+
+        * { box-sizing: border-box; }
+        body { margin: 0; }
+        main { max-width: 1080px; margin: 40px auto; padding: 0 24px; }
+        article { padding: 44px 48px; border: 1px solid var(--border); border-radius: 18px; background: #fff; box-shadow: 0 12px 40px rgb(39 49 71 / 4%); }
+        .doc-header { padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+        .eyebrow { margin: 0 0 8px; color: var(--purple); font-size: 12px; font-weight: 700; letter-spacing: .08em; }
+        h1 { margin: 0 0 12px; font-size: 32px; line-height: 1.4; }
+        h2 { margin: 0 0 16px; font-size: 23px; line-height: 1.5; }
+        h3 { margin: 0 0 8px; font-size: 18px; }
+        p { margin: 12px 0; }
+        .subtitle, .muted { color: var(--muted); }
+        .subtitle { margin-bottom: 0; }
+        a { color: #5059bd; text-underline-offset: 3px; }
+        a:focus-visible, button:focus-visible { outline: 3px solid #a5abff; outline-offset: 4px; }
+        code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: .9em; }
+        :not(pre) > code { padding: 2px 6px; border-radius: 4px; background: #f0f2f7; overflow-wrap: anywhere; }
+        section { margin-top: 36px; scroll-margin-top: 24px; }
+        .doc-nav { display: flex; flex-wrap: wrap; gap: 10px 22px; margin-top: 22px; font-size: 14px; }
+        .doc-nav a { text-decoration: none; }
+        .definition-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+        .definition { padding: 20px; border: 1px solid var(--border); border-radius: 10px; }
+        .definition p { margin-bottom: 0; }
+        .definition.vh { border-top: 3px solid var(--purple); background: #fafaff; }
+        .definition.dvh { border-top: 3px solid var(--green); background: #f8fcfb; }
+        .definition h3 { font-family: "SFMono-Regular", Consolas, monospace; }
+        .note { padding: 14px 18px; border-left: 3px solid #727cf5; border-radius: 0 8px 8px 0; background: #f2f3fe; }
+        .note p { margin: 0; }
+        .demo {
+            --toolbar-height: 50px;
+            --dynamic-height: 350px;
+            --visible-height: 350px;
+            padding: 24px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: #f9fafc;
+        }
+        .demo-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
+        .button-group { display: flex; padding: 4px; gap: 4px; border: 1px solid #dde1eb; border-radius: 9px; background: #fff; }
+        .state-button { padding: 9px 14px; border: 0; border-radius: 6px; background: transparent; color: #657089; font: inherit; font-size: 14px; cursor: pointer; }
+        .state-button[aria-pressed="true"] { color: #fff; background: #636bd6; }
+        .current-size { font-size: 14px; color: #4a5570; }
+        .current-size strong { color: #273147; }
+        .diagram-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin-top: 24px; }
+        .diagram-card { min-width: 0; padding: 20px 16px 18px; border: 1px solid var(--border); border-radius: 12px; background: #fff; text-align: center; }
+        .diagram-card h3 { margin: 0; font-size: 16px; }
+        .diagram-card h3 code { padding: 0; background: transparent; }
+        .height-value { margin: 4px 0 0; color: var(--purple); font-size: 32px; font-weight: 700; line-height: 1.4; font-variant-numeric: tabular-nums; }
+        .height-value small { font-size: 14px; font-weight: 500; }
+        .dvh-card .height-value { color: var(--green); }
+        .reference-label { margin: 2px 0 18px; color: var(--muted); font-size: 12px; }
+        .browser-frame { position: relative; width: min(100%, 244px); height: 412px; margin: 0 auto; overflow: hidden; border: 6px solid #344157; border-radius: 19px; background: #fff; box-shadow: 0 8px 24px rgb(39 49 71 / 8%); }
+        .screen { position: relative; height: 400px; overflow: hidden; }
+        .page-plane { position: absolute; top: 0; left: 0; width: 100%; overflow: hidden; height: 400px; border: 2px solid #8b92eb; background: #eef0ff; }
+        .dvh-page { height: var(--dynamic-height); border-color: #56aa94; background: #ebf7f2; transition: height .3s ease; }
+        .sample-header { display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 12px; border-bottom: 1px solid rgb(76 87 127 / 10%); background: #fff; font-size: 11px; text-align: left; }
+        .sample-brand { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 5px; background: #727cf5; color: #fff; font-weight: 700; }
+        .sample-content { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 10px; margin: 12px; }
+        .sample-nav { display: grid; align-content: start; gap: 9px; min-height: 150px; padding: 10px 6px; border-radius: 5px; background: #344157; }
+        .sample-nav span { height: 6px; border-radius: 2px; background: #8f9aaa; }
+        .sample-nav span:first-child { background: #a7acff; }
+        .sample-panel { padding: 12px 9px; border: 1px solid #e1e6ee; border-radius: 5px; background: #fff; text-align: left; }
+        .sample-panel p { margin: 0 0 12px; font-size: 11px; color: #55617c; }
+        .sample-row { display: block; height: 7px; margin: 10px 0; border-radius: 2px; background: #e8ebf3; }
+        .sample-row.short { width: 65%; }
+        .page-footer { position: absolute; bottom: 12px; left: 12px; right: 12px; display: grid; place-items: center; height: 30px; border-radius: 5px; color: #fff; background: #727cf5; font-size: 11px; }
+        .dvh-page .page-footer { background: #16816b; }
+        .browser-toolbar { position: absolute; z-index: 3; left: 0; right: 0; bottom: 0; display: grid; place-items: center; height: var(--toolbar-height); overflow: hidden; border-top: 1px solid #9ea6b5; background: #d9dde5; transition: height .3s ease; }
+        .browser-toolbar span { white-space: nowrap; color: #45516a; font-size: 11px; }
+        .visible-boundary { position: absolute; z-index: 4; top: var(--visible-height); left: 0; right: 0; height: 0; border-top: 2px dashed #d06145; pointer-events: none; transition: top .3s ease; }
+        .visible-boundary span { position: absolute; top: -24px; right: 5px; padding: 0 4px; border-radius: 3px; color: #a34930; background: #fff3e9; font-size: 10px; line-height: 18px; }
+        .demo[data-toolbar="collapsed"] .browser-toolbar { border-top-width: 0; }
+        .demo[data-toolbar="collapsed"] .visible-boundary span { display: none; }
+        .result { min-height: 27px; margin: 16px 0 0; font-size: 14px; font-weight: 600; }
+        .vh-card .result { color: #a64e36; }
+        .dvh-card .result { color: var(--green); }
+        .formula { margin: 4px 0 0; color: #657089; font-family: "SFMono-Regular", Consolas, monospace; font-size: 12px; }
+        .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 22px; margin: 20px 0 0; color: #657089; font-size: 12px; }
+        .legend span { display: inline-flex; align-items: center; gap: 7px; }
+        .swatch { display: inline-block; width: 14px; height: 10px; border-radius: 2px; background: #d9dde5; }
+        .swatch.page { border: 1px solid #9298e9; background: #eef0ff; }
+        .swatch.line { height: 0; border-top: 2px dashed #d06145; border-radius: 0; background: none; }
+        .figure-caption { margin: 14px 0 0; color: #657089; font-size: 13px; }
+        .live-summary { margin: 18px 0 0; padding: 12px 16px; border-radius: 8px; background: #eef0fa; font-size: 14px; }
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { padding: 12px 14px; border: 1px solid var(--border); text-align: left; }
+        th { white-space: nowrap; background: #f7f8fc; }
+        td strong { color: #40508b; }
+        .code-label { margin-top: 18px; padding: 8px 16px; border-radius: 9px 9px 0 0; background: #29334c; color: #d1d7ed; font-size: 12px; }
+        pre { margin: 0; padding: 18px 20px; overflow-x: auto; border-radius: 0 0 9px 9px; background: #1d263b; color: #edf0fb; line-height: 1.8; }
+        .source { color: #657089; font-size: 13px; }
+        footer { margin-top: 36px; padding-top: 18px; border-top: 1px solid var(--border); color: #657089; font-size: 13px; }
+
+        @media (max-width: 700px) {
+            main { margin: 16px auto; padding: 0 12px; }
+            article { padding: 26px 20px; border-radius: 12px; }
+            h1 { font-size: 26px; }
+            h2 { font-size: 21px; }
+            .definition-grid, .diagram-grid { grid-template-columns: minmax(0, 1fr); }
+            .demo { padding: 16px; }
+            .diagram-grid { gap: 16px; }
+            .diagram-card { padding: 18px 12px; }
+            .demo-controls { justify-content: center; }
+            .state-button { padding: 8px 12px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .dvh-page, .browser-toolbar, .visible-boundary { transition: none; }
+        }
+
+        @media print {
+            :root { background: #fff; font-size: 11pt; }
+            main { max-width: none; margin: 0; padding: 0; }
+            article { padding: 0; border: 0; border-radius: 0; box-shadow: none; }
+            .doc-nav, .button-group { display: none; }
+            .demo { padding: 16px; print-color-adjust: exact; }
+            .diagram-grid, .definition-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            h1, h2, h3, .code-label { break-after: avoid; }
+            .diagram-card, tr, pre { break-inside: avoid; }
+            pre { color: #273147; background: #f5f6f8; white-space: pre-wrap; }
+            .code-label { color: #273147; background: #e9ecf3; }
+            a { color: inherit; }
+        }
+    </style>
+</head>
+<body>
+<main>
+    <article>
+        <header class="doc-header">
+            <p class="eyebrow">SOLARNOTESADMIN / CSS 图解</p>
+            <h1>用图看懂 vh 与 dvh</h1>
+            <p class="subtitle">地址栏展开时，网页到底有多高？把“元素的高度”和“当前可见区域”画在一起，就能看到两种单位的区别。</p>
+            <nav class="doc-nav" aria-label="文档目录">
+                <a href="#definition">两个计算基准</a>
+                <a href="#diagram">切换图示</a>
+                <a href="#calculation">对照数值</a>
+                <a href="#layout">回到后台布局</a>
+            </nav>
+        </header>
+
+        <section id="definition">
+            <h2>1. 先分清两个计算基准</h2>
+            <p><strong>视口</strong>指浏览器用来显示网页的区域。<code>1vh</code> 和 <code>1dvh</code> 都取相应高度的 <strong>1%</strong>，但参照的高度不同：</p>
+            <div class="definition-grid">
+                <div class="definition vh">
+                    <h3>vh：以大视口为基准</h3>
+                    <p>按可伸缩的浏览器界面收起时的视口高度计算。在当前标准中，<code>vh</code> 与 <code>lvh</code> 等价。</p>
+                </div>
+                <div class="definition dvh">
+                    <h3>dvh：以动态视口为基准</h3>
+                    <p>根据地址栏等浏览器界面的展开、收起状态调整。<code>100dvh</code> 可以跟随当前动态视口的高度变化。</p>
+                </div>
+            </div>
+            <p class="source">依据：<a href="https://www.w3.org/TR/css-values-4/#viewport-variants">W3C：大视口、小视口和动态视口</a>、<a href="https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Values/length#relative_length_units_based_on_viewport">MDN：视口相对长度单位</a>。</p>
+        </section>
+
+        <section id="diagram">
+            <h2>2. 点击切换，观察页面底部的位置</h2>
+            <p>假设地址栏收起后的视口高 <strong>800px</strong>；展开时，地址栏和工具栏合计占去 <strong>100px</strong>，当前可见网页区域剩下 <strong>700px</strong>。本例只切换工具栏状态，保持窗口大小和设备方向不变。</p>
+
+            <figure class="demo" id="viewport-demo" data-toolbar="expanded" style="margin: 20px 0 0;">
+                <div class="demo-controls">
+                    <div class="button-group" role="group" aria-label="模拟浏览器工具栏状态">
+                        <button class="state-button" id="expand-toolbar" type="button" aria-pressed="true">地址栏展开</button>
+                        <button class="state-button" id="collapse-toolbar" type="button" aria-pressed="false">地址栏收起</button>
+                    </div>
+                    <div class="current-size">当前可见网页高度：<strong id="visible-height-value">700px</strong></div>
+                </div>
+
+                <div class="diagram-grid">
+                    <div class="diagram-card vh-card">
+                        <h3><code>height: 100vh</code></h3>
+                        <p class="height-value">800 <small>px</small></p>
+                        <p class="reference-label">始终参照本例的 800px 大视口</p>
+                        <div class="browser-frame" id="vh-frame" role="img" aria-label="100vh 示例：页面高 800px，可见区域高 700px，页面底部的按钮落在工具栏后方。">
+                            <div class="screen" aria-hidden="true">
+                                <div class="page-plane vh-page">
+                                    <div class="sample-header"><span class="sample-brand">S</span>SolarNotes 管理后台</div>
+                                    <div class="sample-content">
+                                        <div class="sample-nav"><span></span><span></span><span></span></div>
+                                        <div class="sample-panel"><p>页面内容</p><span class="sample-row"></span><span class="sample-row"></span><span class="sample-row short"></span></div>
+                                    </div>
+                                    <div class="page-footer">页面底部操作按钮</div>
+                                </div>
+                                <div class="browser-toolbar"><span>浏览器地址 / 工具栏 · 100px</span></div>
+                                <div class="visible-boundary"><span>可见区域的底部</span></div>
+                            </div>
+                        </div>
+                        <p class="result" id="vh-result">页面多出 100px，底部按钮被遮住</p>
+                        <p class="formula">1vh = 800 ÷ 100 = 8px</p>
+                    </div>
+
+                    <div class="diagram-card dvh-card">
+                        <h3><code>height: 100dvh</code></h3>
+                        <p class="height-value"><span id="dvh-height-value">700</span> <small>px</small></p>
+                        <p class="reference-label">跟随本例当前的可见网页高度</p>
+                        <div class="browser-frame" id="dvh-frame" role="img" aria-label="100dvh 示例：页面高 700px，与可见区域一致，页面底部的按钮仍然可见。">
+                            <div class="screen" aria-hidden="true">
+                                <div class="page-plane dvh-page">
+                                    <div class="sample-header"><span class="sample-brand">S</span>SolarNotes 管理后台</div>
+                                    <div class="sample-content">
+                                        <div class="sample-nav"><span></span><span></span><span></span></div>
+                                        <div class="sample-panel"><p>页面内容</p><span class="sample-row"></span><span class="sample-row"></span><span class="sample-row short"></span></div>
+                                    </div>
+                                    <div class="page-footer">页面底部操作按钮</div>
+                                </div>
+                                <div class="browser-toolbar"><span>浏览器地址 / 工具栏 · 100px</span></div>
+                                <div class="visible-boundary"><span>可见区域的底部</span></div>
+                            </div>
+                        </div>
+                        <p class="result" id="dvh-result">页面刚好 700px，底部按钮可见</p>
+                        <p class="formula" id="dvh-formula">1dvh = 700 ÷ 100 = 7px</p>
+                    </div>
+                </div>
+
+                <div class="legend" aria-label="图例">
+                    <span><i class="swatch page" aria-hidden="true"></i>彩色区域：网页元素</span>
+                    <span><i class="swatch" aria-hidden="true"></i>灰色区域：浏览器工具栏</span>
+                    <span><i class="swatch line" aria-hidden="true"></i>虚线：当前可见区域底部</span>
+                </div>
+                <p class="live-summary" id="state-summary" role="status" aria-live="polite">地址栏展开：可见区域为 700px；100vh 仍为 800px，100dvh 调整为 700px。</p>
+                <figcaption class="figure-caption">图中按 1:2 比例缩小绘制，把可伸缩的地址栏和工具栏统一画在底部。700 / 800px 是教学假设，并非当前设备实测值；真实浏览器的工具栏也可能位于顶部。</figcaption>
+            </figure>
+            <noscript><p class="note">启用 JavaScript 后可以切换地址栏状态；上方默认显示“地址栏展开”，下方表格同时列出两种状态。</p></noscript>
+            <p>先看左图：页面本身仍有 800px 高，当前只能看到其中的 700px。再看右图：页面缩短为 700px，底部按钮跟着上移。点击“地址栏收起”，两边都会显示为 800px。</p>
+        </section>
+
+        <section id="calculation">
+            <h2>3. 把两种状态放在一起对照</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">地址栏状态</th><th scope="col">可见网页高度</th><th scope="col">100vh</th><th scope="col">100dvh</th></tr></thead>
+                    <tbody>
+                        <tr><td>展开，占去 100px</td><td>700px</td><td><strong>800px</strong></td><td><strong>700px</strong></td></tr>
+                        <tr><td>收起</td><td>800px</td><td><strong>800px</strong></td><td><strong>800px</strong></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="note" style="margin-top: 20px;">
+                <p><strong>vh 并非永远不变。</strong>调整窗口高度或旋转设备时，它也可能改变。本例中的 100vh 保持 800px，是因为只改变工具栏状态，大视口本身没有改变。</p>
+            </div>
+            <p>桌面浏览器通常没有这种伸缩工具栏带来的高度差，所以 <code>100vh</code> 与 <code>100dvh</code> 通常表现相同。</p>
+            <p class="source">图示只解释地址栏等伸缩界面；软键盘的行为需另行考虑。示意图中的平滑过渡用于展示两个状态，真实浏览器在工具栏动画期间不一定逐帧更新 <code>dvh</code>。依据：<a href="https://www.w3.org/TR/css-values-4/#viewport-variants">W3C 动态视口定义</a>。</p>
+        </section>
+
+        <section id="layout">
+            <h2>4. 回到 LayoutPage.vue 的写法</h2>
+            <p>后台公共布局需要占满当前视口高度，因此优先使用 <code>100dvh</code>。前面保留 <code>100vh</code>，供不认识 <code>dvh</code> 的浏览器使用：</p>
+            <div class="code-label">LayoutPage.vue · style 部分（标准 CSS 注释，也可用于 SCSS）</div>
+            <pre><code>.layout-page {
+    height: 100vh;  /* 兼容不支持 dvh 的浏览器 */
+    height: 100dvh; /* 支持时覆盖上一行，使用动态视口高度 */
+    overflow: hidden;
+}</code></pre>
+            <ul>
+                <li>支持 <code>dvh</code>：后面的有效声明覆盖前面的声明，最终使用 <code>100dvh</code>。</li>
+                <li>不支持 <code>dvh</code>：忽略第二行，最终使用 <code>100vh</code>。</li>
+            </ul>
+            <p>这两行高度不会相加。当前布局示例中，外层的 <code>overflow: hidden</code> 配合内容区的 <code>overflow: auto</code> 使用，让右下内容区独立滚动。</p>
+            <p>相关代码见：<a href="admin-layout-guide.html#layout">后台布局参考文档 · LayoutPage.vue</a>。</p>
+        </section>
+
+        <footer>本文件可以直接在浏览器中打开，图示与交互均保存在 HTML 内，不依赖外部脚本、图片或样式。编写日期：2026 年 11 月 6 日。</footer>
+    </article>
+</main>
+<script>
+    /**
+     * 示例中工具栏收起后的大视口高度，单位为 CSS 像素。
+     * @type {number}
+     */
+    const LARGE_VIEWPORT_HEIGHT = 800
+
+    /**
+     * 示例中工具栏展开时占据的高度，单位为 CSS 像素。
+     * @type {number}
+     */
+    const TOOLBAR_HEIGHT = 100
+
+    /**
+     * 图示尺寸与假设尺寸的比例。
+     * @type {number}
+     */
+    const DIAGRAM_SCALE = 0.5
+
+    /**
+     * 获取本文档中必须存在的元素。
+     * @param {string} id 元素的 ID。
+     * @returns {HTMLElement} 对应元素。
+     * @throws {Error} 元素不存在时抛出。
+     */
+    function getRequiredElement(id) {
+        /** @type {HTMLElement|null} 找到的文档元素。 */
+        const element = document.getElementById(id)
+
+        if (element === null) {
+            throw new Error('缺少文档元素：' + id)
+        }
+
+        return element
+    }
+
+    /**
+     * 图示容器，保存当前模拟状态及按比例计算的尺寸。
+     * @type {HTMLElement}
+     */
+    const diagram = getRequiredElement('viewport-demo')
+
+    /**
+     * 设置模拟工具栏状态，更新图形、数值和无障碍描述。
+     * @param {boolean} expanded 工具栏是否处于展开状态。
+     * @returns {void}
+     */
+    function setToolbarState(expanded) {
+        /** @type {number} 当前工具栏占据的假设高度。 */
+        let toolbarHeight = 0
+
+        if (expanded === true) {
+            toolbarHeight = TOOLBAR_HEIGHT
+            diagram.dataset.toolbar = 'expanded'
+        } else {
+            diagram.dataset.toolbar = 'collapsed'
+        }
+
+        /** @type {number} 当前可见网页区域的假设高度。 */
+        const visibleHeight = LARGE_VIEWPORT_HEIGHT - toolbarHeight
+
+        diagram.style.setProperty('--toolbar-height', toolbarHeight * DIAGRAM_SCALE + 'px')
+        diagram.style.setProperty('--dynamic-height', visibleHeight * DIAGRAM_SCALE + 'px')
+        diagram.style.setProperty('--visible-height', visibleHeight * DIAGRAM_SCALE + 'px')
+        getRequiredElement('expand-toolbar').setAttribute('aria-pressed', String(expanded === true))
+        getRequiredElement('collapse-toolbar').setAttribute('aria-pressed', String(expanded === false))
+        getRequiredElement('visible-height-value').textContent = visibleHeight + 'px'
+        getRequiredElement('dvh-height-value').textContent = String(visibleHeight)
+        getRequiredElement('dvh-formula').textContent = '1dvh = ' + visibleHeight + ' ÷ 100 = ' + visibleHeight / 100 + 'px'
+
+        if (expanded === true) {
+            getRequiredElement('vh-result').textContent = '页面多出 100px，底部按钮被遮住'
+            getRequiredElement('dvh-result').textContent = '页面刚好 700px，底部按钮可见'
+            getRequiredElement('state-summary').textContent = '地址栏展开：可见区域为 700px；100vh 仍为 800px，100dvh 调整为 700px。'
+            getRequiredElement('vh-frame').setAttribute('aria-label', '100vh 示例：页面高 800px，可见区域高 700px，页面底部的按钮落在工具栏后方。')
+            getRequiredElement('dvh-frame').setAttribute('aria-label', '100dvh 示例：页面高 700px，与可见区域一致，页面底部的按钮仍然可见。')
+        } else {
+            getRequiredElement('vh-result').textContent = '页面高 800px，底部按钮可见'
+            getRequiredElement('dvh-result').textContent = '页面恢复到 800px，底部按钮可见'
+            getRequiredElement('state-summary').textContent = '地址栏收起：可见区域恢复到 800px；100vh 与 100dvh 都为 800px。'
+            getRequiredElement('vh-frame').setAttribute('aria-label', '100vh 示例：工具栏收起后，页面与可见区域都高 800px，底部按钮可见。')
+            getRequiredElement('dvh-frame').setAttribute('aria-label', '100dvh 示例：工具栏收起后，页面随可见区域恢复到 800px，底部按钮可见。')
+        }
+    }
+
+    /**
+     * 模拟地址栏展开。
+     * @returns {void}
+     */
+    function expandToolbar() {
+        setToolbarState(true)
+    }
+
+    /**
+     * 模拟地址栏收起。
+     * @returns {void}
+     */
+    function collapseToolbar() {
+        setToolbarState(false)
+    }
+
+    getRequiredElement('expand-toolbar').addEventListener('click', expandToolbar)
+    getRequiredElement('collapse-toolbar').addEventListener('click', collapseToolbar)
+</script>
+</body>
+</html>
