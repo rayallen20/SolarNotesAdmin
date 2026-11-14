@@ -1,0 +1,898 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="根据 SolarNotesAdminAPI 源码实现管理员登录：接口协议、Vite 代理、Axios 请求、表单校验、Pinia 会话及路由守卫的完整参考代码。">
+    <title>SolarNotesAdmin · 管理员登录 API 对接指南</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+          "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+        color: #273147;
+        background: #f5f6fb;
+        line-height: 1.8;
+        font-size: 16px;
+        --primary: #5964d6;
+        --border: #e3e7f0;
+        --muted: #657089;
+      }
+
+      * { box-sizing: border-box; }
+      body { margin: 0; }
+      main { max-width: 1000px; margin: 48px auto; padding: 0 28px; }
+      article {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 48px 56px;
+        box-shadow: 0 12px 40px rgb(39 49 71 / 4%);
+      }
+      header { padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+      .eyebrow {
+        margin: 0 0 12px;
+        color: var(--primary);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+      }
+      h1 { margin: 0 0 16px; font-size: 32px; line-height: 1.4; }
+      h2 { margin: 40px 0 16px; font-size: 23px; line-height: 1.5; }
+      h3 { margin: 26px 0 10px; font-size: 17px; }
+      p { margin: 12px 0; }
+      a { color: var(--primary); text-underline-offset: 3px; }
+      a:hover { color: #3d46ab; }
+      a:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; }
+      strong { color: #172137; }
+      .subtitle, .source, footer { color: var(--muted); }
+      .stack { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+      .stack span {
+        border-radius: 6px;
+        background: #f0f1fd;
+        color: #4d57ba;
+        padding: 3px 10px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      nav {
+        margin: 28px 0;
+        padding: 18px 24px;
+        background: #f8f9fc;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+      }
+      nav ol { margin: 8px 0 0; padding-left: 24px; }
+      nav a { text-decoration: none; }
+      section { scroll-margin-top: 24px; }
+      code {
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-size: 0.88em;
+      }
+      :not(pre) > code {
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: #f0f2f7;
+        overflow-wrap: anywhere;
+      }
+      .code-label {
+        margin: 18px 0 0;
+        padding: 8px 16px;
+        color: #d1d7ed;
+        background: #29334c;
+        border-radius: 9px 9px 0 0;
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 12px;
+        overflow-wrap: anywhere;
+      }
+      pre {
+        margin: 14px 0 20px;
+        padding: 18px 20px;
+        overflow-x: auto;
+        border-radius: 9px;
+        background: #1d263b;
+        color: #edf0fb;
+        line-height: 1.7;
+        tab-size: 2;
+      }
+      .code-label + pre { margin-top: 0; border-radius: 0 0 9px 9px; }
+      pre code { font-size: 13px; }
+      .note {
+        margin: 20px 0;
+        padding: 14px 18px;
+        border-left: 3px solid #727cf5;
+        border-radius: 0 8px 8px 0;
+        background: #f2f3fe;
+      }
+      .note p { margin: 0; }
+      .table-wrap { overflow-x: auto; margin: 18px 0; }
+      table { width: 100%; border-collapse: collapse; font-size: 14px; }
+      th, td { padding: 12px 14px; text-align: left; border: 1px solid var(--border); }
+      th { background: #f7f8fc; color: #35405b; }
+      .source { font-size: 13px; }
+      footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 13px; }
+
+      @media (max-width: 640px) {
+        main { margin: 16px auto; padding: 0 12px; }
+        article { padding: 28px 20px; border-radius: 12px; }
+        h1 { font-size: 25px; }
+        h2 { font-size: 21px; }
+        pre { padding: 14px; }
+        nav { padding: 14px 18px; }
+      }
+
+      @media print {
+        :root { background: #fff; font-size: 11pt; }
+        main { max-width: none; margin: 0; padding: 0; }
+        article { border: 0; border-radius: 0; padding: 0; box-shadow: none; }
+        nav { display: none; }
+        h1, h2, h3, .code-label { break-after: avoid; }
+        pre {
+          white-space: pre-wrap;
+          overflow-wrap: anywhere;
+          background: #f5f6f8;
+          color: #172137;
+          border: 1px solid #ddd;
+          break-inside: avoid;
+        }
+        .code-label { background: #e9ecf3; color: #273147; }
+        a { color: inherit; }
+        tr { break-inside: avoid; }
+      }
+
+    article { min-width: 0; }
+    .code-block { margin: 20px 0; min-width: 0; }
+    .code-block summary { display: flex; justify-content: space-between; gap: 12px; padding: 10px 16px; border-radius: 8px; color: #e3e8f8; background: #29334c; font-family: monospace; font-size: 13px; cursor: pointer; overflow-wrap: anywhere; }
+    .code-block summary span { flex-shrink: 0; font-family: inherit; font-size: 11px; color: #b4bed7; }
+    .code-block[open] summary { border-radius: 8px 8px 0 0; }
+    .code-block pre { margin: 0; border-radius: 0 0 8px 8px; max-height: 780px; }
+    .pill { display: inline-block; padding: 2px 9px; color: #5964d6; background: #f0f1fd; border-radius: 5px; font-size: 13px; }
+    .flow-steps { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 18px; border: 1px solid var(--border); border-radius: 10px; background: #fafbfe; }
+    .flow-steps span { padding: 5px 10px; border-radius: 6px; background: #eef0fe; color: #4d57ba; font-size: 14px; }
+
+    .connection { display: grid; gap: 10px; margin: 20px 0; }
+    .connection-row { padding: 14px 18px; border: 1px solid var(--border); background: #fafbfe; border-radius: 9px; }
+    .connection-row b { display: block; color: #35405b; }
+    .connection-row code { display: inline-block; margin-top: 4px; }
+    .case-panel { margin: 22px 0; padding: 20px; border: 1px solid var(--border); border-radius: 10px; background: #fafbfe; }
+    .case-panel label { font-weight: 600; }
+    .case-panel select { max-width: 100%; margin: 8px 0 4px 12px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font: inherit; font-size: 14px; color: #273147; background: #fff; }
+    .case-panel pre { margin: 12px 0; }
+    .case-panel p { margin-bottom: 0; }
+    .verification { padding: 16px 20px; border-left: 3px solid #4b9b77; border-radius: 0 8px 8px 0; background: #f1f9f4; }
+    .verification p { margin: 4px 0; }
+    summary:focus-visible, select:focus-visible { outline: 2px solid #727cf5; outline-offset: 3px; }
+    @media (max-width: 640px) {
+        .code-block summary { flex-direction: column; gap: 4px; }
+        .case-panel { padding: 14px; }
+        .case-panel select { display: block; margin-left: 0; }
+    }
+    @media print { .code-block pre { max-height: none; } }
+</style>
+</head>
+<body>
+<main><article>
+    <header>
+        <p class="eyebrow">SOLARNOTESADMIN / 接口实现参考</p>
+        <h1>将登录页接入真实管理员 API</h1>
+        <p class="subtitle">依据 SolarNotesAdminAPI 的现有代码，把登录占位页接通到后端，完成表单校验、业务错误提示、会话保存和后台入口检查。</p>
+        <div class="stack"><span>POST /v1/admin/login</span><span>Vue · Axios · Pinia</span><span>完整 JSDoc</span><span>普通函数</span></div>
+        <p class="source">编写日期：2026 年 11 月 14 日 · <a href="vite-vue-initialization.html">初始化参考</a> · <a href="body-management-guide.html">天体管理页面参考</a></p>
+    </header>
+    <nav aria-label="文档目录"><strong>阅读与实现顺序</strong><ol><li><a href="#contract">核对后端登录协议</a></li><li><a href="#responses">区分 HTTP 与业务响应码</a></li><li><a href="#files">查看文件分工</a></li><li><a href="#proxy">配置开发代理</a></li><li><a href="#api">新增登录 API 模块</a></li><li><a href="#login-page">实现登录页面</a></li><li><a href="#session">对接用户 Store</a></li><li><a href="#router">补上路由守卫</a></li><li><a href="#verify">启动与验收</a></li><li><a href="#troubleshoot">排查常见问题</a></li><li><a href="#verification-record">查看示例验证范围</a></li></ol></nav>
+<section id="contract">
+    <h2>1. 从后端源码确认登录协议</h2>
+    <p>本次对接的后端是 <code>/Users/roach/Desktop/SolarNotesAdminAPI</code>。当前唯一注册的业务路由是管理员登录；下面的路径、字段与业务码均来自该工程现有代码。</p>
+    <div class="table-wrap"><table><thead><tr><th>项目</th><th>当前约定</th><th>后端依据</th></tr></thead><tbody>
+        <tr><td>请求方法与路径</td><td><code>POST /v1/admin/login</code></td><td><code>main.go</code> 中 /v1 分组及 /admin/login 注册</td></tr>
+        <tr><td>开发监听端口</td><td><code>4060</code>；监听地址为 <code>0.0.0.0</code></td><td><code>config.dev.yaml</code> 的 service.port 与 main.go</td></tr>
+        <tr><td>请求格式</td><td>JSON，顶层必须有 <code>admin</code> 对象</td><td><code>param/req/v1/admin/login.go</code></td></tr>
+        <tr><td>用户名</td><td>必填，5～20 个字符，不能全为空白</td><td><code>required,min=5,max=20,notblank</code></td></tr>
+        <tr><td>密码</td><td>必填，6～20 个字符，不能全为空白</td><td><code>required,min=6,max=20,notblank</code></td></tr>
+        <tr><td>成功数据</td><td><code>data.admin.id</code>、<code>username</code>、<code>access_token</code>，均为字符串</td><td><code>controller/v1/admin/admin.go</code> 与响应结构体</td></tr>
+        <tr><td>成功判断</td><td>业务响应的 <code>code === 200</code></td><td><code>resp_body/resp_body.go</code></td></tr>
+        <tr><td>登录限流</td><td>后端按客户端 IP，滚动 1 分钟最多放行 5 次登录请求</td><td><code>middleware/login_rate_limiter.go</code></td></tr>
+    </tbody></table></div>
+    <h3>请求体示例</h3>
+    <p>以下凭据仅用于说明字段结构，不代表项目中存在这个账号。真正登录时使用已有管理员账号。</p><details class="code-block" open><summary>POST /v1/admin/login · JSON 请求体<span>点击折叠 / 展开</span></summary><pre><code data-file="POST /v1/admin/login · JSON 请求体" data-kind="fragment">{
+    &quot;admin&quot;: {
+        &quot;username&quot;: &quot;admin_demo&quot;,
+        &quot;password&quot;: &quot;example_password&quot;
+    }
+}</code></pre></details>
+    <p>后端直接使用输入的用户名查询记录，并通过 <code>auth.MatchSHA256()</code> 对输入密码计算摘要后比较。因此前端应<strong>原样提交用户名和密码</strong>：不用 <code>trim()</code> 改写凭据，也不在前端先算一遍 SHA-256。全空白判断仅用于校验，不修改输入值。生产环境通过 HTTPS 传输登录请求。</p>
+    <h3>成功响应示例</h3><details class="code-block" open><summary>HTTP 200 · 业务 code 200<span>点击折叠 / 展开</span></summary><pre><code data-file="HTTP 200 · 业务 code 200" data-kind="fragment">{
+    &quot;code&quot;: 200,
+    &quot;message&quot;: &quot;success&quot;,
+    &quot;data&quot;: {
+        &quot;admin&quot;: {
+            &quot;id&quot;: &quot;1234567890123456789&quot;,
+            &quot;username&quot;: &quot;admin_demo&quot;,
+            &quot;access_token&quot;: &quot;&lt;后端签发的 JWT&gt;&quot;
+        }
+    }
+}</code></pre></details>
+    <p><code>id</code> 是后端转换好的十进制字符串，前端保留字符串类型。Store 中的 <code>token</code> 应取自 <code>access_token</code>；用户名使用响应中的 <code>username</code>。</p>
+</section>
+<section id="responses">
+    <h2>2. 区分 HTTP 状态与业务响应码</h2>
+    <p>当前后端对登录成功、参数错误、账号密码错误、限流等已处理结果，均返回 <strong>HTTP 200</strong>。例如下面这份响应仍代表登录失败：</p><details class="code-block" open><summary>HTTP 200 · 业务 code 20001<span>点击折叠 / 展开</span></summary><pre><code data-file="HTTP 200 · 业务 code 20001" data-kind="fragment">{
+    &quot;code&quot;: 20001,
+    &quot;message&quot;: &quot;账号或密码错误&quot;,
+    &quot;data&quot;: {}
+}</code></pre></details>
+    <div class="table-wrap"><table><thead><tr><th>业务 code</th><th>含义</th><th>页面处理</th></tr></thead><tbody>
+        <tr><td>200</td><td>登录成功</td><td>保存令牌与用户名，进入天体管理</td></tr>
+        <tr><td>10101</td><td>参数校验或请求体限制错误</td><td>提示检查登录信息格式</td></tr>
+        <tr><td>20001</td><td>用户名不存在或密码不匹配</td><td>显示“账号或密码错误”</td></tr>
+        <tr><td>20002</td><td>密码验证后，凭据记录的条件更新未命中</td><td>提示重新登录</td></tr>
+        <tr><td>20005</td><td>触发登录访问频率限制</td><td>提示稍后重试，由用户手动再次提交</td></tr>
+        <tr><td>10201 / 500</td><td>数据库错误 / 服务内部错误</td><td>提示服务暂时不可用</td></tr>
+    </tbody></table></div>
+    <div class="case-panel">
+        <label for="response-case">切换一个响应场景</label>
+        <select id="response-case"><option value="success">登录成功</option><option value="credentials">账号或密码错误</option><option value="limited">触发登录限流</option><option value="network">网络连接失败</option></select>
+        <pre><code id="response-code"></code></pre>
+        <p id="response-result" role="status" aria-live="polite"></p>
+    </div>
+    <p class="source">以上为文档内的响应示意，不发送登录请求。后端限流统计包括成功登录及到达登录路由的失败请求，OPTIONS 预检不计入；开发代理后的多个浏览器可能共享后端看到的同一 IP 配额，因此不要用循环请求来验收登录。</p>
+</section>
+<section id="files">
+    <h2>3. 文件分工与修改顺序</h2>
+    <p>延续前面的实现方式：按本文保存对应代码，再运行工程联调。新增文件与完整替换文件已在代码块标题中标明；现有依赖足够完成本次功能。</p>
+    <div class="table-wrap"><table><thead><tr><th>文件</th><th>操作</th><th>作用</th></tr></thead><tbody>
+        <tr><td><code>.env.development</code></td><td>修改</td><td>将开发请求基础地址设为 /api</td></tr>
+        <tr><td><code>vite.config.js</code></td><td>替换为下文完整配置</td><td>将 /api 请求转发到后端 4060</td></tr>
+        <tr><td><code>src/api/admin.js</code></td><td>新增</td><td>构造登录请求体、读取和校验成功响应</td></tr>
+        <tr><td><code>src/views/LoginPage.vue</code></td><td>替换为下文完整组件</td><td>表单校验、请求、错误反馈及成功跳转</td></tr>
+        <tr><td><code>src/router/index.js</code></td><td>替换为下文完整配置</td><td>后台页面检查是否有本地登录令牌</td></tr>
+    </tbody></table></div>
+    <p>已有的 <code>src/utils/request.js</code> 提供业务响应解包及 Bearer 请求头；<code>src/stores/user.js</code> 提供 <code>setSession(token, username)</code> 和 <code>clearSession()</code>。下文直接使用这两部分已有能力。</p>
+</section>
+<section id="proxy">
+    <h2>4. 配置开发环境的 API 地址与代理</h2>
+    <p>当前前端开发配置为 <code>http://localhost:8080</code>，与管理 API 的 <code>4060</code> 端口不一致。这里采用 Vite 开发代理：浏览器向正在访问的前端站点请求 <code>/api</code>，由开发机上的 Vite 转发给同机后端。</p>
+    <div class="connection" aria-label="登录请求转发路径">
+        <div class="connection-row"><b>浏览器 → Vite</b><code>POST http://前端主机:5062/api/v1/admin/login</code></div>
+        <div class="connection-row"><b>Vite 去除 /api 前缀 → 后端</b><code>POST http://127.0.0.1:4060/v1/admin/login</code></div>
+    </div>
+    <p>这样局域网其他机器也通过前端主机访问接口，代理中的 <code>127.0.0.1</code> 指运行 Vite 的开发机。若后端在另一台机器运行，应把代理 target 改为那台机器的实际地址。</p>
+    <h3>4.1 修改开发环境变量</h3><details class="code-block" open><summary>.env.development<span>点击折叠 / 展开</span></summary><pre><code data-file=".env.development" data-kind="complete">VITE_API_BASE_URL=/api</code></pre></details>
+    <h3>4.2 更新 Vite 配置</h3>
+    <h4 id="rewrite-api-path">4.2.1 定义路径重写函数</h4>
+    <p>先在 <code>vite.config.js</code> 的 <code>import</code> 语句之后、<code>const option</code> 之前加入下面的函数。<code>rewriteApiPath</code> 是在本文件中定义的普通函数，无需额外导入。</p>
+    <details class="code-block" open><summary>vite.config.js · rewriteApiPath() 函数<span>点击折叠 / 展开</span></summary><pre><code data-file="vite.config.js · rewriteApiPath()" data-kind="fragment">/**
+ * 去除开发代理路径中的 /api 前缀，保留后端真实的 /v1 路径。
+ * @param {string} path 浏览器请求的路径。
+ * @returns {string} 转发给后端的路径。
+ */
+function rewriteApiPath(path) {
+    return path.replace(/^\/api/, &#x27;&#x27;)
+}</code></pre></details>
+    <p>配置中的 <code>rewrite: rewriteApiPath</code> 把这个函数交给 Vite 调用，将 <code>/api/v1/admin/login</code> 转换为 <code>/v1/admin/login</code>。其中 <code>rewrite</code> 是 Vite 的配置项，<code>rewriteApiPath</code> 是这里定义的函数名。</p>
+    <h4>4.2.2 对照完整配置</h4>
+    <p>下面是包含上述函数的完整文件内容，可整体替换 <code>vite.config.js</code>。</p>
+    <details class="code-block" open><summary>vite.config.js · 完整配置（含路径重写函数）<span>点击折叠 / 展开</span></summary><pre><code data-file="vite.config.js" data-kind="complete">import {fileURLToPath, URL} from &#x27;node:url&#x27;
+import {defineConfig} from &#x27;vite&#x27;
+import vue from &#x27;@vitejs/plugin-vue&#x27;
+
+/**
+ * 去除开发代理路径中的 /api 前缀，保留后端真实的 /v1 路径。
+ * @param {string} path 浏览器请求的路径。
+ * @returns {string} 转发给后端的路径。
+ */
+function rewriteApiPath(path) {
+    return path.replace(/^\/api/, &#x27;&#x27;)
+}
+
+/** @type {import(&#x27;vite&#x27;).UserConfig} Vite 配置，后端与 Vite 运行在同一台开发机。 */
+const option = {
+    plugins: [vue()],
+    server: {
+        host: &#x27;0.0.0.0&#x27;,
+        port: 5062,
+        strictPort: true,
+        proxy: {
+            &#x27;/api&#x27;: {
+                target: &#x27;http://127.0.0.1:4060&#x27;,
+                changeOrigin: true,
+                rewrite: rewriteApiPath,
+            },
+        },
+    },
+    resolve: {
+        alias: {
+            &#x27;@&#x27;: fileURLToPath(new URL(&#x27;./src&#x27;, import.meta.url)),
+        },
+    },
+}
+
+/** @type {import(&#x27;vite&#x27;).UserConfig} 交给 Vite 加载的配置对象。 */
+const config = defineConfig(option)
+
+export default config</code></pre></details>
+    <p>请求模块中的路径仍写 <code>/v1/admin/login</code>，不重复拼上 <code>/api</code>。修改环境文件或代理配置后重启 <code>npm run dev</code>。配置用法可对照 <a href="https://vite.dev/config/server-options.html#server-proxy">Vite server.proxy 文档</a>。</p>
+    <div class="note"><p><strong>生产配置需对应部署方式。</strong><code>server.proxy</code> 是开发服务器能力，不会随构建产物发布。部署时若配置了同源 <code>/api</code> 反向代理，生产环境也可使用 <code>VITE_API_BASE_URL=/api</code>；若使用独立 API 域名，则填写真实 HTTPS 地址并配置相应跨域规则。现有生产配置中的 localhost:8080 不能直接代表部署后的 API 地址。</p></div>
+    <p>后端已提供开发用 CORS 头及 OPTIONS 预检处理。本文代理方案让浏览器按同源请求访问 Vite，登录过程不依赖 Cookie，也无需增加 <code>withCredentials: true</code>。</p>
+</section>
+<section id="api">
+    <h2>5. 新增管理员登录请求模块</h2>
+    <p><code>loginAdmin(username, password)</code> 接收两个必填参数，内部构造后端要求的 <code>{admin: {username, password}}</code>。函数只在业务成功且响应字段完整时返回管理员对象。</p><details class="code-block" open><summary>src/api/admin.js<span>点击折叠 / 展开</span></summary><pre><code data-file="src/api/admin.js" data-kind="complete">import request from &#x27;@/utils/request&#x27;
+
+/**
+ * @typedef {Object} LoginRequest 管理员登录接口的请求体。
+ * @property {{username: string, password: string}} admin 管理员凭据，按原值提交。
+ */
+
+/**
+ * @typedef {Object} LoginAdmin 登录接口返回的管理员信息。
+ * @property {string} id 管理员 ID，保留字符串形式。
+ * @property {string} username 服务端返回的管理员用户名。
+ * @property {string} access_token 服务端签发的访问令牌。
+ */
+
+/**
+ * 检查管理员信息中的 id 字段是否存在且为非空字符串。
+ * @param {unknown} admin 待检查的管理员信息。
+ * @returns {admin is {id: string}} id 字段通过校验时返回 true。
+ */
+function hasValidAdminId(admin) {
+    if (typeof admin !== &#x27;object&#x27; || admin === null) {
+        return false
+    }
+
+    if ((&#x27;id&#x27; in admin) === false || typeof admin.id !== &#x27;string&#x27;) {
+        return false
+    }
+
+    return admin.id !== &#x27;&#x27;
+}
+
+/**
+ * 检查管理员信息中的 username 字段是否存在且为非空字符串。
+ * @param {unknown} admin 待检查的管理员信息。
+ * @returns {admin is {username: string}} username 字段通过校验时返回 true。
+ */
+function hasValidAdminUsername(admin) {
+    if (typeof admin !== &#x27;object&#x27; || admin === null) {
+        return false
+    }
+
+    if ((&#x27;username&#x27; in admin) === false || typeof admin.username !== &#x27;string&#x27;) {
+        return false
+    }
+
+    return admin.username !== &#x27;&#x27;
+}
+
+/**
+ * 检查管理员信息中的 access_token 字段是否存在且为非空字符串。
+ * @param {unknown} admin 待检查的管理员信息。
+ * @returns {admin is {access_token: string}} access_token 字段通过校验时返回 true。
+ */
+function hasValidAdminAccessToken(admin) {
+    if (typeof admin !== &#x27;object&#x27; || admin === null) {
+        return false
+    }
+
+    if ((&#x27;access_token&#x27; in admin) === false || typeof admin.access_token !== &#x27;string&#x27;) {
+        return false
+    }
+
+    return admin.access_token !== &#x27;&#x27;
+}
+
+/**
+ * 请求管理员登录接口，并从解包后的数据中取得管理员信息。
+ * @param {string} username 用户输入的用户名。
+ * @param {string} password 用户输入的原始密码，不做 trim 或前端哈希。
+ * @returns {Promise&lt;LoginAdmin&gt;} 已检查字段类型的管理员信息。
+ * @throws {Error} 响应格式异常时拒绝；业务错误和网络错误直接向调用方传递。
+ */
+async function loginAdmin(username, password) {
+    /** @type {LoginRequest} 与后端 LoginReq 对应的请求体。 */
+    const body = {
+        admin: {
+            username,
+            password,
+        },
+    }
+
+    /**
+     * request 的响应拦截器已经返回 payload.data。
+     * 先作为 unknown 检查，避免误用 AxiosResponse 类型或未经校验的数据。
+     * @type {unknown}
+     */
+    const data = await request.post(&#x27;/v1/admin/login&#x27;, body)
+
+    if (typeof data !== &#x27;object&#x27; || data === null || (&#x27;admin&#x27; in data) === false) {
+        throw new Error(&#x27;登录响应格式异常，请稍后重试&#x27;)
+    }
+
+    /** @type {unknown} 待检查的管理员信息。 */
+    const admin = data.admin
+
+    if (typeof admin !== &#x27;object&#x27; || admin === null) {
+        throw new Error(&#x27;登录响应缺少管理员信息，请稍后重试&#x27;)
+    }
+
+    if (
+        hasValidAdminId(admin) === true &amp;&amp;
+        hasValidAdminUsername(admin) === true &amp;&amp;
+        hasValidAdminAccessToken(admin) === true
+    ) {
+        return {
+            id: admin.id,
+            username: admin.username,
+            access_token: admin.access_token,
+        }
+    }
+
+    throw new Error(&#x27;登录响应中的管理员信息不完整，请稍后重试&#x27;)
+}
+
+export {loginAdmin}</code></pre></details>
+    <h3>三个字段分别校验</h3>
+    <p><code>hasValidAdminId()</code>、<code>hasValidAdminUsername()</code> 和 <code>hasValidAdminAccessToken()</code> 各自检查一个字段是否存在、是否为字符串以及是否非空。主函数只组合三个校验结果。</p>
+    <p>JSDoc 中的 <code>admin is {id: string}</code> 等写法是类型谓词：函数运行时仍返回 <code>true</code> 或 <code>false</code>，同时让 IDE 在校验通过后识别相应字段的类型。</p>
+    <h3>为什么这里取得的是 data.admin？</h3>
+    <p>当前 <code>request.js</code> 的响应拦截器在 <code>payload.code === 200</code> 时返回 <code>payload.data</code>，其他业务码返回被拒绝的 Promise。所以这里 <code>await request.post(...)</code> 的运行时结果是 <code>{admin: {...}}</code>，而不是包含 HTTP 头等信息的 AxiosResponse。</p>
+    <p>示例先将结果声明为 <code>unknown</code>，检查对象及字段后构造 <code>LoginAdmin</code>。这既对应实际运行时数据，也避免为了 IDE 类型提示再错误地读取一层 <code>response.data</code>。</p>
+    <div class="flow-steps"><span>HTTP 响应：{code, message, data}</span>→<span>拦截器：data</span>→<span>loginAdmin：data.admin</span>→<span>登录页：admin.access_token</span></div>
+</section>
+<section id="login-page">
+    <h2>6. 实现登录表单与提交过程</h2>
+    <p>用下面完整组件替换登录占位页。点击按钮或在输入框按 Enter，都通过表单的 <code>submit</code> 事件进入 <code>login()</code>。提交锁从校验开始持续到会话保存和路由跳转完成，避免连续点击重复请求。</p>
+    <p>脚本保持普通函数、完整 JSDoc、显式比较及 <code>template → script → style</code> 的顺序。校验、请求、成功处理使用三个同级的 <code>try...catch</code>，各自处理对应阶段的失败。</p><details class="code-block" open><summary>src/views/LoginPage.vue<span>点击折叠 / 展开</span></summary><pre><code data-file="src/views/LoginPage.vue" data-kind="complete">&lt;template&gt;
+    &lt;main class=&quot;login-page&quot;&gt;
+        &lt;el-card class=&quot;login-card&quot; shadow=&quot;never&quot;&gt;
+            &lt;template #header&gt;
+                &lt;h1&gt;SolarNotes 管理后台登录&lt;/h1&gt;
+            &lt;/template&gt;
+
+            &lt;el-form
+                ref=&quot;loginFormRef&quot;
+                :model=&quot;loginForm&quot;
+                :rules=&quot;loginFormRules&quot;
+                :disabled=&quot;isSubmitting&quot;
+                label-position=&quot;top&quot;
+                @submit.prevent=&quot;login&quot;
+            &gt;
+                &lt;el-form-item label=&quot;用户名&quot; prop=&quot;username&quot;&gt;
+                    &lt;el-input
+                        v-model=&quot;loginForm.username&quot;
+                        name=&quot;username&quot;
+                        autocomplete=&quot;username&quot;
+                        placeholder=&quot;请输入用户名&quot;
+                        clearable
+                    &gt;&lt;/el-input&gt;
+                &lt;/el-form-item&gt;
+
+                &lt;el-form-item label=&quot;密码&quot; prop=&quot;password&quot;&gt;
+                    &lt;el-input
+                        v-model=&quot;loginForm.password&quot;
+                        name=&quot;password&quot;
+                        type=&quot;password&quot;
+                        autocomplete=&quot;current-password&quot;
+                        placeholder=&quot;请输入密码&quot;
+                        show-password
+                    &gt;&lt;/el-input&gt;
+                &lt;/el-form-item&gt;
+
+                &lt;el-button
+                    type=&quot;primary&quot;
+                    native-type=&quot;submit&quot;
+                    :loading=&quot;isSubmitting&quot;
+                    :disabled=&quot;isSubmitting&quot;
+                    class=&quot;login-button&quot;
+                &gt;登录&lt;/el-button&gt;
+            &lt;/el-form&gt;
+        &lt;/el-card&gt;
+    &lt;/main&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import {reactive, ref} from &#x27;vue&#x27;
+import {isNavigationFailure, useRouter} from &#x27;vue-router&#x27;
+import {ElMessage} from &#x27;element-plus&#x27;
+import axios from &#x27;axios&#x27;
+import {loginAdmin} from &#x27;@/api/admin&#x27;
+import useUserStore from &#x27;@/stores/user&#x27;
+
+defineOptions({
+    name: &#x27;LoginPage&#x27;,
+})
+
+/**
+ * @typedef {Object} LoginForm 登录表单数据。
+ * @property {string} username 用户名，长度为 5～20 个字符。
+ * @property {string} password 原始密码，长度为 6～20 个字符。
+ */
+
+/** @type {LoginForm} 当前登录表单，凭据按输入原值保存。 */
+const loginForm = reactive({
+    username: &#x27;&#x27;,
+    password: &#x27;&#x27;,
+})
+
+/** @type {import(&#x27;vue&#x27;).Ref&lt;import(&#x27;element-plus&#x27;).FormInstance | null&gt;} 登录表单实例。 */
+const loginFormRef = ref(null)
+
+/** @type {import(&#x27;vue&#x27;).Ref&lt;boolean&gt;} 是否正在校验、请求登录或处理成功后的跳转。 */
+const isSubmitting = ref(false)
+
+/** @type {import(&#x27;element-plus&#x27;).FormRules&lt;LoginForm&gt;} 与后端长度及非空白要求对应的规则。 */
+const loginFormRules = {
+    username: [
+        {required: true, whitespace: true, message: &#x27;请输入用户名&#x27;, trigger: &#x27;blur&#x27;},
+        {min: 5, max: 20, message: &#x27;用户名长度为 5～20 个字符&#x27;, trigger: &#x27;blur&#x27;},
+    ],
+    password: [
+        {required: true, whitespace: true, message: &#x27;请输入密码&#x27;, trigger: &#x27;blur&#x27;},
+        {min: 6, max: 20, message: &#x27;密码长度为 6～20 个字符&#x27;, trigger: &#x27;blur&#x27;},
+    ],
+}
+
+/** 用户 Store 实例，沿用工程中供 IDE 识别的显式类型。 */
+const userStore = /** @type {import(&#x27;@/stores/user&#x27;).UserStore} */ (useUserStore())
+
+/** @type {import(&#x27;vue-router&#x27;).Router} 路由实例。 */
+const router = useRouter()
+
+/**
+ * 将后端业务错误或普通异常转换为登录提示。
+ * @param {unknown} error 后端响应体或其他异常。
+ * @returns {string} 可供页面展示的错误说明。
+ */
+function getBusinessErrorMessage(error) {
+    if (typeof error !== &#x27;object&#x27; || error === null) {
+        return &#x27;登录失败，请稍后重试&#x27;
+    }
+
+    if (&#x27;code&#x27; in error &amp;&amp; typeof error.code === &#x27;number&#x27;) {
+        switch (error.code) {
+            case 10101:
+                return &#x27;登录信息格式不正确，请检查用户名和密码&#x27;
+            case 20001:
+                return &#x27;账号或密码错误&#x27;
+            case 20002:
+                return &#x27;账号状态已变化，请重新登录&#x27;
+            case 20005:
+                return &#x27;请求过于频繁，请稍后再试&#x27;
+            case 10201:
+            case 500:
+                return &#x27;登录服务暂时不可用，请稍后重试&#x27;
+        }
+    }
+
+    if (&#x27;message&#x27; in error &amp;&amp; typeof error.message === &#x27;string&#x27; &amp;&amp; error.message.trim() !== &#x27;&#x27;) {
+        return error.message
+    }
+
+    return &#x27;登录失败，请稍后重试&#x27;
+}
+
+/**
+ * 区分业务拒绝、HTTP 错误、超时与未收到响应的连接错误。
+ * @param {unknown} error 登录请求抛出的异常。
+ * @returns {string} 登录失败提示。
+ */
+function getLoginErrorMessage(error) {
+    if (axios.isAxiosError(error) === true) {
+        if (error.code === &#x27;ECONNABORTED&#x27; || error.code === &#x27;ETIMEDOUT&#x27;) {
+            return &#x27;登录请求超时，请稍后重试&#x27;
+        }
+
+        if (error.response === undefined) {
+            return &#x27;暂时无法连接登录服务，请稍后重试&#x27;
+        }
+
+        if (error.response.status &gt;= 500) {
+            return &#x27;登录服务暂时不可用，请稍后重试&#x27;
+        }
+
+        return getBusinessErrorMessage(error.response.data)
+    }
+
+    return getBusinessErrorMessage(error)
+}
+
+/**
+ * 校验并提交登录凭据，成功后保存会话并进入天体管理。
+ * @returns {Promise&lt;void&gt;} 本次登录处理结束。
+ */
+async function login() {
+    if (isSubmitting.value === true || loginFormRef.value === null) {
+        return
+    }
+
+    isSubmitting.value = true
+
+    try {
+        /** @type {boolean} 表单校验是否通过。 */
+        const isValid = await loginFormRef.value.validate()
+
+        if (isValid === false) {
+            isSubmitting.value = false
+            return
+        }
+    } catch {
+        // 校验错误由表单项显示，恢复按钮后允许用户修改输入。
+        isSubmitting.value = false
+        return
+    }
+
+    /** @type {import(&#x27;@/api/admin&#x27;).LoginAdmin} 成功响应中的管理员信息。 */
+    let admin
+
+    try {
+        admin = await loginAdmin(loginForm.username, loginForm.password)
+    } catch (error) {
+        isSubmitting.value = false
+        ElMessage.error(getLoginErrorMessage(error))
+        return
+    }
+
+    try {
+        await onLoginSuccess(admin.access_token, admin.username)
+        ElMessage.success(&#x27;登录成功&#x27;)
+    } catch {
+        ElMessage.error(&#x27;登录后的页面未能打开，请刷新页面后重试&#x27;)
+    } finally {
+        isSubmitting.value = false
+    }
+}
+
+/**
+ * 清空表单中的密码，保存服务端返回的会话并进入天体管理。
+ * @param {string} token 服务端返回的 access_token。
+ * @param {string} username 服务端返回的管理员用户名。
+ * @returns {Promise&lt;void&gt;} 会话保存及页面跳转完成。
+ * @throws {Error} 会话保存或路由跳转失败时抛出。
+ */
+async function onLoginSuccess(token, username) {
+    loginForm.password = &#x27;&#x27;
+    userStore.setSession(token, username)
+
+    /** @type {void | import(&#x27;vue-router&#x27;).NavigationFailure} 路由跳转的结果。 */
+    const failure = await router.replace({name: &#x27;bodyList&#x27;})
+
+    if (isNavigationFailure(failure) === true) {
+        throw new Error(&#x27;未能进入天体管理页面&#x27;)
+    }
+}
+&lt;/script&gt;
+
+&lt;style scoped&gt;
+.login-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    place-items: center;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 24px 16px;
+    box-sizing: border-box;
+    background: #f5f6fb;
+}
+
+.login-card {
+    width: 400px;
+    max-width: 100%;
+    box-sizing: border-box;
+    border-radius: 10px;
+}
+
+.login-card h1 {
+    margin: 0;
+    color: #35405b;
+    font-size: 21px;
+    font-weight: 600;
+}
+
+.login-button {
+    width: 100%;
+    margin-top: 8px;
+}
+&lt;/style&gt;</code></pre></details>
+    <h3>实现时保留这些行为</h3>
+    <ul>
+        <li>表单校验不通过时，恢复按钮并保留输入；不会向后端发送请求。</li>
+        <li>不增加旧占位代码中的 <code>@keyup.enter="login"</code> 或按钮 <code>@click="login"</code>，统一由原生 submit 触发。</li>
+        <li>业务失败由现有响应拦截器拒绝；超时及 HTTP 错误由 Axios 拒绝，页面统一给出相应提示。</li>
+        <li>后端没有给出限流重试时刻，页面提示用户稍后手动重试，不自动重新发送登录请求。</li>
+        <li>成功时清空表单密码，保存后端返回的用户名和访问令牌，再跳转 <code>bodyList</code>。</li>
+        <li>保存会话或跳转失败采用独立提示，避免将这类错误解释为用户名或密码错误。</li>
+    </ul>
+    <p>表单校验 API 参考 <a href="https://element-plus.org/en-US/component/form.html">Element Plus Form 文档</a>；网络错误与 HTTP 响应错误的区分参考 <a href="https://axios-http.com/docs/handling_errors">Axios 错误处理文档</a>。</p>
+</section>
+<section id="session">
+    <h2>7. 与现有用户 Store 对接</h2>
+    <p>接口字段与 Store 字段的对应关系如下。已有 <code>setSession()</code> 接收两个字符串参数，直接按顺序传入即可。</p>
+    <div class="table-wrap"><table><thead><tr><th>服务端字段</th><th>前端用途</th></tr></thead><tbody>
+        <tr><td><code>admin.access_token</code></td><td>传入 setSession() 第一个参数，保存为 userStore.token</td></tr>
+        <tr><td><code>admin.username</code></td><td>传入第二个参数，保存为 userStore.username，供顶部用户栏显示</td></tr>
+        <tr><td><code>admin.id</code></td><td>在 LoginAdmin 类型中保留为字符串；当前登录后的页面尚不需要持久化该字段</td></tr>
+    </tbody></table></div>
+    <p>当前 Store 会写入 <code>solar-notes-admin-token</code> 和 <code>solar-notes-admin-username</code> 两个本地存储键，刷新后恢复。密码只存在于表单中，不增加密码持久化逻辑；浏览器自己的密码管理器可通过 autocomplete 属性识别登录表单。</p>
+    <p>现有 <code>request.js</code> 会在有 token 时附加 <code>Authorization: Bearer …</code>。登录接口本身只验证请求体中的用户名和密码，后续受保护接口的令牌校验需由后端相应中间件执行。</p>
+</section>
+<section id="router">
+    <h2>8. 为后台页面补上前端路由守卫</h2>
+    <p>在 <code>/admin</code> 父路由上设置 <code>meta.requiresAuth</code>，它的三个子页面都经过同一检查。守卫在组件外读取 Store，显式使用现有的 <code>pinia</code> 实例。</p><details class="code-block" open><summary>src/router/index.js<span>点击折叠 / 展开</span></summary><pre><code data-file="src/router/index.js" data-kind="complete">import {createRouter, createWebHistory} from &#x27;vue-router&#x27;
+import pinia from &#x27;@/stores&#x27;
+import useUserStore from &#x27;@/stores/user&#x27;
+
+/** @type {import(&#x27;vue-router&#x27;).RouteRecordRaw[]} 路由列表。 */
+const routes = [
+    {
+        path: &#x27;/&#x27;,
+        redirect: &#x27;/admin&#x27;,
+    },
+    {
+        path: &#x27;/login&#x27;,
+        name: &#x27;login&#x27;,
+        component: () =&gt; import(&#x27;@/views/LoginPage.vue&#x27;),
+    },
+    {
+        path: &#x27;/admin&#x27;,
+        component: () =&gt; import(&#x27;@/views/LayoutPage.vue&#x27;),
+        redirect: {name: &#x27;bodyList&#x27;},
+        meta: {
+            requiresAuth: true,
+        },
+        children: [
+            {
+                path: &#x27;bodies&#x27;,
+                name: &#x27;bodyList&#x27;,
+                component: () =&gt; import(&#x27;@/views/BodyListPage.vue&#x27;),
+                meta: {
+                    title: &#x27;天体管理&#x27;,
+                    description: &#x27;管理太阳与八大行星的简介信息&#x27;,
+                },
+            },
+            {
+                path: &#x27;users&#x27;,
+                name: &#x27;userList&#x27;,
+                component: () =&gt; import(&#x27;@/views/PlaceholderPage.vue&#x27;),
+                meta: {
+                    title: &#x27;用户管理&#x27;,
+                    description: &#x27;查看与管理用户信息&#x27;,
+                },
+            },
+            {
+                path: &#x27;notes&#x27;,
+                name: &#x27;noteList&#x27;,
+                component: () =&gt; import(&#x27;@/views/PlaceholderPage.vue&#x27;),
+                meta: {
+                    title: &#x27;笔记管理&#x27;,
+                    description: &#x27;查看和管理笔记内容&#x27;,
+                },
+            },
+        ],
+    },
+]
+
+/** @type {import(&#x27;vue-router&#x27;).RouterOptions} 路由配置。 */
+const option = {
+    routes,
+    history: createWebHistory(import.meta.env.BASE_URL),
+}
+
+/** @type {import(&#x27;vue-router&#x27;).Router} 路由实例。 */
+const router = createRouter(option)
+
+/**
+ * 访问后台页面前检查本地是否有令牌。
+ * @param {import(&#x27;vue-router&#x27;).RouteLocationNormalized} to 即将进入的路由。
+ * @returns {true | import(&#x27;vue-router&#x27;).RouteLocationRaw} 允许继续或返回登录页地址。
+ */
+function checkLogin(to) {
+    /** 当前 Pinia 实例中的用户 Store，在组件外显式传入 pinia。 */
+    const userStore = /** @type {import(&#x27;@/stores/user&#x27;).UserStore} */ (useUserStore(pinia))
+
+    if (to.meta.requiresAuth === true &amp;&amp; userStore.token === &#x27;&#x27;) {
+        return {
+            name: &#x27;login&#x27;,
+            replace: true,
+        }
+    }
+
+    return true
+}
+
+router.beforeEach(checkLogin)
+
+export default router</code></pre></details>
+    <p>访问根路径时先进入 <code>/admin</code>：本地没有 token 就返回登录页；有 token 则显示天体管理。<code>/login</code> 始终可手动打开，便于本地残留旧令牌时重新登录。父子路由的 meta 合并行为可对照 <a href="https://router.vuejs.org/guide/advanced/meta.html">Vue Router 路由元信息文档</a>。</p>
+    <div class="note"><p><strong>这个守卫检查的是“本地是否存在令牌”。</strong>令牌是否有效、是否过期、是否被撤销，需要后端受保护接口验证。当前后端虽已提供 JWT 签发与解析函数、20003/20004 业务码，但 main.go 尚未注册受保护的业务路由或令牌校验中间件，因此本次示例没有声称已经完成服务端登录态校验。</p></div>
+    <p>现有布局的退出操作调用 <code>clearSession()</code> 后跳转登录页，可继续配合此守卫使用。后端当前没有注册退出或刷新令牌接口，因此这里的退出是清除当前浏览器会话；后续增加服务端撤销能力时再接入对应 API。</p>
+</section>
+<section id="verify">
+    <h2>9. 启动与验收</h2>
+    <h3>9.1 启动后端和前端</h3>
+    <p>后端需要可用的开发配置、数据库以及已存在的管理员账号。示例工程默认读取 <code>config.dev.yaml</code>；环境变量 <code>SOLAR_NOTES_ENV=prod</code> 时读取生产配置。</p><details class="code-block" open><summary>终端 A · 启动后端<span>点击折叠 / 展开</span></summary><pre><code data-file="终端 A · 启动后端" data-kind="fragment">cd /Users/roach/Desktop/SolarNotesAdminAPI
+go run .</code></pre></details><details class="code-block" open><summary>终端 B · 启动前端<span>点击折叠 / 展开</span></summary><pre><code data-file="终端 B · 启动前端" data-kind="fragment">cd /Users/roach/Desktop/SolarNotesAdmin
+npm run dev</code></pre></details>
+    <p>访问 <code>http://localhost:5062/login</code>。局域网其他设备使用开发机的局域网 IP 和 5062 端口；API 请求仍由这台开发机上的代理转发。</p>
+    <h3>9.2 检查浏览器 Network 与页面行为</h3>
+    <div class="table-wrap"><table><thead><tr><th>动作</th><th>预期结果</th></tr></thead><tbody>
+        <tr><td>没有 token 时直接打开 /admin/bodies</td><td>跳转 /login</td></tr>
+        <tr><td>留空、全空格或长度不合规后提交</td><td>表单显示错误，Network 没有新增登录请求</td></tr>
+        <tr><td>填写符合格式但不正确的凭据</td><td>HTTP 200、业务 code 20001；提示“账号或密码错误”，保持在登录页</td></tr>
+        <tr><td>检查发出的请求</td><td>POST /api/v1/admin/login；JSON 顶层 admin 下有 username/password；密码按原值发送</td></tr>
+        <tr><td>使用已有管理员账号成功登录</td><td>业务 code 200；保存 access_token 与响应 username；进入 /admin/bodies，顶部显示该用户名</td></tr>
+        <tr><td>请求未结束时连续点击或按 Enter</td><td>本页只执行一次登录请求，按钮和输入框禁用</td></tr>
+        <tr><td>成功后刷新后台页面</td><td>恢复本地 token 和用户名，按本地守卫规则继续展示后台</td></tr>
+        <tr><td>确认退出后重新访问后台路径</td><td>本地会话清空，重新进入登录页</td></tr>
+        <tr><td>收到业务 code 20005</td><td>显示稍后重试；按钮恢复可用，不自动重发</td></tr>
+        <tr><td>后端未启动或请求超时</td><td>显示连接、服务不可用或超时提示；按钮恢复可用</td></tr>
+    </tbody></table></div>
+    <p>一次真实成功登录会更新后端管理员记录的 <code>token_hash</code>。建议用专门的开发账号做成功联调；这份文档不包含真实账号、密码或 JWT。</p>
+    <h3>9.3 检查构建</h3><details class="code-block" open><summary>终端 · 构建检查<span>点击折叠 / 展开</span></summary><pre><code data-file="终端 · 构建检查" data-kind="fragment">npm run build</code></pre></details>
+    <p>构建可以检查组件和模块导入，但不能代替真实管理员账号的接口联调。接口字段或部署地址变化时，先调整 <code>src/api/admin.js</code> 与环境配置，再验证一次成功和失败流程。</p>
+</section>
+<section id="troubleshoot">
+    <h2>10. 对接时容易混淆的地方</h2>
+    <div class="table-wrap"><table><thead><tr><th>现象</th><th>应检查的内容</th></tr></thead><tbody>
+        <tr><td>仍请求 localhost:8080</td><td>开发环境变量是否改为 /api，是否存在覆盖该值的本地环境文件，Vite 是否已重启</td></tr>
+        <tr><td>浏览器请求路径出现 /api/api</td><td>baseURL 已包含 /api，API 函数只写 /v1/admin/login</td></tr>
+        <tr><td>后端返回 404</td><td>代理是否去掉 /api；实际后端路径是 /v1/admin/login</td></tr>
+        <tr><td>HTTP 200 但无法登录</td><td>读取响应体 code，账号错误与限流也使用 HTTP 200</td></tr>
+        <tr><td>读取不到 token</td><td>服务端字段名为 access_token；API 模块取得解包后的 data.admin，再把 access_token 传给 Store</td></tr>
+        <tr><td>密码正确却一直失败</td><td>请求体是否嵌套 admin，是否错误地 trim 密码或提前计算了 SHA-256</td></tr>
+        <tr><td>短时间内其他浏览器也被限流</td><td>后端按看到的客户端 IP 计数；开发代理可能使多个客户端共享一个限流配额</td></tr>
+        <tr><td>填写表单后整页刷新</td><td>检查 el-form 上的 @submit.prevent，以及按钮是否使用 native-type="submit"</td></tr>
+        <tr><td>生产页面能打开但 API 请求失败</td><td>构建后的 API 地址、服务器反向代理和跨域配置；生产环境不运行 Vite 开发代理</td></tr>
+    </tbody></table></div>
+</section>
+<section id="verification-record">
+    <h2>11. 示例验证范围</h2>
+    <div class="verification">
+        <p id="verification-result"><strong>已验证：</strong>从本文提取完整文件，在临时工程中通过 Vite 构建及登录 API、登录页面脚本、路由的严格 JSDoc 类型检查。</p>
+        <p>使用与后端协议一致的模拟响应，验证了请求体嵌套、原始凭据保留、业务码处理、超时与 HTTP 错误、重复提交拦截、Store 持久化、Bearer 请求头及路由守卫。</p>
+        <p>Chrome 中验证了开发代理、必填提示、账号错误、按 Enter 登录、成功跳转、刷新恢复，以及文档和登录页的 390px 窄屏显示。</p>
+        <p><strong>验证边界：</strong>这些检查使用临时模拟 API 和虚构凭据，未对真实管理员账号执行登录。请按第 9 节使用现有开发账号完成真实后端的成功登录联调。</p>
+    </div>
+    <p class="source">协议来源：SolarNotesAdminAPI 的 main.go、controller/v1/admin/admin.go、param/req/v1/admin/login.go、param/resp/v1/admin/login.go、resp_body/resp_body.go、biz/admin.go、auth/hash.go、middleware/login_rate_limiter.go 与 cors.go。端口取自当前开发配置的 service.port。</p>
+</section>
+    <footer>本文提供完整文件示例，供你按顺序实现。服务端路径与响应结构按编写时的后端源码核对，真实凭据由现有管理员账号提供。</footer>
+</article></main>
+<script>
+/** @type {HTMLSelectElement} 文档响应场景选择框。 */
+const responseSelect = document.getElementById('response-case')
+
+/** @returns {void} 展示所选场景的响应与页面处理结果，不发送请求。 */
+function updateResponseCase() {
+    /** @type {string} 展示的协议内容。 */
+    let content = ''
+    /** @type {string} 对应的页面行为。 */
+    let result = ''
+
+    switch (responseSelect.value) {
+        case 'success':
+            content = 'HTTP 200\n' + JSON.stringify({code: 200, message: 'success', data: {admin: {id: '1234567890123456789', username: 'admin_demo', access_token: '<后端签发的 JWT>'}}}, null, 2)
+            result = '响应拦截器返回 data → loginAdmin 返回 admin → 保存 access_token 与 username → 跳转天体管理。'
+            break
+        case 'credentials':
+            content = 'HTTP 200\n' + JSON.stringify({code: 20001, message: '账号或密码错误', data: {}}, null, 2)
+            result = '响应拦截器拒绝 Promise → 登录页显示“账号或密码错误” → 恢复按钮，保留输入。'
+            break
+        case 'limited':
+            content = 'HTTP 200\n' + JSON.stringify({code: 20005, message: '请求过于频繁,请稍后再试', data: {}}, null, 2)
+            result = '显示限流提示，等待用户稍后手动重试；不能仅根据 HTTP 200 判定登录成功。'
+            break
+        case 'network':
+            content = '没有取得可用的 HTTP 响应\nAxiosError: ERR_NETWORK'
+            result = '登录页区分连接错误和超时，显示相应提示并恢复按钮；不会保存新的登录信息。'
+            break
+    }
+
+    document.getElementById('response-code').textContent = content
+    document.getElementById('response-result').textContent = result
+}
+
+responseSelect.addEventListener('change', updateResponseCase)
+updateResponseCase()
+</script>
+</body>
+</html>

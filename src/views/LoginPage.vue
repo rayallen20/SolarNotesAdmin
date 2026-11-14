@@ -5,25 +5,45 @@
                 SolarNotes 管理后台登录
             </template>
 
-            <el-form :model="loginForm" label-width="60px">
-                <el-form-item label="用户名">
-                    <el-input v-model="loginForm.username" placeholder="请输入用户名">
+            <el-form
+                ref="loginFormRef"
+                :model="loginForm"
+                :rules="loginFormRules"
+                :disabled="isSubmitting"
+                label-position="top"
+                @submit.prevent="login"
+            >
+                <el-form-item label="用户名" prop="username">
+                    <el-input
+                        v-model="loginForm.username"
+                        name="username"
+                        autocomplete="username"
+                        placeholder="请输入用户名"
+                        clearable
+                    >
                     </el-input>
                 </el-form-item>
 
-                <el-form-item label="密码">
+                <el-form-item label="密码" prop="password">
                     <el-input
                         v-model="loginForm.password"
+                        name="password"
                         type="password"
+                        autocomplete="current-password"
                         placeholder="请输入密码"
                         show-password
-                        @keyup.enter="login"
                     >
                     </el-input>
                 </el-form-item>
 
                 <el-form-item>
-                    <el-button type="primary" @click="login">
+                    <el-button
+                        type="primary"
+                        native-type="submit"
+                        :loading="isSubmitting"
+                        :disabled="isSubmitting"
+                        class="login-button"
+                    >
                         登录
                     </el-button>
                 </el-form-item>
@@ -33,19 +53,46 @@
 </template>
 
 <script setup>
-import {ref} from "vue";
+import {reactive, ref} from "vue";
 import {ElMessage} from "element-plus";
 import useUserStore from "@/stores/user";
-import {useRouter} from "vue-router";
+import {isNavigationFailure, useRouter} from "vue-router";
+import axios from "axios";
+import {loginAdmin} from "@/api/admin";
+
+defineOptions({
+    name: 'LoginPage',
+})
 
 /**
- * 本常量表示登录表单中用户输入的用户名和密码
- * @type {import('vue').Ref<{username: string, password: string}>}
+ * @typedef {Object} LoginForm 本常量用于表示登录表单数据
+ * @property {string} username 用户名,长度为 5-20 个字符
+ * @property {string} password 原始密码,长度为 6-20 个字符
  * */
-const loginForm = ref({
-    username: "",
-    password: "",
+
+/** @type {LoginForm} 本常量用于表示登录表单中用户输入的用户名和密码,输入内容按输入原值保存 */
+const loginForm = reactive({
+    username: '',
+    password: '',
 })
+
+/** @type {import('vue').Ref<import('element-plus').FormInstance | null>} 本常量用于表示登录表单实例 */
+const loginFormRef = ref(null)
+
+/** @type {import('vue').Ref<boolean>} 本标量用于表示是否正在校验/请求登录/处理成功后的跳转 */
+const isSubmitting = ref(false)
+
+/** @type {import('element-plus').FormRules<LoginForm>} 本常量用于表示表单字段校验规则 */
+const loginFormRules = {
+    username: [
+        {required: true, whitespace: true, message: '请输入用户名', trigger: 'blur'},
+        {min: 5, max: 20, message: '用户名长度为 5-20 个字符', trigger: 'blur'},
+    ],
+    password: [
+        {required: true, whitespace: true, message: '请输入密码', trigger: 'blur'},
+        {min: 6, max: 20, message: '密码长度为 6-20 个字符', trigger: 'blur'},
+    ],
+}
 
 /**
  * 用户Store实例
@@ -55,26 +102,130 @@ const userStore = /** @type {import('@/stores/user').UserStore} */ (useUserStore
 /**
  * 路由实例
  * @type {import('vue-router').Router}
- */
+ * */
 const router = useRouter()
 
 /**
- * 本函数用于处理登录请求
+ * 本函数用于校验并提交登录凭据,成功后保存会话并进入天体管理
+ * @returns {Promise<void>} 本次登录处理结束
  * */
-function login() {
-    ElMessage.info("当前为登录占位页, 后续接入登录API")
+async function login() {
+    if (isSubmitting.value === true || loginFormRef.value === null) {
+        return
+    }
+
+    isSubmitting.value = true
+
+    try {
+        /** @type {boolean} 本标量用于表示表单校验是否通过 */
+        const isValid = await loginFormRef.value.validate()
+
+        if (isValid === false) {
+            isSubmitting.value = false
+            return
+        }
+    } catch {
+        // 校验错误由表单项显示,恢复按钮后允许用户修改输入
+        isSubmitting.value = false
+        return
+    }
+
+    /** @type {import('@/api/admin').LoginAdmin} 本变量用于表示成功响应中的管理员信息 */
+    let admin
+
+    try {
+        admin = await loginAdmin(loginForm.username, loginForm.password)
+    } catch (error) {
+        isSubmitting.value = false
+        ElMessage.error(getLoginErrorMessage(error))
+        return
+    }
+
+    try {
+        await onLoginSuccess(admin.access_token, admin.username)
+        ElMessage.success('登录成功')
+    } catch {
+        ElMessage.error('登录后的页面未能打开,请刷新页面后重试')
+    } finally {
+        isSubmitting.value = false
+    }
 }
 
 /**
- * 本函数用于将登录API响应的token和用户名保存至本地存储
- * @param {string} token 服务端发放的token
- * @param {string} username 用户名
- * @returns {Promise<void>}
- * @throws {TypeError} 参数类型不为string时抛出此异常
+ * 本函数用于区分业务拒绝/ HTTP 错误/超时/未收到响应的连接错误
+ * @param {unknown} error 登录请求抛出的异常
+ * @returns {string} 登录失败提示
+ * */
+function getLoginErrorMessage(error) {
+    if (axios.isAxiosError(error) === true) {
+        if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+            return '登录请求超时,请稍后重试'
+        }
+
+        if (error.response === undefined) {
+            return '暂时无法连接登录服务,请稍后重试'
+        }
+
+        if (error.response.status >= 500) {
+            return '登录服务暂时不可用,请稍后重试'
+        }
+
+        return getBusinessErrorMessage(error.response.data)
+    }
+
+    return getBusinessErrorMessage(error)
+}
+
+/**
+ * 本函数用于将后端业务错误或普通异常转换为登录提示
+ * @param {unknown} error 后端响应体或其他异常
+ * @returns {string} 可供页面展示的错误说明
+ * */
+function getBusinessErrorMessage(error) {
+    if (typeof error !== 'object' || error === null) {
+        return '登录失败，请稍后重试'
+    }
+
+    if ('code' in error && typeof error.code === 'number') {
+        switch (error.code) {
+            case 10101:
+                return '登录信息格式不正确,请检查用户名和密码'
+            case 20001:
+                return '账号或密码错误'
+            case 20002:
+                return '账号状态已变化,请重新登录'
+            case 20005:
+                return '请求过于频繁,请稍后再试'
+            case 10201:
+            case 500:
+                return '登录服务暂时不可用,请稍后重试'
+        }
+    }
+
+    if ('message' in error && typeof error.message === 'string' && error.message.trim() !== '') {
+        return error.message
+    }
+
+    return '登录失败,请稍后重试'
+}
+
+/**
+ * 本函数用于清空表单中的密码,保存服务端返回的会话并进入天体管理
+ * @param {string} token 服务端返回的 access_token
+ * @param {string} username 服务端返回的管理员用户名
+ * @returns {Promise<void>} 会话保存及页面跳转完成
+ * @throws {Error} 会话保存或路由跳转失败时抛出
  * */
 async function onLoginSuccess(token, username) {
+    loginForm.password = ''
     userStore.setSession(token, username)
-    await router.replace({name: "bodyList"})
+
+    /** @type {void | import('vue-router').NavigationFailure} 路由跳转的结果 */
+    const failure = await router.replace({name: 'bodyList'})
+
+    if (isNavigationFailure(failure) === true) {
+        throw new Error('未能进入天体管理页面')
+    }
 }
 </script>
 

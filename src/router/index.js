@@ -1,4 +1,6 @@
 import {createRouter, createWebHistory} from "vue-router";
+import useUserStore from "@/stores/user";
+import pinia from "@/stores";
 
 /**
  * 路由列表
@@ -7,7 +9,7 @@ import {createRouter, createWebHistory} from "vue-router";
 const routes = [
     {
         path: '/',
-        redirect: '/login',
+        redirect: '/admin',
     },
     {
         path: '/login',
@@ -19,6 +21,9 @@ const routes = [
         component: () => import('@/views/LayoutPage.vue'),
         redirect: {
             name: 'bodyList'
+        },
+        meta: {
+            requiresAuth: true,
         },
         children: [
             {
@@ -66,5 +71,26 @@ const option = {
  * @type {import('vue-router').Router}
  * */
 const router = createRouter(option)
+
+/**
+ * 本函数用于在访问后台页面前检查本地是否持有令牌
+ * @param {import('vue-router').RouteLocationNormalized} to 即将进入的路由
+ * @returns {true | import('vue-router').RouteLocationRaw} 允许继续或返回登录页地址
+ * */
+function checkLogin(to) {
+    /** 当前 Pinia 实例中的用户 Store,在组件外显式传入 pinia */
+    const userStore = /** @type {import('@/stores/user').UserStore} */ (useUserStore(pinia))
+
+    if (to.meta.requiresAuth === true && userStore.token === '') {
+        return {
+            name: 'login',
+            replace: true,
+        }
+    }
+
+    return true
+}
+
+router.beforeEach(checkLogin)
 
 export default router
