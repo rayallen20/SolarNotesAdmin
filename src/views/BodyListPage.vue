@@ -42,7 +42,7 @@
                             :disabled="isLoading || loadFailed || isSubmitting || availableBodyCount === 0"
                             @click="openAddDrawer"
                         >
-                            添加天体
+                            创建天体
                         </el-button>
                     </div>
                 </div>
@@ -62,7 +62,7 @@
                 :data="bodyList"
                 row-key="id"
                 stripe
-                empty-text="暂无天体,请点击添加天体"
+                empty-text="暂无天体,请点击创建天体"
                 class="body-table"
             >
                 <el-table-column label="天体" width="100">
@@ -94,7 +94,7 @@
             </el-table>
 
             <p v-if="loadFailed === false && isLoading === false && availableBodyCount === 0" class="all-added">
-                太阳与八大行星均已添加,无法再创建新的天体
+                太阳与八大行星均已创建,无法再创建新的天体
             </p>
         </el-card>
 
@@ -133,7 +133,7 @@
                         </el-option>
                     </el-select>
 
-                    <p class="field-help">已添加的天体不可重复选择</p>
+                    <p class="field-help">已创建的天体不可重复选择</p>
                 </el-form-item>
 
                 <el-form-item label="简介标题" prop="title">
@@ -165,7 +165,7 @@
                 </el-button>
 
                 <el-button type="primary" :loading="isSubmitting" @click="submitBody">
-                    确认添加
+                    确认创建
                 </el-button>
             </template>
         </el-drawer>
