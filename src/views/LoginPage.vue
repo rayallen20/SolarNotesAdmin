@@ -59,6 +59,8 @@ import useUserStore from "@/stores/user";
 import {isNavigationFailure, useRouter} from "vue-router";
 import axios from "axios";
 import {loginAdmin} from "@/api/admin";
+import {getApiErrorCode, getApiErrorMessage} from "@/utils/apiError";
+import {API_CODE} from "@/constants/apiCode";
 
 defineOptions({
     name: 'LoginPage',
@@ -70,16 +72,25 @@ defineOptions({
  * @property {string} password 原始密码,长度为 6-20 个字符
  * */
 
-/** @type {LoginForm} 本常量用于表示登录表单中用户输入的用户名和密码,输入内容按输入原值保存 */
+/**
+ * 本常量用于表示登录表单中用户输入的用户名和密码,输入内容按输入原值保存
+ * @type {LoginForm}
+ * */
 const loginForm = reactive({
     username: '',
     password: '',
 })
 
-/** @type {import('vue').Ref<import('element-plus').FormInstance | null>} 本常量用于表示登录表单实例 */
+/**
+ * 本常量用于表示登录表单实例
+ * @type {import('vue').Ref<import('element-plus').FormInstance | null>}
+ * */
 const loginFormRef = ref(null)
 
-/** @type {import('vue').Ref<boolean>} 本标量用于表示是否正在校验/请求登录/处理成功后的跳转 */
+/**
+ * 本标量用于表示是否正在校验/请求登录/处理成功后的跳转
+ * @type {import('vue').Ref<boolean>}
+ * */
 const isSubmitting = ref(false)
 
 /** @type {import('element-plus').FormRules<LoginForm>} 本常量用于表示表单字段校验规则 */
@@ -152,61 +163,22 @@ async function login() {
 }
 
 /**
- * 本函数用于区分业务拒绝/ HTTP 错误/超时/未收到响应的连接错误
+ * 本函数用于解释登录专属业务错误(其他异常交给公共模块)
  * @param {unknown} error 登录请求抛出的异常
- * @returns {string} 登录失败提示
+ * @returns {string} 登录页可展示的错误说明
  * */
 function getLoginErrorMessage(error) {
-    if (axios.isAxiosError(error) === true) {
-        if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
-            return '登录请求超时,请稍后重试'
-        }
-
-        if (error.response === undefined) {
-            return '暂时无法连接登录服务,请稍后重试'
-        }
-
-        if (error.response.status >= 500) {
-            return '登录服务暂时不可用,请稍后重试'
-        }
-
-        return getBusinessErrorMessage(error.response.data)
+    switch (getApiErrorCode(error)) {
+        case API_CODE.VALIDATION_ERROR:
+            return '登录信息格式不正确,请检查用户名和密码'
+        case API_CODE.LOGIN_CREDENTIAL_ERROR:
+            return '账号或密码错误'
+        case API_CODE.LOGIN_STATE_CHANGED:
+            return '账号状态已变化,请重新登录'
+        case API_CODE.LOGIN_RATE_LIMIT:
+            return '请求过于频繁,请稍后再试'
     }
-
-    return getBusinessErrorMessage(error)
-}
-
-/**
- * 本函数用于将后端业务错误或普通异常转换为登录提示
- * @param {unknown} error 后端响应体或其他异常
- * @returns {string} 可供页面展示的错误说明
- * */
-function getBusinessErrorMessage(error) {
-    if (typeof error !== 'object' || error === null) {
-        return '登录失败，请稍后重试'
-    }
-
-    if ('code' in error && typeof error.code === 'number') {
-        switch (error.code) {
-            case 10101:
-                return '登录信息格式不正确,请检查用户名和密码'
-            case 20001:
-                return '账号或密码错误'
-            case 20002:
-                return '账号状态已变化,请重新登录'
-            case 20005:
-                return '请求过于频繁,请稍后再试'
-            case 10201:
-            case 500:
-                return '登录服务暂时不可用,请稍后重试'
-        }
-    }
-
-    if ('message' in error && typeof error.message === 'string' && error.message.trim() !== '') {
-        return error.message
-    }
-
-    return '登录失败,请稍后重试'
+    return getApiErrorMessage(error, '登录失败,请稍后重试')
 }
 
 /**

@@ -9,37 +9,35 @@
 
         <p class="page-description">管理太阳与八大行星的标题和内容</p>
 
-        <el-alert
-            class="demo-notice"
-            title="当前为页面演示,数据仅在本次浏览中保留,刷新整个浏览器后清空"
-            type="info"
-            show-icon
-            :closable="false"
-        >
-        </el-alert>
-
         <el-card shadow="never">
             <template #header>
                 <div class="list-toolbar">
                     <div class="list-heading">
                         <strong>天体列表</strong>
-                        <span>已创建 {{bodyList.length}} / {{bodyOptions.length}} 个天体</span>
+
+                        <span v-if="loadFailed === false">
+                            列表共 {{ bodyList.length }} 条
+                        </span>
+
+                        <span v-if="statusFailed === false && isStatusLoading === false">
+                            固定天体已创建 {{ createdBodyCount }} / {{ bodyOptions.length }} 个
+                        </span>
                     </div>
 
                     <div class="toolbar-actions">
                         <el-button
                             :icon="Refresh"
-                            :loading="isLoading"
-                            :disabled="isLoading || isSubmitting"
-                            @click="loadBodies"
+                            :loading="isLoading || isStatusLoading"
+                            :disabled="isLoading || isStatusLoading || isSubmitting"
+                            @click="refreshData"
                         >
-                            刷新列表
+                            刷新列表和天体状态
                         </el-button>
 
                         <el-button
                             type="primary"
                             :icon="Plus"
-                            :disabled="isLoading || loadFailed || isSubmitting || availableBodyCount === 0"
+                            :disabled="isLoading || isStatusLoading || isSubmitting"
                             @click="openAddDrawer"
                         >
                             创建天体
@@ -49,12 +47,21 @@
             </template>
 
             <el-alert
-                v-if="loadFailed"
-                title="列表加载失败,请点击刷新列表重试"
+                class="status-notice"
+                v-if="statusFailed"
+                :title="statusError"
                 type="error"
                 show-icon
-                :closable="false"
-            ></el-alert>
+                :closable="false">
+            </el-alert>
+
+            <el-alert
+                v-if="loadFailed"
+                :title="listError"
+                type="error"
+                show-icon
+                :closable="false">
+            </el-alert>
 
             <el-table
                 v-else
@@ -93,8 +100,11 @@
                 </el-table-column>
             </el-table>
 
-            <p v-if="loadFailed === false && isLoading === false && availableBodyCount === 0" class="all-added">
-                太阳与八大行星均已创建,无法再创建新的天体
+            <p
+                class="all-added"
+                v-if="statusFailed === false && isStatusLoading === false && availableBodyCount === 0"
+            >
+                太阳与八大行星均已创建
             </p>
         </el-card>
 
@@ -109,11 +119,29 @@
             :before-close="beforeCloseDrawer"
             @closed="resetAddForm"
         >
+            <el-alert
+                v-if="statusFailed"
+                :title="statusError"
+                class="status-notice"
+                type="error"
+                show-icon
+                :closable="false"
+            >
+            </el-alert>
+
+            <el-button
+                :loading="isStatusLoading"
+                :disabled="isSubmitting || isStatusLoading"
+                @click="loadBodyStatuses"
+            >
+                刷新可选天体
+            </el-button>
+
             <el-form
                 ref="addFormRef"
                 :model="addForm"
                 :rules="addFormRules"
-                :disabled="isSubmitting"
+                :disabled="isSubmitting || isStatusLoading || statusFailed"
                 label-position="top"
                 @submit.prevent="submitBody"
             >
@@ -126,24 +154,24 @@
                         <el-option
                             v-for="option in bodyOptions"
                             :key="option.name"
-                            :label="option.label + '(' + option.name + ')' "
+                            :label="getOptionLabel(option.name)"
                             :value="option.name"
-                            :disabled="isBodyAdded(option.name)"
+                            :disabled="isBodySelectable(option.name) === false"
                         >
                         </el-option>
                     </el-select>
 
-                    <p class="field-help">已创建的天体不可重复选择</p>
+                    <p class="field-help">已创建的天体不可重复选择.状态加载失败时请先刷新.</p>
                 </el-form-item>
 
                 <el-form-item label="简介标题" prop="title">
                     <el-input
                         v-model="addForm.title"
                         placeholder="请输入简介标题"
-                        :maxlength="BODY_TITLE_MAX_LENGTH"
-                        show-word-limit
                     >
                     </el-input>
+
+                    <p class="field-help">最多 {{ BODY_TITLE_MAX_LENGTH }} 个字符</p>
                 </el-form-item>
 
                 <el-form-item label="简介内容" prop="intro">
@@ -152,10 +180,10 @@
                         type="textarea"
                         placeholder="请输入简介内容"
                         :rows="6"
-                        :maxlength="BODY_INTRO_MAX_LENGTH"
-                        show-word-limit
                     >
                     </el-input>
+
+                    <p class="field-help">最多 {{ BODY_INTRO_MAX_LENGTH }} 个字符</p>
                 </el-form-item>
             </el-form>
 
@@ -164,7 +192,12 @@
                     取消
                 </el-button>
 
-                <el-button type="primary" :loading="isSubmitting" @click="submitBody">
+                <el-button
+                    type="primary"
+                    :loading="isSubmitting"
+                    :disabled="isSubmitting || isStatusLoading || statusFailed || isBodySelectable(addForm.name) === false"
+                    @click="submitBody"
+                >
                     确认创建
                 </el-button>
             </template>
@@ -176,8 +209,10 @@
 import {computed, nextTick, onMounted, reactive, ref} from "vue";
 import {BODY_INTRO_MAX_LENGTH, BODY_TITLE_MAX_LENGTH, bodyOptions} from "@/constants/body";
 import {ElMessage} from "element-plus";
-import {addBody, getBodyList} from "@/api/body";
+import {addBody, getBodyList, getBodyStatus} from "@/api/body";
 import {ArrowRight, Plus, Refresh} from "@element-plus/icons-vue";
+import {getApiErrorCode, getApiErrorMessage, isAuthError} from "@/utils/apiError";
+import {API_CODE} from "@/constants/apiCode";
 
 defineOptions({
     name: 'BodyListPage',
@@ -188,6 +223,36 @@ defineOptions({
  * @type {import('vue').Ref<import('@/api/body').BodyRecord[]>}
  * */
 const bodyList = ref([])
+
+/**
+ * 后端返回的下拉选项状态
+ * @type {import('vue').Ref<import('@/api/body').BodyStatus[]>}
+ * */
+const bodyStatuses = ref([])
+
+/**
+ * 本标量用于表示是否正在请求天体状态API
+ * @type {import('vue').Ref<boolean>}
+ * */
+const isStatusLoading = ref(false)
+
+/**
+ * 本标量用于表示状态数据是否不可用(首次加载前也不可用)
+ * @type {import('vue').Ref<boolean>}
+ * */
+const statusFailed = ref(true)
+
+/**
+ * 状态数据错误说明
+ * @type {import('vue').Ref<string>}
+ * */
+const statusError = ref('天体状态尚未加载,请刷新')
+
+/**
+ * 天体列表错误说明
+ * @type {import('vue').Ref<string>}
+ * */
+const listError = ref('')
 
 /**
  * 本标量用于标记是否正在读取列表
@@ -269,6 +334,9 @@ const addFormRules = {
     ],
 }
 
+/** @type {import('vue').ComputedRef<number>} 已创建的固定天体数量，与列表总数区分。 */
+const createdBodyCount = computed(getCreatedBodyCount)
+
 /**
  * 未被创建的天体数量
  * @type {import('vue').ComputedRef<number>}
@@ -278,8 +346,8 @@ const availableBodyCount = computed(getAvailableBodyCount)
 /**
  * 本函数用于根据天体的name获取对应的中文名称
  * @param {string} name 天体的匹配标识
- * @returns {string} name对应的中文名称,未匹配到则返回原始name
- */
+ * @returns {string} name对应的中文名称(未匹配到则返回原始name)
+ * */
 function getBodyLabel(name) {
     for (const option of bodyOptions) {
         if (option.name === name) {
@@ -291,14 +359,18 @@ function getBodyLabel(name) {
 }
 
 /**
- * 本函数用于判断给定天体是否已存在于当前列表中
- * @param {string} name 天体的匹配标识
- * @returns {boolean} 已被创建时返回true
- */
-function isBodyAdded(name) {
-    for (const body of bodyList.value) {
-        if (body.name === name) {
-            return true
+ * 本函数用于判定给定名称的天体是否已被创建,若未创建则返回false
+ * @param {string} name 天体标识
+ * @returns {boolean} 是否允许创建
+ * */
+function isBodySelectable(name) {
+    if (statusFailed.value === true || isStatusLoading.value === true) {
+        return false
+    }
+
+    for (const status of bodyStatuses.value) {
+        if (status.name === name) {
+            return status.exist === false
         }
     }
 
@@ -306,15 +378,45 @@ function isBodyAdded(name) {
 }
 
 /**
- * 本函数用于在预定义的天体选项中,计算未被创建的天体数量
- * @returns {number} 未被创建的天体数量
- */
-function getAvailableBodyCount() {
-    /** @type {number} 未被创建的天体数量 */
+ * 本函数用于组合天体的中文名/标识/可选状态
+ * @param {string} name 天体标识
+ * @returns {string} 下拉选项文字
+ * */
+function getOptionLabel(name) {
+    /** @type {string} 不含状态的基础文字 */
+    const label = getBodyLabel(name) + '（' + name + '）'
+
+    if (isStatusLoading.value === true) {
+        return label + ' 正在读取状态'
+    }
+
+    if (statusFailed.value === true) {
+        return label + ' 状态未知'
+    }
+
+    for (const status of bodyStatuses.value) {
+        if (status.name === name) {
+            if (status.exist === true) {
+                return label + ' 已创建'
+            }
+
+            return label + ' 可创建'
+        }
+    }
+
+    return label + ' 状态未知'
+}
+
+/**
+ * 本函数用于在天体状态API的响应中统计已创建的天体数量,若状态数据不可用则返回0
+ * @returns {number} 已创建天体数量
+ * */
+function getCreatedBodyCount() {
+    /** @type {number} 已创建天体数量 */
     let count = 0
 
-    for (const option of bodyOptions) {
-        if (isBodyAdded(option.name) === false) {
+    for (const status of bodyStatuses.value) {
+        if (status.exist === true) {
             count += 1
         }
     }
@@ -323,11 +425,97 @@ function getAvailableBodyCount() {
 }
 
 /**
+ * 本函数用于在天体状态API的响应中统计可创建的天体数量,若状态数据不可用则返回0
+ * @returns {number} 可创建天体数量
+ * */
+function getAvailableBodyCount() {
+    /** @type {number} 可创建天体数量 */
+
+    let count = 0
+
+    for (const option of bodyOptions) {
+        if (isBodySelectable(option.name) === true) {
+            count += 1
+        }
+    }
+
+    return count
+}
+
+/**
+ * 本函数用于解释天体业务错误(其他异常交给公共模块)
+ * @param {unknown} error 接口异常
+ * @param {string} fallback 当前操作没有具体错误信息时的提示
+ * @returns {string} 天体页面可展示的错误说明
+ * */
+function getBodyErrorMessage(error, fallback) {
+    switch (getApiErrorCode(error)) {
+        case API_CODE.VALIDATION_ERROR:
+            return '提交内容不符合要求,请检查天体/标题/简介'
+        case API_CODE.BODY_ALREADY_EXISTS:
+            return '该天体已被创建,请选择其他天体'
+    }
+    return getApiErrorMessage(error, fallback)
+}
+
+/**
+ * 本函数用于读取列表,失败时保留错误状态并允许重新刷新
+ * @returns {Promise<void>} 本次读取结束
+ * */
+async function loadBodies() {
+    if (isLoading.value === true) {
+        return
+    }
+
+    isLoading.value = true
+    loadFailed.value = false
+    listError.value = ''
+
+    try {
+        bodyList.value = await getBodyList()
+    } catch (error) {
+        loadFailed.value = true
+        listError.value = getBodyErrorMessage(error, '天体列表加载失败') + '.请刷新列表重试'
+    } finally {
+        isLoading.value = false
+    }
+}
+
+/**
+ * 本函数用于请求天体状态API,失败时保留错误状态并允许重新刷新
+ * @returns {Promise<void>}
+ * */
+async function loadBodyStatuses() {
+    if (isStatusLoading.value === true) {
+        return
+    }
+
+    isStatusLoading.value = true
+    statusError.value = ''
+
+    try {
+        bodyStatuses.value = await getBodyStatus()
+        statusFailed.value = false
+    } catch (error) {
+        bodyStatuses.value = []
+        statusFailed.value = true
+        statusError.value = getBodyErrorMessage(error, '天体状态加载失败') + '.请刷新可选天体重试'
+    } finally {
+        isStatusLoading.value = false
+    }
+
+    // 刷新发现该天体已被其他管理员创建时,只清除名称,保留已填写的标题和简介
+    if (addForm.name !== '' && isBodySelectable(addForm.name) === false) {
+        addForm.name = ''
+    }
+}
+
+/**
  * 本函数用于从错误对象中读取可展示的信息,若无可展示的信息则返回备用文字
  * @param {unknown} error 捕获到的异常
  * @param {string} fallback 没有可用错误信息时显示的备用文字
  * @returns {string} 错误信息
- */
+ * */
 function getErrorMessage(error, fallback) {
     if (typeof error === 'object' && error !== null && 'message' in error) {
         if (typeof error.message === 'string' && error.message.trim() !== '') {
@@ -339,25 +527,14 @@ function getErrorMessage(error, fallback) {
 }
 
 /**
- * 本函数用于读取列表,失败时保留错误状态并允许重新刷新
- * @returns {Promise<void>} 本次读取结束
- */
-async function loadBodies() {
-    if (isLoading.value === true) {
-        return
-    }
-
-    isLoading.value = true
-    loadFailed.value = false
-
-    try {
-        bodyList.value = await getBodyList()
-    } catch (error) {
-        loadFailed.value = true
-        ElMessage.error(getErrorMessage(error, '天体列表加载失败'))
-    } finally {
-        isLoading.value = false
-    }
+ * 本函数用于等待2个独立的API请求均结束后,各自维护错误状态
+ * @returns {Promise<void>}
+ * */
+async function refreshData() {
+    await Promise.all([
+        loadBodies(),
+        loadBodyStatuses()
+    ])
 }
 
 /**
@@ -377,23 +554,24 @@ function resetAddForm() {
 /**
  * 本函数用于打开创建天体抽屉,并等待懒加载的表单挂载后清除旧校验信息
  * @returns {Promise<void>} 抽屉内容已完成本轮更新
- */
+ * */
 async function openAddDrawer() {
-    if (isLoading.value === true || loadFailed.value === true || isSubmitting.value === true) {
-        return
-    }
-
-    if (availableBodyCount.value === 0) {
+    if (isSubmitting.value === true || isLoading.value === true || isStatusLoading.value === true) {
         return
     }
 
     resetAddForm()
     drawerVisible.value = true
-    await nextTick()
 
+    // 先启动请求,使本轮渲染立即禁用提交,再等待抽屉懒加载表单
+    /** @type {Promise<void>} 本次状态刷新 */
+    const loading = loadBodyStatuses()
+    await nextTick()
     if (addFormRef.value !== null) {
         addFormRef.value.clearValidate()
     }
+
+    await loading
 }
 
 /**
@@ -402,11 +580,9 @@ async function openAddDrawer() {
  * @returns {void}
  */
 function beforeCloseDrawer(done) {
-    if (isSubmitting.value === true) {
-        return
+    if (isSubmitting.value === false) {
+        done()
     }
-
-    done()
 }
 
 /**
@@ -414,11 +590,9 @@ function beforeCloseDrawer(done) {
  * @returns {void}
  */
 function closeAddDrawer() {
-    if (isSubmitting.value === true) {
-        return
+    if (isSubmitting.value === false) {
+        drawerVisible.value = false
     }
-
-    drawerVisible.value = false
 }
 
 /**
@@ -426,29 +600,25 @@ function closeAddDrawer() {
  * @returns {Promise<void>} 本次提交处理结束
  */
 async function submitBody() {
-    if (isSubmitting.value === true || drawerVisible.value === false) {
+    if (isSubmitting.value === true || drawerVisible.value === false || addFormRef.value === null) {
         return
     }
 
-    if (addFormRef.value === null) {
+    if (isBodySelectable(addForm.name) === false) {
+        ElMessage.warning('请选择状态已确认可创建的天体')
         return
     }
 
     isSubmitting.value = true
-
     try {
         addForm.title = addForm.title.trim()
         addForm.intro = addForm.intro.trim()
-
-        /** @type {boolean} Element Plus 表单校验结果 */
         const isValid = await addFormRef.value.validate()
-
         if (isValid === false) {
             isSubmitting.value = false
             return
         }
     } catch {
-        // 校验失败时表单项已经显示提示,此处保留用户输入并解除提交锁即可
         isSubmitting.value = false
         return
     }
@@ -457,22 +627,38 @@ async function submitBody() {
         await addBody({
             name: addForm.name,
             title: addForm.title,
-            intro: addForm.intro,
+            intro: addForm.intro
         })
     } catch (error) {
-        ElMessage.error(getErrorMessage(error, '创建天体失败,请重试'))
+        // 鉴权错误已由 request.js 统一提示和跳转,此处不再重复弹窗
+        if (isAuthError(error) === true) {
+            return
+        }
+        /** @type {number | undefined} 业务错误码 */
+        const code = getApiErrorCode(error)
+        ElMessage.error(getBodyErrorMessage(error, '创建失败,请稍后重试'))
+
+        if (code === API_CODE.BODY_ALREADY_EXISTS || code === undefined) {
+            // 超时/断网可能发生在数据库写入之后,因此先读取结果,读取后不自动重发创建请求
+            if (code === undefined) {
+                ElMessage.warning('尚未确认创建结果,请核对刷新后的列表再决定是否提交')
+            }
+
+            await refreshData()
+        }
         return
     } finally {
         isSubmitting.value = false
     }
 
     drawerVisible.value = false
-    ElMessage.success('天体创建成功(演示)')
-    // 读取失败由 loadBodies() 单独处理,避免误报为创建失败
-    await loadBodies()
+    ElMessage.success('天体创建成功')
+
+    // 创建已确认成功后,列表或状态刷新失败只显示各自的错误
+    await refreshData()
 }
 
-onMounted(loadBodies)
+onMounted(refreshData)
 </script>
 
 <style scoped lang="scss">

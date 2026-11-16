@@ -1,0 +1,1500 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="SolarNotes 天体列表、选项状态与创建 API 联调，含 Bearer 鉴权、完整 Vue/Axios 示例和验证步骤。">
+<title>SolarNotesAdmin · 天体管理 API 联调指南</title><style>
+      :root {
+        color-scheme: light;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+          "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+        color: #273147;
+        background: #f5f6fb;
+        line-height: 1.8;
+        font-size: 16px;
+        --primary: #5964d6;
+        --border: #e3e7f0;
+        --muted: #657089;
+      }
+
+      * { box-sizing: border-box; }
+      body { margin: 0; }
+      main { max-width: 1000px; margin: 48px auto; padding: 0 28px; }
+      article {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 48px 56px;
+        box-shadow: 0 12px 40px rgb(39 49 71 / 4%);
+      }
+      header { padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+      .eyebrow {
+        margin: 0 0 12px;
+        color: var(--primary);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+      }
+      h1 { margin: 0 0 16px; font-size: 32px; line-height: 1.4; }
+      h2 { margin: 40px 0 16px; font-size: 23px; line-height: 1.5; }
+      h3 { margin: 26px 0 10px; font-size: 17px; }
+      p { margin: 12px 0; }
+      a { color: var(--primary); text-underline-offset: 3px; }
+      a:hover { color: #3d46ab; }
+      a:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; }
+      strong { color: #172137; }
+      .subtitle, .source, footer { color: var(--muted); }
+      .stack { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+      .stack span {
+        border-radius: 6px;
+        background: #f0f1fd;
+        color: #4d57ba;
+        padding: 3px 10px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      nav {
+        margin: 28px 0;
+        padding: 18px 24px;
+        background: #f8f9fc;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+      }
+      nav ol { margin: 8px 0 0; padding-left: 24px; }
+      nav a { text-decoration: none; }
+      section { scroll-margin-top: 24px; }
+      code {
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-size: 0.88em;
+      }
+      :not(pre) > code {
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: #f0f2f7;
+        overflow-wrap: anywhere;
+      }
+      .code-label {
+        margin: 18px 0 0;
+        padding: 8px 16px;
+        color: #d1d7ed;
+        background: #29334c;
+        border-radius: 9px 9px 0 0;
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 12px;
+        overflow-wrap: anywhere;
+      }
+      pre {
+        margin: 14px 0 20px;
+        padding: 18px 20px;
+        overflow-x: auto;
+        border-radius: 9px;
+        background: #1d263b;
+        color: #edf0fb;
+        line-height: 1.7;
+        tab-size: 2;
+      }
+      .code-label + pre { margin-top: 0; border-radius: 0 0 9px 9px; }
+      pre code { font-size: 13px; }
+      .note {
+        margin: 20px 0;
+        padding: 14px 18px;
+        border-left: 3px solid #727cf5;
+        border-radius: 0 8px 8px 0;
+        background: #f2f3fe;
+      }
+      .note p { margin: 0; }
+      .table-wrap { overflow-x: auto; margin: 18px 0; }
+      table { width: 100%; border-collapse: collapse; font-size: 14px; }
+      th, td { padding: 12px 14px; text-align: left; border: 1px solid var(--border); }
+      th { background: #f7f8fc; color: #35405b; }
+      .source { font-size: 13px; }
+      footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 13px; }
+
+      @media (max-width: 640px) {
+        main { margin: 16px auto; padding: 0 12px; }
+        article { padding: 28px 20px; border-radius: 12px; }
+        h1 { font-size: 25px; }
+        h2 { font-size: 21px; }
+        pre { padding: 14px; }
+        nav { padding: 14px 18px; }
+      }
+
+      @media print {
+        :root { background: #fff; font-size: 11pt; }
+        main { max-width: none; margin: 0; padding: 0; }
+        article { border: 0; border-radius: 0; padding: 0; box-shadow: none; }
+        nav { display: none; }
+        h1, h2, h3, .code-label { break-after: avoid; }
+        pre {
+          white-space: pre-wrap;
+          overflow-wrap: anywhere;
+          background: #f5f6f8;
+          color: #172137;
+          border: 1px solid #ddd;
+          break-inside: avoid;
+        }
+        .code-label { background: #e9ecf3; color: #273147; }
+        a { color: inherit; }
+        tr { break-inside: avoid; }
+      }
+
+    article { min-width: 0; }
+    .code-block { margin: 20px 0; min-width: 0; }
+    .code-block summary { display: flex; justify-content: space-between; gap: 12px; padding: 10px 16px; border-radius: 8px; color: #e3e8f8; background: #29334c; font-family: monospace; font-size: 13px; cursor: pointer; overflow-wrap: anywhere; }
+    .code-block summary span { flex-shrink: 0; font-family: inherit; font-size: 11px; color: #b4bed7; }
+    .code-block[open] summary { border-radius: 8px 8px 0 0; }
+    .code-block pre { margin: 0; border-radius: 0 0 8px 8px; max-height: 780px; }
+    .pill { display: inline-block; padding: 2px 9px; color: #5964d6; background: #f0f1fd; border-radius: 5px; font-size: 13px; }
+    .flow-steps { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 18px; border: 1px solid var(--border); border-radius: 10px; background: #fafbfe; }
+    .flow-steps span { padding: 5px 10px; border-radius: 6px; background: #eef0fe; color: #4d57ba; font-size: 14px; }
+
+    .connection { display: grid; gap: 10px; margin: 20px 0; }
+    .connection-row { padding: 14px 18px; border: 1px solid var(--border); background: #fafbfe; border-radius: 9px; }
+    .connection-row b { display: block; color: #35405b; }
+    .connection-row code { display: inline-block; margin-top: 4px; }
+    .case-panel { margin: 22px 0; padding: 20px; border: 1px solid var(--border); border-radius: 10px; background: #fafbfe; }
+    .case-panel label { font-weight: 600; }
+    .case-panel select { max-width: 100%; margin: 8px 0 4px 12px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font: inherit; font-size: 14px; color: #273147; background: #fff; }
+    .case-panel pre { margin: 12px 0; }
+    .case-panel p { margin-bottom: 0; }
+    .verification { padding: 16px 20px; border-left: 3px solid #4b9b77; border-radius: 0 8px 8px 0; background: #f1f9f4; }
+    .verification p { margin: 4px 0; }
+    summary:focus-visible, select:focus-visible { outline: 2px solid #727cf5; outline-offset: 3px; }
+    @media (max-width: 640px) {
+        .code-block summary { flex-direction: column; gap: 4px; }
+        .case-panel { padding: 14px; }
+        .case-panel select { display: block; margin-left: 0; }
+    }
+    @media print { .code-block pre { max-height: none; } }
+
+.code-block pre {max-height: 700px;} td {vertical-align: top;} .diagram {display:grid;gap:10px;margin:20px 0;} .diagram div {padding:12px 16px;background:#f0f1fd;border-radius:8px;} @media print {.code-block pre {max-height:none;}}
+</style></head><body><main><article><header>
+<p class="eyebrow">SOLARNOTESADMIN / 接口实现参考</p><h1>天体管理 API 联调指南</h1>
+<p class="subtitle">统一业务响应码，先接入天体状态、创建和列表接口，再迁移已有登录请求与错误提示。</p>
+<div class="stack"><span>GET status / list</span><span>POST create</span><span>Bearer 鉴权</span><span>完整文件示例</span></div>
+<p class="source">根据 2026 年 11 月 16 日的项目源码编写 · <a href="body-management-guide.html">原天体页面参考</a> · <a href="admin-login-api-guide.html">登录 API 参考</a></p></header><nav aria-label="文档目录"><strong>实现顺序</strong><ol><li><a href="#scope">本次替换哪些内容</a></li><li><a href="#contract">先确认后端协议</a></li><li><a href="#connection">请求地址与鉴权链路</a></li><li><a href="#constants">统一定义业务响应码</a></li><li><a href="#request">分离公共工具与请求处理</a></li><li><a href="#api">替换天体 API 模块</a></li><li><a href="#page">更新 BodyListPage.vue</a></li><li><a href="#login">再迁移已有登录 API</a></li><li><a href="#flow">刷新、并发和失败处理顺序</a></li><li><a href="#verify">按此顺序完成真实联调</a></li><li><a href="#codes">业务响应码速查</a></li><li><a href="#checks">示例校验与源码依据</a></li></ol></nav>
+<section id="scope"><h2>1. 本次替换哪些内容</h2><p>本指南按“统一业务码 → 完成三个天体 API 与页面 → 迁移已有登录请求”的顺序组织。先定义共享常量，再让请求层和页面中的判断都使用常量名。</p><div class="table-wrap"><table><thead><tr><th>文件</th><th>操作</th></tr></thead><tbody><tr><td>src/constants/apiCode.js</td><td>第 4 节新增：集中定义后端现有全部业务码。</td></tr><tr><td>src/utils/typeGuard.js</td><td>第 5.1 节新增：定义共享 isObject()、isRecord() 及其 JSDoc 类型谓词。</td></tr><tr><td>src/utils/fieldReader.js</td><td>第 5.2 节新增：集中读取和校验字符串字段，提供通用异常文案。</td></tr><tr><td>src/utils/apiError.js</td><td>第 5.3 节新增：提供公共错误码提取、鉴权错误识别和通用提示，不执行页面操作。</td></tr><tr><td>src/utils/request.js</td><td>第 5.4 节替换：附加令牌、按业务码解包、统一处理鉴权失效行为。</td></tr><tr><td>src/api/body.js</td><td>第 6 节替换：完成状态、创建、列表三个真实请求，删除全部内存演示数据。</td></tr><tr><td>src/views/BodyListPage.vue</td><td>第 7 节替换：接入三个 API，getBodyErrorMessage() 处理天体专属提示，其他异常调用公共模块。</td></tr><tr><td>src/api/admin.js</td><td>第 8.1 节对照：复用已经更新的 request 实例，仍负责登录响应字段校验。</td></tr><tr><td>src/views/LoginPage.vue</td><td>第 8.2 节更新：getLoginErrorMessage() 处理登录专属提示，删除重复网络错误处理并复用公共模块。</td></tr><tr><td>src/constants/body.js、Store、路由、Vite</td><td>沿用现有天体选项和长度限制、setSession/clearSession、/admin/bodies 和 /api 开发代理。</td></tr></tbody></table></div><p>实现顺序：第 4 → 5 → 6 → 7 节完成天体对接，再按第 8 节迁移登录。示例先定义再导出，使用普通函数和 JSDoc；组件保持 template → script → style 顺序。</p></section>
+<section id="contract"><h2>2. 先确认后端协议</h2><div class="table-wrap"><table><thead><tr><th>用途</th><th>方法与后端完整路径</th><th>解包后的结果</th></tr></thead><tbody><tr><td>下拉选项状态</td><td><code>GET /v1/planet/status</code></td><td><code>{planets: [{name, exist}]}</code>，固定九项</td></tr><tr><td>创建天体</td><td><code>POST /v1/planet/create</code></td><td><code>{}</code>，没有新记录或 ID</td></tr><tr><td>天体列表</td><td><code>GET /v1/planet/list</code></td><td><code>{planets: [{id, name, title, intro}]}</code>，没有分页参数</td></tr></tbody></table></div>
+<p>统一响应包为 <code>{code, message, data}</code>。这些控制器处理的成功、业务失败、鉴权失败均返回 <strong>HTTP 200</strong>；业务是否成功由 <code>code === API_CODE.SUCCESS</code> 决定。代理故障等仍可能产生 HTTP 5xx 或网络错误。</p>
+<h3>2.1 状态：exist 为 true 表示已经存在，必须禁用</h3><details class="code-block" open><summary>GET /v1/planet/status · 成功响应<span>点击折叠 / 展开</span></summary><pre><code data-file="GET /v1/planet/status · 成功响应" data-kind="fragment">{
+    &quot;code&quot;: 200,
+    &quot;message&quot;: &quot;success&quot;,
+    &quot;data&quot;: {
+        &quot;planets&quot;: [
+            {
+                &quot;name&quot;: &quot;Sun&quot;,
+                &quot;exist&quot;: true
+            },
+            {
+                &quot;name&quot;: &quot;Mercury&quot;,
+                &quot;exist&quot;: false
+            },
+            {
+                &quot;name&quot;: &quot;Venus&quot;,
+                &quot;exist&quot;: false
+            },
+            {
+                &quot;name&quot;: &quot;Earth&quot;,
+                &quot;exist&quot;: false
+            },
+            {
+                &quot;name&quot;: &quot;Mars&quot;,
+                &quot;exist&quot;: false
+            },
+            {
+                &quot;name&quot;: &quot;Jupiter&quot;,
+                &quot;exist&quot;: false
+            },
+            {
+                &quot;name&quot;: &quot;Saturn&quot;,
+                &quot;exist&quot;: false
+            },
+            {
+                &quot;name&quot;: &quot;Uranus&quot;,
+                &quot;exist&quot;: false
+            },
+            {
+                &quot;name&quot;: &quot;Neptune&quot;,
+                &quot;exist&quot;: false
+            }
+        ]
+    }
+}</code></pre></details>
+<p><code>exist</code> 是布尔值，不能把字符串 <code>"false"</code> 当成 false，也不能把缺失状态当成“可创建”。中文 label 仍由前端 constants 提供，通过 <code>name</code> 精确匹配。</p>
+<h3>2.2 创建：必须包在 planet 对象中</h3><details class="code-block" open><summary>POST /v1/planet/create · 请求体<span>点击折叠 / 展开</span></summary><pre><code data-file="POST /v1/planet/create · 请求体" data-kind="fragment">{
+    &quot;planet&quot;: {
+        &quot;name&quot;: &quot;Earth&quot;,
+        &quot;title&quot;: &quot;我们的家园&quot;,
+        &quot;intro&quot;: &quot;地球是太阳系中的第三颗行星。&quot;
+    }
+}</code></pre></details><details class="code-block" open><summary>POST /v1/planet/create · 成功响应<span>点击折叠 / 展开</span></summary><pre><code data-file="POST /v1/planet/create · 成功响应" data-kind="fragment">{
+    &quot;code&quot;: 200,
+    &quot;message&quot;: &quot;success&quot;,
+    &quot;data&quot;: {}
+}</code></pre></details><div class="table-wrap"><table><thead><tr><th>字段</th><th>规则</th></tr></thead><tbody><tr><td>name</td><td>必填，只接受 Sun、Mercury、Venus、Earth、Mars、Jupiter、Saturn、Uranus、Neptune，大小写必须一致，不提交中文 label。</td></tr><tr><td>title</td><td>必填，不得全为空白，最多 20 个字符。</td></tr><tr><td>intro</td><td>必填，不得全为空白，最多 150 个字符。</td></tr><tr><td>id</td><td>由服务端生成，不提交；创建响应也不返回。</td></tr></tbody></table></div>
+<p>后端原样保存 title/intro。本文沿用当前页面的产品选择，在提交前 trim 标题和简介；<strong>name 不 trim、不改变大小写</strong>。登录用户名和密码仍按原值提交，这与天体表单的处理不同。</p>
+<h3>2.3 列表：保留字符串 ID 与后端顺序</h3><details class="code-block" open><summary>GET /v1/planet/list · 成功响应<span>点击折叠 / 展开</span></summary><pre><code data-file="GET /v1/planet/list · 成功响应" data-kind="fragment">{
+    &quot;code&quot;: 200,
+    &quot;message&quot;: &quot;success&quot;,
+    &quot;data&quot;: {
+        &quot;planets&quot;: [
+            {
+                &quot;id&quot;: &quot;1234567890123456789&quot;,
+                &quot;name&quot;: &quot;Sun&quot;,
+                &quot;title&quot;: &quot;太阳&quot;,
+                &quot;intro&quot;: &quot;太阳系的中心恒星。&quot;
+            }
+        ]
+    }
+}</code></pre></details>
+<p>空表返回 <code>planets: []</code>。已知天体按太阳到海王星的顺序排列；其他入口写入的未知名称也会保留在末尾，沿用 ID 升序。前端不要把列表限制为九条，也不要过滤未知 name。ID 始终使用字符串，避免转 Number 后丢失精度。</p>
+<p>列表总记录数不一定等于已创建的九个固定天体数量，所以页面分别显示“列表共 N 条”和“固定天体已创建 N / 9 个”。</p></section>
+<section id="connection"><h2>3. 请求地址与鉴权链路</h2>
+<p>现有 <code>.env.development</code> 已是 <code>VITE_API_BASE_URL=/api</code>。Vite 开发服务在 5062 端口，将 /api 前缀去除后转发到 <code>http://127.0.0.1:4060</code>，无需为新增接口分别配置代理。</p>
+<div class="diagram"><div>浏览器：GET /api/v1/planet/status + Authorization: Bearer &lt;access_token&gt;</div><div>Vite：去掉 /api → GET http://127.0.0.1:4060/v1/planet/status</div><div>后端：校验 JWT 与数据库 token_hash → 执行状态查询 → 返回业务响应</div><div>Axios：code 200 解包 data；20003 / 20004 清会话并回登录页</div></div>
+<p>后端仅豁免 <code>POST /v1/admin/login</code>；OPTIONS 预检在鉴权前已处理。受保护接口需要唯一的 <code>Authorization: Bearer …</code> 请求头。使用登录返回的 access_token，不从查询参数、请求体或 Cookie 传递。</p>
+<p>后端会检查签名、时效及数据库中的 token_hash。同一账号再次成功登录后，旧 token 的后续请求会失败。当前没有刷新 token、服务端 logout 或 /me 接口，因此失效后重新登录，不自动重放创建请求。</p>
+<div class="note"><p>前端路由守卫只检查本地 token 是否存在。即使地址能进入后台，后端仍会独立验证令牌；真正的接口访问权限由后端决定。</p></div>
+<p>生产部署不使用 Vite 开发代理。目前 <code>.env.production</code> 仍是 <code>http://localhost:8080</code>，发布前需要配置实际 API 地址；若也使用 /api，需要部署服务器提供反向代理。</p></section>
+<section id="constants"><h2>4. 统一定义业务响应码</h2><p>新增 <code>src/constants/apiCode.js</code>，集中维护后端当前十个业务码。它描述的是 JSON 响应体的 <code>code</code>，包括成功码，不是 HTTP 状态码。</p><details class="code-block" open><summary>src/constants/apiCode.js<span>点击折叠 / 展开</span></summary><pre><code data-file="src/constants/apiCode.js" data-kind="complete">/**
+ * 后端业务响应码，对应响应体中的 code 字段。
+ * 数值与 SolarNotesAdminAPI/resp_body/resp_body.go 保持一致。
+ * 不用于 HTTP response.status 的比较。
+ * @enum {number}
+ */
+const API_CODE = {
+    /** 业务成功。 */
+    SUCCESS: 200,
+    /** 服务端内部错误。 */
+    INTERNAL_ERROR: 500,
+    /** 请求参数校验失败。 */
+    VALIDATION_ERROR: 10101,
+    /** 数据库操作失败，包括鉴权查询数据库失败。 */
+    DATABASE_ERROR: 10201,
+    /** 登录账号或密码错误。 */
+    LOGIN_CREDENTIAL_ERROR: 20001,
+    /** 登录过程中账号状态变化，需要重新登录。 */
+    LOGIN_STATE_CHANGED: 20002,
+    /** 登录令牌过期。 */
+    TOKEN_EXPIRED: 20003,
+    /** 登录令牌缺失、无效或已撤销。 */
+    TOKEN_INVALID: 20004,
+    /** 登录请求触发访问频率限制。 */
+    LOGIN_RATE_LIMIT: 20005,
+    /** 请求创建的天体已经存在。 */
+    BODY_ALREADY_EXISTS: 20101,
+}
+
+export {API_CODE}</code></pre></details><p><code>@enum {number}</code> 是 JavaScript 的 JSDoc 类型说明，不是 TypeScript enum。API_CODE 以具名方式导出，使用时写 <code>import {API_CODE} from '@/constants/apiCode'</code>。数值只在此处定义；其他业务判断使用具有含义的成员名。</p><p>例如令牌判断使用 <code>API_CODE.TOKEN_EXPIRED</code> / <code>API_CODE.TOKEN_INVALID</code>，天体冲突使用 <code>API_CODE.BODY_ALREADY_EXISTS</code>。后端新增业务码时在这里补充，再在对应功能中添加处理分支。</p><div class="note"><p><code>error.response.status &gt;= 500</code> 判断的是 HTTP 5xx 范围，保留该写法；不要替换为 <code>API_CODE.INTERNAL_ERROR</code>。后者只表示响应体中的业务内部错误。后面的 JSON 响应示例、协议表仍保留数字，便于核对网络响应。</p></div></section>
+<section id="request"><h2>5. 分离公共工具与请求处理</h2><p>先完成第 4 节常量定义，再按 5.1 → 5.2 → 5.3 → 5.4 的顺序实现。类型工具负责基础判断，字段工具负责读取与校验，公共错误模块负责解释错误，请求层负责发送请求和处理失效会话，页面负责解释自身业务错误并决定如何展示。</p><div class="table-wrap"><table><thead><tr><th>位置</th><th>职责</th></tr></thead><tbody><tr><td>src/utils/typeGuard.js</td><td>提供不依赖 Axios、Store 或页面的基础类型判断，供多个模块复用。</td></tr><tr><td>src/utils/fieldReader.js</td><td>读取字段并检查字符串类型及非空约束；校验失败抛出异常，不绑定天体或登录业务。</td></tr><tr><td>src/utils/apiError.js</td><td>依赖 Axios、API_CODE 和共享类型工具；提取可处理的业务码、识别鉴权错误、返回通用错误文字。</td></tr><tr><td>src/utils/request.js</td><td>配置 Axios、附加 Bearer、解包成功数据；对当前会话的失效执行一次清理、提示和跳转。</td></tr><tr><td>BodyListPage.vue</td><td>getBodyErrorMessage() 处理天体字段校验和重复创建；其余情况调用公共函数。</td></tr><tr><td>LoginPage.vue</td><td>getLoginErrorMessage() 处理登录字段校验、凭据错误、账号状态变化和登录限流；其余情况调用公共函数。</td></tr></tbody></table></div><h3>5.1 新增共享类型工具：typeGuard.js</h3><p>将 isObject() 与 isRecord() 集中到 <code>src/utils/typeGuard.js</code>。isRecord() 复用 isObject()，再排除数组；两个函数均不依赖错误处理、请求或天体业务模块。</p><details class="code-block" open><summary>src/utils/typeGuard.js<span>点击折叠 / 展开</span></summary><pre><code data-file="src/utils/typeGuard.js" data-kind="complete">/**
+ * 判断输入是否为非 null 的对象，数组也会通过此检查。
+ * @param {unknown} value 待检查的值。
+ * @returns {value is Record&lt;string, unknown&gt;} 是对象时返回 true。
+ */
+function isObject(value) {
+    return typeof value === &#x27;object&#x27; &amp;&amp; value !== null
+}
+
+/**
+ * 判断输入是否为非 null、非数组的对象。
+ * @param {unknown} value 待检查的值。
+ * @returns {value is Record&lt;string, unknown&gt;} 满足条件时返回 true。
+ */
+function isRecord(value) {
+    if (isObject(value) === false) {
+        return false
+    }
+
+    return Array.isArray(value) === false
+}
+
+export {isObject, isRecord}</code></pre></details><p>apiError.js 和 request.js 均删除原有 isObject() 定义，改用 <code>import {isObject} from '@/utils/typeGuard'</code>。body.js 删除原有 isRecord() 定义，改用 <code>import {isRecord} from '@/utils/typeGuard'</code>。两个函数均保留 JSDoc 类型谓词 <code>value is Record&lt;string, unknown&gt;</code>，使 IDE 在判断通过后能够继续检查字段类型。</p><p>isObject() 接受非 null 对象，数组也会通过；isRecord() 还要求 <code>Array.isArray(value) === false</code>。两者都不保证值是普通对象，也不验证字段内容。第 6 节继续使用 isRecord()，因此数组仍会被拒绝；本次只集中定义位置，保持原有校验规则。</p><h3>5.2 新增字段读取工具：fieldReader.js</h3><p>将 readStringField() 和 readRequiredStringField() 移入 <code>src/utils/fieldReader.js</code>。前者返回字符串字段，后者复用前者并拒绝空字符串。与返回布尔值的 typeGuard 不同，字段工具返回读取结果，校验失败时抛出异常。</p><details class="code-block" open><summary>src/utils/fieldReader.js<span>点击折叠 / 展开</span></summary><pre><code data-file="src/utils/fieldReader.js" data-kind="complete">/**
+ * 读取一个字符串字段，保留输入对象中的原值。
+ * @param {Record&lt;string, unknown&gt;} record 待检查的记录。
+ * @param {string} field 字段名。
+ * @returns {string} 已确认类型的字段值。
+ * @throws {Error} 字段缺失或类型错误时抛出。
+ */
+function readStringField(record, field) {
+    /** @type {unknown} 待校验的字段值。 */
+    const value = record[field]
+
+    if (typeof value !== &#x27;string&#x27;) {
+        throw new Error(&#x27;接口响应中的 &#x27; + field + &#x27; 字段类型异常&#x27;)
+    }
+
+    return value
+}
+
+/**
+ * 读取必须非空的字符串字段；复用字符串读取函数，不执行 trim。
+ * @param {Record&lt;string, unknown&gt;} record 待检查的记录。
+ * @param {string} field 字段名。
+ * @returns {string} 非空字符串。
+ * @throws {Error} 字段缺失、类型错误或为空时抛出。
+ */
+function readRequiredStringField(record, field) {
+    /** @type {string} 已确认类型的字段值。 */
+    const value = readStringField(record, field)
+
+    if (value === &#x27;&#x27;) {
+        throw new Error(&#x27;接口响应中的 &#x27; + field + &#x27; 字段不能为空&#x27;)
+    }
+
+    return value
+}
+
+export {readStringField, readRequiredStringField}</code></pre></details><p>该模块使用通用的“接口响应中的”错误说明，不包含天体业务文案。两个函数的 record 参数均要求对象；调用方先用 isRecord() 确认对象形态，再读取字段，继续分别检查业务约束。</p><p>保持原有语义：readStringField() 接受空字符串；readRequiredStringField() 拒绝 <code>''</code>，但保留 <code>'   '</code> 及字符串的首尾空白，不做 trim 或类型转换。天体表单提交前的 trim 仍由该业务自己的代码决定。</p><h3>5.3 新增公共错误模块：apiError.js</h3><p>任何页面都可以使用 <code>getApiErrorMessage(error, fallback)</code>，它不再硬编码“天体、标题和简介”等业务提示。公共函数只返回值，不弹窗、不修改 Store、不跳转路由，也不导入 request.js，避免依赖循环。</p><p><code>getApiErrorCode()</code> 返回可按业务错误处理的 code。超时、无响应和 HTTP 5xx 优先按传输异常处理，返回 undefined，使页面转交公共函数；即使 HTTP 503 的响应体恰好包含某个业务码，也不会被误报为表单错误。</p><details class="code-block" open><summary>src/utils/apiError.js<span>点击折叠 / 展开</span></summary><pre><code data-file="src/utils/apiError.js" data-kind="complete">import {isObject} from &#x27;@/utils/typeGuard&#x27;
+import axios from &#x27;axios&#x27;
+import {API_CODE} from &#x27;@/constants/apiCode&#x27;
+
+/**
+ * 提取可按业务错误处理的 code。
+ * 超时、未收到响应或 HTTP 5xx 时返回 undefined，优先交给公共错误提示处理。
+ * @param {unknown} error 业务错误或 Axios 异常。
+ * @returns {number | undefined} 可用的业务码；不存在或应优先处理传输错误时返回 undefined。
+ */
+function getApiErrorCode(error) {
+    if (axios.isAxiosError(error) === true) {
+        if (error.code === &#x27;ECONNABORTED&#x27; || error.code === &#x27;ETIMEDOUT&#x27;) {
+            return undefined
+        }
+        if (error.response === undefined || error.response.status &gt;= 500) {
+            return undefined
+        }
+        error = error.response.data
+    }
+    if (isObject(error) === true &amp;&amp; typeof error.code === &#x27;number&#x27;) {
+        return error.code
+    }
+    return undefined
+}
+
+/**
+ * 判断后端是否明确拒绝了登录令牌。
+ * @param {unknown} error 业务错误或 Axios 异常。
+ * @returns {boolean} 业务码表示令牌过期或无效时返回 true。
+ */
+function isAuthError(error) {
+    /** @type {number | undefined} 可用业务码。 */
+    const code = getApiErrorCode(error)
+    return code === API_CODE.TOKEN_EXPIRED || code === API_CODE.TOKEN_INVALID
+}
+
+/**
+ * 生成公共错误说明，不包含天体、用户名或密码等页面业务文案。
+ * 本函数只返回文字，不弹窗、不清理会话、不跳转路由。
+ * @param {unknown} error 业务错误或 Axios 异常。
+ * @param {string} fallback 没有可用错误信息时显示的备用文字。
+ * @returns {string} 可供调用方展示的错误说明。
+ */
+function getApiErrorMessage(error, fallback) {
+    if (axios.isAxiosError(error) === true) {
+        if (error.code === &#x27;ECONNABORTED&#x27; || error.code === &#x27;ETIMEDOUT&#x27;) {
+            return &#x27;请求超时，请稍后刷新重试&#x27;
+        }
+        if (error.response === undefined) {
+            return &#x27;暂时无法连接服务，请检查网络或后端是否启动&#x27;
+        }
+        if (error.response.status &gt;= 500) {
+            return &#x27;服务暂时不可用，请稍后重试&#x27;
+        }
+        error = error.response.data
+    }
+    switch (getApiErrorCode(error)) {
+        case API_CODE.VALIDATION_ERROR:
+            return &#x27;请求参数不符合要求，请检查后重试&#x27;
+        case API_CODE.TOKEN_EXPIRED:
+            return &#x27;登录已过期，请重新登录&#x27;
+        case API_CODE.TOKEN_INVALID:
+            return &#x27;登录状态无效，请重新登录&#x27;
+        case API_CODE.DATABASE_ERROR:
+        case API_CODE.INTERNAL_ERROR:
+            return &#x27;服务暂时不可用，请稍后重试&#x27;
+    }
+    if (isObject(error) === true &amp;&amp; typeof error.message === &#x27;string&#x27;) {
+        if (error.message.trim() !== &#x27;&#x27;) {
+            return error.message
+        }
+    }
+    return fallback
+}
+
+export {getApiErrorCode, getApiErrorMessage, isAuthError}</code></pre></details><p>页面先匹配自身业务码，再调用公共函数。fallback 仅在公共函数找不到明确分类或非空 message 时使用，不强行覆盖后端返回的有效说明。</p><h3>5.4 更新请求模块：request.js</h3><p>用下方完整文件替换请求模块。它从 typeGuard.js 导入 isObject()，从 apiError.js 导入公共错误工具，不再重复定义或转导出这些工具。页面需要同步把错误工具的导入路径改为 <code>@/utils/apiError</code>，API 请求模块仍从 <code>@/utils/request</code> 导入默认请求实例。</p><p>只有 API_CODE.TOKEN_EXPIRED / API_CODE.TOKEN_INVALID 会清除会话。列表与状态的并发鉴权错误合并为一次提示和跳转；比较原请求和当前会话的令牌，避免迟到错误清除新会话。数据库、内部和网络错误不会自动登出。</p><p>这里导入 router 用于跳转，当前路由组件均通过动态 import 懒加载，与现有路由结构兼容。处理鉴权后仍保持 Promise 拒绝，由页面结束加载或提交状态；页面不再重复弹鉴权错误提示。</p><details class="code-block" open><summary>src/utils/request.js<span>点击折叠 / 展开</span></summary><pre><code data-file="src/utils/request.js" data-kind="complete">import {isObject} from &#x27;@/utils/typeGuard&#x27;
+import {API_CODE} from &#x27;@/constants/apiCode&#x27;
+import {getApiErrorMessage, isAuthError} from &#x27;@/utils/apiError&#x27;
+import axios from &#x27;axios&#x27;
+import {ElMessage} from &#x27;element-plus&#x27;
+import {isNavigationFailure} from &#x27;vue-router&#x27;
+import router from &#x27;@/router&#x27;
+import useUserStore from &#x27;@/stores/user&#x27;
+import pinia from &#x27;@/stores&#x27;
+
+/** @type {import(&#x27;axios&#x27;).CreateAxiosDefaults} Axios 基础配置。 */
+const config = {
+    baseURL: import.meta.env.VITE_API_BASE_URL,
+    timeout: 5000,
+}
+
+/** @type {import(&#x27;axios&#x27;).AxiosInstance} 全工程共用的请求实例。 */
+const request = axios.create(config)
+
+/** @type {boolean} 是否正在处理当前会话失效，合并并发提示和跳转。 */
+let isHandlingAuthFailure = false
+
+/**
+ * 附加当前令牌；登录请求自身不需要 Authorization。
+ * @param {import(&#x27;axios&#x27;).InternalAxiosRequestConfig} requestConfig 请求配置。
+ * @returns {import(&#x27;axios&#x27;).InternalAxiosRequestConfig} 处理后的配置。
+ */
+function attachToken(requestConfig) {
+    /** 当前 Pinia 的用户 Store。 */
+    const userStore = /** @type {import(&#x27;@/stores/user&#x27;).UserStore} */ (useUserStore(pinia))
+    if (requestConfig.url === &#x27;/v1/admin/login&#x27; || userStore.token === &#x27;&#x27;) {
+        requestConfig.headers.delete(&#x27;Authorization&#x27;)
+    } else {
+        requestConfig.headers.set(&#x27;Authorization&#x27;, &#x27;Bearer &#x27; + userStore.token)
+    }
+    return requestConfig
+}
+
+/**
+ * 清理失效会话并返回登录页；迟到的旧令牌错误不得清理新会话。
+ * @param {unknown} error 后端鉴权错误。
+ * @param {import(&#x27;axios&#x27;).InternalAxiosRequestConfig} requestConfig 原请求配置。
+ * @returns {Promise&lt;void&gt;} 会话失效处理结束。
+ */
+async function handleAuthFailure(error, requestConfig) {
+    if (requestConfig.url === &#x27;/v1/admin/login&#x27;) {
+        return
+    }
+    /** 当前 Pinia 的用户 Store。 */
+    const userStore = /** @type {import(&#x27;@/stores/user&#x27;).UserStore} */ (useUserStore(pinia))
+    /** @type {string} 当前会话应携带的 Authorization 值。 */
+    let currentAuthorization = &#x27;&#x27;
+    if (userStore.token !== &#x27;&#x27;) {
+        currentAuthorization = &#x27;Bearer &#x27; + userStore.token
+    }
+    /** 原请求实际发出的 Authorization 值。 */
+    const sentHeader = requestConfig.headers.get(&#x27;Authorization&#x27;)
+    /** @type {string} 规范化的原请求头。 */
+    let sentAuthorization = &#x27;&#x27;
+    if (typeof sentHeader === &#x27;string&#x27;) {
+        sentAuthorization = sentHeader
+    }
+    if (sentAuthorization !== currentAuthorization || isHandlingAuthFailure === true) {
+        return
+    }
+    isHandlingAuthFailure = true
+    try {
+        userStore.clearSession()
+        if (router.currentRoute.value.name !== &#x27;login&#x27;) {
+            ElMessage.warning(getApiErrorMessage(error, &#x27;请重新登录&#x27;))
+            /** 路由跳转结果。 */
+            const failure = await router.replace({name: &#x27;login&#x27;})
+            if (isNavigationFailure(failure) === true) {
+                ElMessage.error(&#x27;未能打开登录页，请手动进入 /login 重新登录&#x27;)
+            }
+        }
+    } catch {
+        ElMessage.error(&#x27;登录状态清理或跳转失败，请手动进入 /login 重新登录&#x27;)
+    } finally {
+        isHandlingAuthFailure = false
+    }
+}
+
+/**
+ * 按业务码处理响应，只在成功时解包 data。
+ * @param {import(&#x27;axios&#x27;).AxiosResponse} response HTTP 响应。
+ * @returns {Promise&lt;any&gt;} 解包后的业务数据；失败时保持 Promise 拒绝。
+ */
+async function unwrapResponse(response) {
+    /** @type {unknown} 待检查的响应包。 */
+    const payload = response.data
+    if (isObject(payload) === false || typeof payload.code !== &#x27;number&#x27;) {
+        throw new Error(&#x27;接口响应格式异常，请稍后重试&#x27;)
+    }
+    if (payload.code === API_CODE.SUCCESS) {
+        return payload.data
+    }
+    if (isAuthError(payload) === true) {
+        await handleAuthFailure(payload, response.config)
+    }
+    return Promise.reject(payload)
+}
+
+request.interceptors.request.use(attachToken)
+request.interceptors.response.use(unwrapResponse)
+
+export default request</code></pre></details><p>当前后端以 HTTP 200 返回业务鉴权码，拦截器在成功响应分支识别它；若未来后端改为 HTTP 401，还需增加相应的 rejected 分支处理。公共函数能够解析 HTTP 错误信息，并不等于请求层已经实现了 HTTP 401 自动登出。</p></section>
+<section id="api"><h2>6. 替换天体 API 模块</h2><p>本模块从 <code>@/utils/typeGuard</code> 导入 isRecord()，从 <code>@/utils/fieldReader</code> 导入 readStringField() 和 readRequiredStringField()，删除原有的同名本地定义。readPlanets()、isKnownBodyName() 等天体协议校验，以及三个请求函数继续保留在此模块。</p>
+<p>响应码由 request.js 使用 API_CODE 统一判定，此模块取得的已经是 data。因此不重复检查 code，也不为了使用常量而添加未使用的 API_CODE 导入。</p><p>保留页面熟悉的 <code>getBodyList()</code> 和 <code>addBody(form)</code>，新增 <code>getBodyStatus()</code>。Axios 已经返回 data，所以此处直接读取 <code>data.planets</code>，不再读取 <code>response.data.data</code>。</p>
+<p>状态模块检查九个已知名称是否齐全、唯一，exist 是否为布尔值。异常响应会作为加载失败处理。列表允许未知名称，字段结构仍需校验。以后若增加可创建天体，应同时调整后端枚举、前端选项和资源映射。</p><details class="code-block" open><summary>src/api/body.js<span>点击折叠 / 展开</span></summary><pre><code data-file="src/api/body.js" data-kind="complete">import {readStringField, readRequiredStringField} from &#x27;@/utils/fieldReader&#x27;
+import {isRecord} from &#x27;@/utils/typeGuard&#x27;
+import request from &#x27;@/utils/request&#x27;
+import {bodyOptions} from &#x27;@/constants/body&#x27;
+
+/**
+ * @typedef {Object} BodyStatus 天体下拉选项对应的服务端状态。
+ * @property {string} name 区分大小写的天体标识。
+ * @property {boolean} exist 是否已经创建；true 表示不可再次创建。
+ */
+
+/**
+ * @typedef {Object} BodyRecord 列表接口返回的一条天体记录。
+ * @property {string} id 雪花 ID 的字符串，不转换为 Number。
+ * @property {string} name 天体标识；历史未知名称也保留展示。
+ * @property {string} title 天体标题。
+ * @property {string} intro 天体简介。
+ */
+
+/**
+ * @typedef {Object} AddBodyForm 创建天体的表单数据。
+ * @property {string} name 固定选项中的天体标识，保持大小写及原值。
+ * @property {string} title 天体标题。
+ * @property {string} intro 天体简介。
+ */
+
+/**
+ * 从已解包的 data 中读取 planets 数组。
+ * @param {unknown} data request 响应拦截器返回的 payload.data。
+ * @returns {unknown[]} 尚未逐项校验的数组。
+ * @throws {Error} 缺少数组或数据结构异常时抛出。
+ */
+function readPlanets(data) {
+    if (isRecord(data) === false) {
+        throw new Error(&#x27;天体接口响应格式异常，请刷新后重试&#x27;)
+    }
+
+    if (Array.isArray(data.planets) === false) {
+        throw new Error(&#x27;天体接口响应缺少 planets 数组&#x27;)
+    }
+
+    return data.planets
+}
+
+/**
+ * 判断状态项的名称是否属于当前前端支持的九个选项。
+ * @param {string} name 待检查的天体标识。
+ * @returns {boolean} 名称精确匹配时返回 true。
+ */
+function isKnownBodyName(name) {
+    for (const option of bodyOptions) {
+        if (option.name === name) {
+            return true
+        }
+    }
+
+    return false
+}
+
+/**
+ * 获取下拉选项状态；任何缺失、重复或格式错误都视为加载失败。
+ * @returns {Promise&lt;BodyStatus[]&gt;} 包含全部九个天体的有效状态。
+ * @throws {Error} 响应结构或状态字段不符合当前协议时拒绝。
+ */
+async function getBodyStatus() {
+    /** @type {unknown} 已解包的响应 data，不再读取一层 data。 */
+    const data = await request.get(&#x27;/v1/planet/status&#x27;)
+    /** @type {unknown[]} 未经校验的状态项。 */
+    const planets = readPlanets(data)
+    /** @type {Set&lt;string&gt;} 已出现的名称，防止重复项冒充完整状态。 */
+    const seenNames = new Set()
+    /** @type {BodyStatus[]} 返回给组件的已校验状态。 */
+    const result = []
+
+    for (const item of planets) {
+        if (isRecord(item) === false) {
+            throw new Error(&#x27;天体状态记录格式异常&#x27;)
+        }
+
+        /** @type {string} 状态项中的精确名称。 */
+        const name = readRequiredStringField(item, &#x27;name&#x27;)
+
+        if (isKnownBodyName(name) === false || seenNames.has(name) === true) {
+            throw new Error(&#x27;天体状态包含未知或重复的名称&#x27;)
+        }
+
+        if (typeof item.exist !== &#x27;boolean&#x27;) {
+            throw new Error(&#x27;天体状态中的 exist 必须为布尔值&#x27;)
+        }
+
+        seenNames.add(name)
+        result.push({name: name, exist: item.exist})
+    }
+
+    if (seenNames.size !== bodyOptions.length) {
+        throw new Error(&#x27;天体状态不完整，请刷新状态后重试&#x27;)
+    }
+
+    return result
+}
+
+/**
+ * 读取已创建的天体列表，保留后端顺序和历史未知名称。
+ * @returns {Promise&lt;BodyRecord[]&gt;} 空表返回空数组，不补齐未创建天体。
+ * @throws {Error} 列表字段缺失或类型错误时拒绝。
+ */
+async function getBodyList() {
+    /** @type {unknown} 已解包的响应 data。 */
+    const data = await request.get(&#x27;/v1/planet/list&#x27;)
+    /** @type {unknown[]} 未经校验的天体记录。 */
+    const planets = readPlanets(data)
+    /** @type {BodyRecord[]} 返回给页面的天体列表。 */
+    const result = []
+
+    for (const item of planets) {
+        if (isRecord(item) === false) {
+            throw new Error(&#x27;天体列表记录格式异常&#x27;)
+        }
+
+        /** @type {string} 保持为字符串的天体 ID。 */
+        const id = readRequiredStringField(item, &#x27;id&#x27;)
+        /** @type {string} 不转换大小写的名称。 */
+        const name = readRequiredStringField(item, &#x27;name&#x27;)
+        /** @type {string} 数据库中的标题。 */
+        const title = readStringField(item, &#x27;title&#x27;)
+        /** @type {string} 数据库中的简介。 */
+        const intro = readStringField(item, &#x27;intro&#x27;)
+
+        result.push({id: id, name: name, title: title, intro: intro})
+    }
+
+    return result
+}
+
+/**
+ * 创建天体；表单校验由组件执行，重复名称由后端最终判定。
+ * @param {AddBodyForm} form 已通过前端校验的三个必填字段。
+ * @returns {Promise&lt;void&gt;} 后端确认创建成功，不返回新记录或 ID。
+ * @throws {Error} 成功响应结构异常时拒绝；业务及网络错误直接向外传递。
+ */
+async function addBody(form) {
+    /** @type {{planet: AddBodyForm}} 后端要求的嵌套请求体。 */
+    const body = {
+        planet: {
+            name: form.name,
+            title: form.title.trim(),
+            intro: form.intro.trim(),
+        },
+    }
+
+    /** @type {unknown} 创建成功时，解包后的 data 是空对象。 */
+    const data = await request.post(&#x27;/v1/planet/create&#x27;, body)
+
+    if (isRecord(data) === false) {
+        throw new Error(&#x27;创建接口响应格式异常，请刷新列表确认结果&#x27;)
+    }
+}
+
+export {
+    getBodyStatus,
+    getBodyList,
+    addBody,
+}</code></pre></details></section>
+<section id="page"><h2>7. 更新 BodyListPage.vue</h2>
+<p>本组件从 <code>@/utils/apiError</code> 导入公共错误工具，并定义 <code>getBodyErrorMessage()</code>：天体参数错误、重复创建在页面解释，其余异常交给公共函数。列表、选项状态和创建失败都调用这个页面函数。</p><p>本组件导入 API_CODE，在 submitBody() 中使用 <code>code === API_CODE.BODY_ALREADY_EXISTS</code> 判断重复创建，不再直接比较 20101。</p><p>下面是完整组件。列表和状态分别维护 loading/error：状态请求失败时，已成功取得的列表仍可查看；选项全部禁用，可单独刷新状态。每次打开抽屉都会重新读取状态。</p>
+<p>创建按钮允许打开抽屉以重新获取最新状态；确认创建按钮只在选择了服务端确认可创建的天体后启用。九个天体都已创建时，下拉框全部不可选。已选天体在刷新后变成已创建时，只清除名称，保留标题和简介。</p>
+<p><code>submitBody()</code> 的校验和请求使用两个同级 try/catch。创建成功后先确认成功，再独立刷新列表和状态。刷新失败不会诱导用户以为创建失败而重复提交。</p>
+<p>本例移除了输入框的 maxlength/show-word-limit，保留 FormRules 的长度检查：浏览器 maxlength 按 UTF-16 单元计数，而后端和当前表单校验按 Unicode 码点计数，避免 emoji 等字符在两端出现不同限制。</p><details class="code-block" open><summary>src/views/BodyListPage.vue<span>点击折叠 / 展开</span></summary><pre><code data-file="src/views/BodyListPage.vue" data-kind="complete">&lt;template&gt;
+    &lt;section class=&quot;body-list-page&quot;&gt;
+        &lt;el-breadcrumb :separator-icon=&quot;ArrowRight&quot;&gt;
+            &lt;el-breadcrumb-item&gt;管理后台&lt;/el-breadcrumb-item&gt;
+            &lt;el-breadcrumb-item&gt;天体管理&lt;/el-breadcrumb-item&gt;
+        &lt;/el-breadcrumb&gt;
+        &lt;h1&gt;天体管理&lt;/h1&gt;
+        &lt;p class=&quot;page-description&quot;&gt;管理太阳与八大行星的标题和简介&lt;/p&gt;
+
+        &lt;el-card shadow=&quot;never&quot;&gt;
+            &lt;template #header&gt;
+                &lt;div class=&quot;list-toolbar&quot;&gt;
+                    &lt;div class=&quot;list-heading&quot;&gt;
+                        &lt;strong&gt;天体列表&lt;/strong&gt;
+                        &lt;span v-if=&quot;loadFailed === false&quot;&gt;列表共 {{ bodyList.length }} 条&lt;/span&gt;
+                        &lt;span v-if=&quot;statusFailed === false &amp;&amp; isStatusLoading === false&quot;&gt;
+                            固定天体已创建 {{ createdBodyCount }} / {{ bodyOptions.length }} 个
+                        &lt;/span&gt;
+                    &lt;/div&gt;
+                    &lt;div class=&quot;toolbar-actions&quot;&gt;
+                        &lt;el-button :icon=&quot;Refresh&quot; :loading=&quot;isLoading || isStatusLoading&quot;
+                            :disabled=&quot;isLoading || isStatusLoading || isSubmitting&quot; @click=&quot;refreshData&quot;&gt;
+                            刷新列表和状态
+                        &lt;/el-button&gt;
+                        &lt;el-button type=&quot;primary&quot; :icon=&quot;Plus&quot;
+                            :disabled=&quot;isLoading || isStatusLoading || isSubmitting&quot; @click=&quot;openAddDrawer&quot;&gt;
+                            创建天体
+                        &lt;/el-button&gt;
+                    &lt;/div&gt;
+                &lt;/div&gt;
+            &lt;/template&gt;
+            &lt;el-alert v-if=&quot;statusFailed&quot; :title=&quot;statusError&quot; class=&quot;status-notice&quot;
+                type=&quot;error&quot; show-icon :closable=&quot;false&quot;&gt;&lt;/el-alert&gt;
+            &lt;el-alert v-if=&quot;loadFailed&quot; :title=&quot;listError&quot; type=&quot;error&quot;
+                show-icon :closable=&quot;false&quot;&gt;&lt;/el-alert&gt;
+            &lt;el-table v-else v-loading=&quot;isLoading&quot; :data=&quot;bodyList&quot; row-key=&quot;id&quot;
+                stripe empty-text=&quot;暂无天体，请点击创建天体&quot; class=&quot;body-table&quot;&gt;
+                &lt;el-table-column label=&quot;天体&quot; width=&quot;100&quot;&gt;
+                    &lt;template #default=&quot;scope&quot;&gt;{{ getBodyLabel(scope.row.name) }}&lt;/template&gt;
+                &lt;/el-table-column&gt;
+                &lt;el-table-column prop=&quot;name&quot; label=&quot;匹配标识&quot; width=&quot;130&quot;&gt;&lt;/el-table-column&gt;
+                &lt;el-table-column prop=&quot;title&quot; label=&quot;天体标题&quot; min-width=&quot;180&quot;&gt;&lt;/el-table-column&gt;
+                &lt;el-table-column prop=&quot;intro&quot; label=&quot;天体简介&quot; min-width=&quot;280&quot;&gt;&lt;/el-table-column&gt;
+            &lt;/el-table&gt;
+            &lt;p v-if=&quot;statusFailed === false &amp;&amp; isStatusLoading === false &amp;&amp; availableBodyCount === 0&quot; class=&quot;all-added&quot;&gt;
+                太阳与八大行星均已创建
+            &lt;/p&gt;
+        &lt;/el-card&gt;
+
+        &lt;el-drawer v-model=&quot;drawerVisible&quot; title=&quot;创建天体&quot; direction=&quot;rtl&quot; size=&quot;min(520px, 100vw)&quot;
+            :close-on-click-modal=&quot;false&quot; :close-on-press-escape=&quot;isSubmitting === false&quot;
+            :show-close=&quot;isSubmitting === false&quot; :before-close=&quot;beforeCloseDrawer&quot; @closed=&quot;resetAddForm&quot;&gt;
+            &lt;el-alert v-if=&quot;statusFailed&quot; :title=&quot;statusError&quot; class=&quot;status-notice&quot;
+                type=&quot;error&quot; show-icon :closable=&quot;false&quot;&gt;&lt;/el-alert&gt;
+            &lt;el-button :loading=&quot;isStatusLoading&quot; :disabled=&quot;isSubmitting || isStatusLoading&quot;
+                @click=&quot;loadBodyStatuses&quot;&gt;刷新可选天体&lt;/el-button&gt;
+            &lt;el-form ref=&quot;addFormRef&quot; :model=&quot;addForm&quot; :rules=&quot;addFormRules&quot;
+                :disabled=&quot;isSubmitting || isStatusLoading || statusFailed&quot; label-position=&quot;top&quot;
+                @submit.prevent=&quot;submitBody&quot;&gt;
+                &lt;el-form-item label=&quot;天体&quot; prop=&quot;name&quot;&gt;
+                    &lt;el-select v-model=&quot;addForm.name&quot; placeholder=&quot;请选择天体&quot; class=&quot;body-select&quot;
+                        :loading=&quot;isStatusLoading&quot;&gt;
+                        &lt;el-option v-for=&quot;option in bodyOptions&quot; :key=&quot;option.name&quot;
+                            :label=&quot;getOptionLabel(option.name)&quot; :value=&quot;option.name&quot;
+                            :disabled=&quot;isBodySelectable(option.name) === false&quot;&gt;&lt;/el-option&gt;
+                    &lt;/el-select&gt;
+                    &lt;p class=&quot;field-help&quot;&gt;已创建的天体不可重复选择；状态加载失败时请先刷新。&lt;/p&gt;
+                &lt;/el-form-item&gt;
+                &lt;el-form-item label=&quot;简介标题&quot; prop=&quot;title&quot;&gt;
+                    &lt;el-input v-model=&quot;addForm.title&quot; placeholder=&quot;请输入简介标题&quot;&gt;&lt;/el-input&gt;
+                    &lt;p class=&quot;field-help&quot;&gt;最多 {{ BODY_TITLE_MAX_LENGTH }} 个字符&lt;/p&gt;
+                &lt;/el-form-item&gt;
+                &lt;el-form-item label=&quot;简介内容&quot; prop=&quot;intro&quot;&gt;
+                    &lt;el-input v-model=&quot;addForm.intro&quot; type=&quot;textarea&quot; :rows=&quot;6&quot; placeholder=&quot;请输入简介内容&quot;&gt;&lt;/el-input&gt;
+                    &lt;p class=&quot;field-help&quot;&gt;最多 {{ BODY_INTRO_MAX_LENGTH }} 个字符&lt;/p&gt;
+                &lt;/el-form-item&gt;
+            &lt;/el-form&gt;
+            &lt;template #footer&gt;
+                &lt;el-button :disabled=&quot;isSubmitting&quot; @click=&quot;closeAddDrawer&quot;&gt;取消&lt;/el-button&gt;
+                &lt;el-button type=&quot;primary&quot; :loading=&quot;isSubmitting&quot;
+                    :disabled=&quot;isSubmitting || isStatusLoading || statusFailed || isBodySelectable(addForm.name) === false&quot;
+                    @click=&quot;submitBody&quot;&gt;确认创建&lt;/el-button&gt;
+            &lt;/template&gt;
+        &lt;/el-drawer&gt;
+    &lt;/section&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import {computed, nextTick, onMounted, reactive, ref} from &#x27;vue&#x27;
+import {ElMessage} from &#x27;element-plus&#x27;
+import {API_CODE} from &#x27;@/constants/apiCode&#x27;
+import {ArrowRight, Plus, Refresh} from &#x27;@element-plus/icons-vue&#x27;
+import {BODY_INTRO_MAX_LENGTH, BODY_TITLE_MAX_LENGTH, bodyOptions} from &#x27;@/constants/body&#x27;
+import {addBody, getBodyList, getBodyStatus} from &#x27;@/api/body&#x27;
+import {getApiErrorCode, getApiErrorMessage, isAuthError} from &#x27;@/utils/apiError&#x27;
+
+defineOptions({name: &#x27;BodyListPage&#x27;})
+
+/** @type {import(&#x27;vue&#x27;).Ref&lt;import(&#x27;@/api/body&#x27;).BodyRecord[]&gt;} 已创建的列表记录。 */
+const bodyList = ref([])
+/** @type {import(&#x27;vue&#x27;).Ref&lt;import(&#x27;@/api/body&#x27;).BodyStatus[]&gt;} 后端返回的下拉选项状态。 */
+const bodyStatuses = ref([])
+/** @type {import(&#x27;vue&#x27;).Ref&lt;boolean&gt;} 列表请求是否进行中。 */
+const isLoading = ref(false)
+/** @type {import(&#x27;vue&#x27;).Ref&lt;boolean&gt;} 状态请求是否进行中。 */
+const isStatusLoading = ref(false)
+/** @type {import(&#x27;vue&#x27;).Ref&lt;boolean&gt;} 列表是否加载失败。 */
+const loadFailed = ref(false)
+/** @type {import(&#x27;vue&#x27;).Ref&lt;boolean&gt;} 状态是否不可用；首次加载前也不可用。 */
+const statusFailed = ref(true)
+/** @type {import(&#x27;vue&#x27;).Ref&lt;string&gt;} 列表错误说明。 */
+const listError = ref(&#x27;&#x27;)
+/** @type {import(&#x27;vue&#x27;).Ref&lt;string&gt;} 状态错误说明。 */
+const statusError = ref(&#x27;天体状态尚未加载，请刷新&#x27;)
+/** @type {import(&#x27;vue&#x27;).Ref&lt;boolean&gt;} 抽屉是否可见。 */
+const drawerVisible = ref(false)
+/** @type {import(&#x27;vue&#x27;).Ref&lt;boolean&gt;} 表单校验或创建提交是否进行中。 */
+const isSubmitting = ref(false)
+/** @type {import(&#x27;vue&#x27;).Ref&lt;import(&#x27;element-plus&#x27;).FormInstance | null&gt;} 表单组件实例。 */
+const addFormRef = ref(null)
+/** @type {import(&#x27;@/api/body&#x27;).AddBodyForm} 创建表单，名称保持原值。 */
+const addForm = reactive({name: &#x27;&#x27;, title: &#x27;&#x27;, intro: &#x27;&#x27;})
+/** @type {import(&#x27;element-plus&#x27;).FormRules&lt;import(&#x27;@/api/body&#x27;).AddBodyForm&gt;} 表单校验规则。 */
+const addFormRules = {
+    name: [{required: true, message: &#x27;请选择天体&#x27;, trigger: &#x27;change&#x27;}],
+    title: [
+        {required: true, whitespace: true, message: &#x27;请输入天体标题&#x27;, trigger: &#x27;blur&#x27;},
+        {max: BODY_TITLE_MAX_LENGTH, message: &#x27;天体标题最多 20 个字符&#x27;, trigger: &#x27;blur&#x27;},
+    ],
+    intro: [
+        {required: true, whitespace: true, message: &#x27;请输入天体简介&#x27;, trigger: &#x27;blur&#x27;},
+        {max: BODY_INTRO_MAX_LENGTH, message: &#x27;天体简介最多 150 个字符&#x27;, trigger: &#x27;blur&#x27;},
+    ],
+}
+/** @type {import(&#x27;vue&#x27;).ComputedRef&lt;number&gt;} 已创建的固定天体数量，与列表总数区分。 */
+const createdBodyCount = computed(getCreatedBodyCount)
+/** @type {import(&#x27;vue&#x27;).ComputedRef&lt;number&gt;} 当前可创建的固定天体数量。 */
+const availableBodyCount = computed(getAvailableBodyCount)
+
+/**
+ * 根据匹配标识读取中文名称；历史未知名称保留原文。
+ * @param {string} name 天体标识。
+ * @returns {string} 展示名称。
+ */
+function getBodyLabel(name) {
+    for (const option of bodyOptions) {
+        if (option.name === name) {
+            return option.label
+        }
+    }
+    return name
+}
+
+/**
+ * 只有状态已加载且 exist 严格等于 false 时，才允许选择。
+ * @param {string} name 天体标识。
+ * @returns {boolean} 是否允许创建。
+ */
+function isBodySelectable(name) {
+    if (statusFailed.value === true || isStatusLoading.value === true) {
+        return false
+    }
+    for (const status of bodyStatuses.value) {
+        if (status.name === name) {
+            return status.exist === false
+        }
+    }
+    return false
+}
+
+/**
+ * 组合中文名、标识与后端状态。
+ * @param {string} name 天体标识。
+ * @returns {string} 下拉选项文字。
+ */
+function getOptionLabel(name) {
+    /** @type {string} 不含状态的基础文字。 */
+    const label = getBodyLabel(name) + &#x27;（&#x27; + name + &#x27;）&#x27;
+    if (isStatusLoading.value === true) {
+        return label + &#x27; · 正在读取状态&#x27;
+    }
+    if (statusFailed.value === true) {
+        return label + &#x27; · 状态未知&#x27;
+    }
+    for (const status of bodyStatuses.value) {
+        if (status.name === name) {
+            if (status.exist === true) {
+                return label + &#x27; · 已创建&#x27;
+            }
+            return label + &#x27; · 可创建&#x27;
+        }
+    }
+    return label + &#x27; · 状态未知&#x27;
+}
+
+/** @returns {number} 状态接口中 exist 为 true 的天体数量。 */
+function getCreatedBodyCount() {
+    /** @type {number} 已创建数量。 */
+    let count = 0
+    for (const status of bodyStatuses.value) {
+        if (status.exist === true) {
+            count += 1
+        }
+    }
+    return count
+}
+
+/** @returns {number} 状态接口确认可创建的数量。 */
+function getAvailableBodyCount() {
+    /** @type {number} 可创建数量。 */
+    let count = 0
+    for (const option of bodyOptions) {
+        if (isBodySelectable(option.name) === true) {
+            count += 1
+        }
+    }
+    return count
+}
+
+/**
+ * 优先解释天体业务错误，其他异常交给公共模块。
+ * @param {unknown} error 接口异常。
+ * @param {string} fallback 当前操作没有具体错误信息时的提示。
+ * @returns {string} 天体页面可展示的错误说明。
+ */
+function getBodyErrorMessage(error, fallback) {
+    switch (getApiErrorCode(error)) {
+        case API_CODE.VALIDATION_ERROR:
+            return &#x27;提交内容不符合要求，请检查天体、标题和简介&#x27;
+        case API_CODE.BODY_ALREADY_EXISTS:
+            return &#x27;该天体已被创建，请选择其他天体&#x27;
+    }
+    return getApiErrorMessage(error, fallback)
+}
+
+/** @returns {Promise&lt;void&gt;} 列表读取结束，失败保留重试入口。 */
+async function loadBodies() {
+    if (isLoading.value === true) {
+        return
+    }
+    isLoading.value = true
+    loadFailed.value = false
+    listError.value = &#x27;&#x27;
+    try {
+        bodyList.value = await getBodyList()
+    } catch (error) {
+        loadFailed.value = true
+        listError.value = getBodyErrorMessage(error, &#x27;天体列表加载失败&#x27;) + &#x27;；请刷新列表重试&#x27;
+    } finally {
+        isLoading.value = false
+    }
+}
+
+/** @returns {Promise&lt;void&gt;} 状态读取结束；失败清空状态，禁止误选。 */
+async function loadBodyStatuses() {
+    if (isStatusLoading.value === true) {
+        return
+    }
+    isStatusLoading.value = true
+    statusError.value = &#x27;&#x27;
+    try {
+        bodyStatuses.value = await getBodyStatus()
+        statusFailed.value = false
+    } catch (error) {
+        bodyStatuses.value = []
+        statusFailed.value = true
+        statusError.value = getBodyErrorMessage(error, &#x27;天体状态加载失败&#x27;) + &#x27;；请刷新可选天体重试&#x27;
+    } finally {
+        isStatusLoading.value = false
+    }
+    // 刷新发现该天体已被其他管理员创建时，只清除名称，保留已填写的标题和简介。
+    if (addForm.name !== &#x27;&#x27; &amp;&amp; isBodySelectable(addForm.name) === false) {
+        addForm.name = &#x27;&#x27;
+    }
+}
+
+/** @returns {Promise&lt;void&gt;} 两个独立读取均结束，各自维护错误状态。 */
+async function refreshData() {
+    await Promise.all([loadBodies(), loadBodyStatuses()])
+}
+
+/** @returns {void} 清空表单并清除校验提示。 */
+function resetAddForm() {
+    addForm.name = &#x27;&#x27;
+    addForm.title = &#x27;&#x27;
+    addForm.intro = &#x27;&#x27;
+    if (addFormRef.value !== null) {
+        addFormRef.value.clearValidate()
+    }
+}
+
+/** @returns {Promise&lt;void&gt;} 打开抽屉后重新读取状态，避免沿用进入页面时的快照。 */
+async function openAddDrawer() {
+    if (isSubmitting.value === true || isLoading.value === true || isStatusLoading.value === true) {
+        return
+    }
+    resetAddForm()
+    drawerVisible.value = true
+    // 先启动请求，使本轮渲染立即禁用提交，再等待抽屉懒加载表单。
+    /** @type {Promise&lt;void&gt;} 本次状态刷新。 */
+    const loading = loadBodyStatuses()
+    await nextTick()
+    if (addFormRef.value !== null) {
+        addFormRef.value.clearValidate()
+    }
+    await loading
+}
+
+/**
+ * 提交时阻止抽屉关闭。
+ * @param {() =&gt; void} done Element Plus 关闭回调。
+ * @returns {void} 关闭判定结束。
+ */
+function beforeCloseDrawer(done) {
+    if (isSubmitting.value === false) {
+        done()
+    }
+}
+
+/** @returns {void} 未提交时响应取消操作。 */
+function closeAddDrawer() {
+    if (isSubmitting.value === false) {
+        drawerVisible.value = false
+    }
+}
+
+/** @returns {Promise&lt;void&gt;} 校验、创建与后续刷新结束；两个 try/catch 保持同级。 */
+async function submitBody() {
+    if (isSubmitting.value === true || drawerVisible.value === false || addFormRef.value === null) {
+        return
+    }
+    if (isBodySelectable(addForm.name) === false) {
+        ElMessage.warning(&#x27;请选择状态已确认可创建的天体&#x27;)
+        return
+    }
+    isSubmitting.value = true
+    try {
+        addForm.title = addForm.title.trim()
+        addForm.intro = addForm.intro.trim()
+        /** @type {boolean} 表单校验结果。 */
+        const isValid = await addFormRef.value.validate()
+        if (isValid === false) {
+            isSubmitting.value = false
+            return
+        }
+    } catch {
+        isSubmitting.value = false
+        return
+    }
+
+    try {
+        await addBody({name: addForm.name, title: addForm.title, intro: addForm.intro})
+    } catch (error) {
+        // 鉴权错误已由 request.js 统一提示和跳转，不再重复弹窗。
+        if (isAuthError(error) === true) {
+            return
+        }
+        /** @type {number | undefined} 明确的业务错误码。 */
+        const code = getApiErrorCode(error)
+        ElMessage.error(getBodyErrorMessage(error, &#x27;创建失败，请稍后重试&#x27;))
+        if (code === API_CODE.BODY_ALREADY_EXISTS || code === undefined) {
+            // 超时/断网可能发生在数据库写入之后；先读取结果，绝不自动重发创建请求。
+            if (code === undefined) {
+                ElMessage.warning(&#x27;尚未确认创建结果，请核对刷新后的列表再决定是否提交&#x27;)
+            }
+            await refreshData()
+        }
+        return
+    } finally {
+        isSubmitting.value = false
+    }
+
+    drawerVisible.value = false
+    ElMessage.success(&#x27;天体创建成功&#x27;)
+    // 创建已确认成功：列表或状态刷新失败只显示各自的错误，不改报“创建失败”。
+    await refreshData()
+}
+
+onMounted(refreshData)
+&lt;/script&gt;
+
+&lt;style scoped lang=&quot;scss&quot;&gt;
+.body-list-page h1 {
+    margin: 20px 0 8px;
+    color: #35405b;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.page-description {
+    margin: 0 0 20px;
+    color: #657089;
+    line-height: 1.6;
+}
+
+.status-notice {
+    margin-bottom: 20px;
+}
+
+.list-toolbar,
+.list-heading,
+.toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.list-toolbar {
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.list-heading {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+}
+
+.list-heading span,
+.all-added,
+.field-help {
+    color: #657089;
+    font-size: 13px;
+}
+
+.toolbar-actions {
+    flex-wrap: wrap;
+}
+
+.toolbar-actions :deep(.el-button + .el-button) {
+    margin-left: 0;
+}
+
+.body-table {
+    width: 100%;
+}
+
+.body-table :deep(.cell) {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.body-select {
+    width: 100%;
+}
+
+.field-help {
+    margin: 6px 0 0;
+    line-height: 1.6;
+}
+
+.all-added {
+    margin: 16px 0 0;
+}
+
+.body-list-page :deep(.el-card) {
+    border-color: #e8ecf3;
+    border-radius: 8px;
+}
+
+@media (max-width: 640px) {
+    .list-toolbar {
+        align-items: flex-start;
+    }
+
+    .toolbar-actions {
+        width: 100%;
+    }
+}
+&lt;/style&gt;</code></pre></details></section>
+<section id="login"><h2>8. 再迁移已有登录 API</h2><p>完成三个天体接口及其页面后，再更新登录相关内容。仍然请求 <code>POST /v1/admin/login</code>，请求体为 <code>{admin: {username, password}}</code>；成功后读取服务端返回的 access_token 和 username。</p><h3>8.1 登录请求模块：继续复用统一请求层</h3><p>当前 <code>src/api/admin.js</code> 没有业务码数值判断。更新第 5.4 节 request.js 后，登录成功也会经过 <code>API_CODE.SUCCESS</code> 判定；失败业务响应仍原样 reject 到登录页。</p><p>这里不导入未使用的 API_CODE，也不再次读取 <code>data.code</code>：响应拦截处理之后，data 已是有效载荷。保留三个字段校验函数与类型谓词，完整文件如下。</p><details class="code-block" open><summary>src/api/admin.js<span>点击折叠 / 展开</span></summary><pre><code data-file="src/api/admin.js" data-kind="complete">/**
+ * @typedef {Object} LoginRequest 管理员登录接口的请求体
+ * @property {{username: string, password: string}} admin 管理员凭据,按原值提交即可
+ */
+
+/**
+ * @typedef {Object} LoginAdmin 登录接口返回的管理员信息
+ * @property {string} id 管理员 ID,保留字符串形式
+ * @property {string} username 服务端返回的管理员用户名
+ * @property {string} access_token 服务端签发的访问令牌
+ * */
+
+import request from &quot;@/utils/request&quot;;
+
+/**
+ * 本函数用于请求管理员登录接口,并从解包后的数据中取得管理员信息
+ * @param {string} username 用户输入的用户名
+ * @param {string} password 用户输入的原始密码,不做 trim 或前端哈希
+ * @returns {Promise&lt;LoginAdmin&gt;} 已检查字段类型的管理员信息
+ * @throws {Error} 响应格式异常时拒绝;业务错误和网络错误直接向调用方传递
+ * */
+async function loginAdmin(username, password) {
+    /** @type {LoginRequest} 管理员登录接口的请求体 */
+    const body = {
+        admin: {
+            username: username,
+            password: password,
+        },
+    }
+
+    /**
+     * request 的响应拦截器(已经返回 payload.data)
+     * 先作为 unknown 检查,避免误用 AxiosResponse 类型或未经校验的数据
+     * @type {unknown}
+     */
+    const data = await request.post(&#x27;/v1/admin/login&#x27;, body)
+    if (typeof data !== &#x27;object&#x27; || data === null || (&#x27;admin&#x27; in data) === false) {
+        throw new Error(&#x27;登录响应格式异常，请稍后重试&#x27;)
+    }
+
+    /** @type {unknown} 待检查的管理员信息 */
+    const admin = data.admin
+    if (typeof admin !== &#x27;object&#x27; || admin === null) {
+        throw new Error(&#x27;登录响应缺少管理员信息,请稍后重试&#x27;)
+    }
+
+    if (hasValidAdminId(admin) === false) {
+        throw new Error(&#x27;登录响应中的管理员信息不完整,请稍后重试&#x27;)
+    }
+
+    if (hasValidAdminUsername(admin) === false) {
+        throw new Error(&#x27;登录响应中的管理员信息不完整,请稍后重试&#x27;)
+    }
+
+    if (hasValidAdminAccessToken(admin) === false) {
+        throw new Error(&#x27;登录响应中的管理员信息不完整,请稍后重试&#x27;)
+    }
+
+    return {
+        id: admin.id,
+        username: admin.username,
+        access_token: admin.access_token,
+    }
+}
+
+/**
+ * 本函数用于检查管理员信息中的 id 字段是否存在且为非空字符串
+ * @param {unknown} admin 待检查的管理员信息
+ * @returns {admin is {id: string}} id 字段通过校验时返回 true
+ * */
+function hasValidAdminId(admin) {
+    if (typeof admin !== &#x27;object&#x27; || admin === null) {
+        return false
+    }
+
+    if ((&#x27;id&#x27; in admin) === false || typeof admin.id !== &#x27;string&#x27;) {
+        return false
+    }
+
+    return admin.id !== &#x27;&#x27;
+}
+
+/**
+ * 本函数用于检查管理员信息中的 username 字段是否存在且为非空字符串
+ * @param {unknown} admin 待检查的管理员信息
+ * @returns {admin is {username: string}} username 字段通过校验时返回 true
+ * */
+function hasValidAdminUsername(admin) {
+    if (typeof admin !== &#x27;object&#x27; || admin === null) {
+        return false
+    }
+
+    if ((&#x27;username&#x27; in admin) === false || typeof admin.username !== &#x27;string&#x27;) {
+        return false
+    }
+
+    return admin.username !== &#x27;&#x27;
+}
+
+/**
+ * 本函数用于检查管理员信息中的 access_token 字段是否存在且为非空字符串
+ * @param {unknown} admin 待检查的管理员信息
+ * @returns {admin is {access_token: string}} access_token 字段通过校验时返回 true
+ */
+function hasValidAdminAccessToken(admin) {
+    if (typeof admin !== &#x27;object&#x27; || admin === null) {
+        return false
+    }
+
+    if ((&#x27;access_token&#x27; in admin) === false || typeof admin.access_token !== &#x27;string&#x27;) {
+        return false
+    }
+
+    return admin.access_token !== &#x27;&#x27;
+}
+
+export {
+    loginAdmin,
+}</code></pre></details><h3>8.2 登录页面：只处理登录业务错误</h3><p>导入 API_CODE 和 apiError.js 的公共工具。保留 getLoginErrorMessage()，删除原 getBusinessErrorMessage() 以及页面中重复的 Axios、超时、连接错误和 HTTP 5xx 判断。四种登录专属业务码在页面解释，其他错误调用公共函数。</p><div class="table-wrap"><table><thead><tr><th>错误类型</th><th>处理位置</th></tr></thead><tbody><tr><td>VALIDATION_ERROR</td><td>登录页：请检查用户名和密码；天体页对同一码给出天体字段提示。</td></tr><tr><td>LOGIN_CREDENTIAL_ERROR / LOGIN_STATE_CHANGED / LOGIN_RATE_LIMIT</td><td>登录页：凭据错误、账号状态变化、登录限流。</td></tr><tr><td>DATABASE_ERROR / INTERNAL_ERROR / TOKEN_EXPIRED / TOKEN_INVALID</td><td>公共模块统一给出说明；鉴权清理与跳转行为仍由 request.js 执行。</td></tr><tr><td>超时 / 未收到响应 / HTTP 5xx</td><td>公共模块，登录页和天体页复用相同提示。</td></tr></tbody></table></div><details class="code-block" open><summary>src/views/LoginPage.vue<span>点击折叠 / 展开</span></summary><pre><code data-file="src/views/LoginPage.vue" data-kind="complete">&lt;template&gt;
+    &lt;main class=&quot;login-page&quot;&gt;
+        &lt;el-card class=&quot;login-card&quot;&gt;
+            &lt;template #header&gt;
+                SolarNotes 管理后台登录
+            &lt;/template&gt;
+
+            &lt;el-form
+                ref=&quot;loginFormRef&quot;
+                :model=&quot;loginForm&quot;
+                :rules=&quot;loginFormRules&quot;
+                :disabled=&quot;isSubmitting&quot;
+                label-position=&quot;top&quot;
+                @submit.prevent=&quot;login&quot;
+            &gt;
+                &lt;el-form-item label=&quot;用户名&quot; prop=&quot;username&quot;&gt;
+                    &lt;el-input
+                        v-model=&quot;loginForm.username&quot;
+                        name=&quot;username&quot;
+                        autocomplete=&quot;username&quot;
+                        placeholder=&quot;请输入用户名&quot;
+                        clearable
+                    &gt;
+                    &lt;/el-input&gt;
+                &lt;/el-form-item&gt;
+
+                &lt;el-form-item label=&quot;密码&quot; prop=&quot;password&quot;&gt;
+                    &lt;el-input
+                        v-model=&quot;loginForm.password&quot;
+                        name=&quot;password&quot;
+                        type=&quot;password&quot;
+                        autocomplete=&quot;current-password&quot;
+                        placeholder=&quot;请输入密码&quot;
+                        show-password
+                    &gt;
+                    &lt;/el-input&gt;
+                &lt;/el-form-item&gt;
+
+                &lt;el-form-item&gt;
+                    &lt;el-button
+                        type=&quot;primary&quot;
+                        native-type=&quot;submit&quot;
+                        :loading=&quot;isSubmitting&quot;
+                        :disabled=&quot;isSubmitting&quot;
+                        class=&quot;login-button&quot;
+                    &gt;
+                        登录
+                    &lt;/el-button&gt;
+                &lt;/el-form-item&gt;
+            &lt;/el-form&gt;
+        &lt;/el-card&gt;
+    &lt;/main&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import {reactive, ref} from &quot;vue&quot;;
+import {ElMessage} from &quot;element-plus&quot;;
+import useUserStore from &quot;@/stores/user&quot;;
+import {isNavigationFailure, useRouter} from &quot;vue-router&quot;;
+import {loginAdmin} from &quot;@/api/admin&quot;;
+import {API_CODE} from &quot;@/constants/apiCode&quot;;
+import {getApiErrorCode, getApiErrorMessage} from &quot;@/utils/apiError&quot;;
+
+defineOptions({
+    name: &#x27;LoginPage&#x27;,
+})
+
+/**
+ * @typedef {Object} LoginForm 本常量用于表示登录表单数据
+ * @property {string} username 用户名,长度为 5-20 个字符
+ * @property {string} password 原始密码,长度为 6-20 个字符
+ * */
+
+/** @type {LoginForm} 本常量用于表示登录表单中用户输入的用户名和密码,输入内容按输入原值保存 */
+const loginForm = reactive({
+    username: &#x27;&#x27;,
+    password: &#x27;&#x27;,
+})
+
+/** @type {import(&#x27;vue&#x27;).Ref&lt;import(&#x27;element-plus&#x27;).FormInstance | null&gt;} 本常量用于表示登录表单实例 */
+const loginFormRef = ref(null)
+
+/** @type {import(&#x27;vue&#x27;).Ref&lt;boolean&gt;} 本标量用于表示是否正在校验/请求登录/处理成功后的跳转 */
+const isSubmitting = ref(false)
+
+/** @type {import(&#x27;element-plus&#x27;).FormRules&lt;LoginForm&gt;} 本常量用于表示表单字段校验规则 */
+const loginFormRules = {
+    username: [
+        {required: true, whitespace: true, message: &#x27;请输入用户名&#x27;, trigger: &#x27;blur&#x27;},
+        {min: 5, max: 20, message: &#x27;用户名长度为 5-20 个字符&#x27;, trigger: &#x27;blur&#x27;},
+    ],
+    password: [
+        {required: true, whitespace: true, message: &#x27;请输入密码&#x27;, trigger: &#x27;blur&#x27;},
+        {min: 6, max: 20, message: &#x27;密码长度为 6-20 个字符&#x27;, trigger: &#x27;blur&#x27;},
+    ],
+}
+
+/**
+ * 用户Store实例
+ * */
+const userStore = /** @type {import(&#x27;@/stores/user&#x27;).UserStore} */ (useUserStore())
+
+/**
+ * 路由实例
+ * @type {import(&#x27;vue-router&#x27;).Router}
+ * */
+const router = useRouter()
+
+/**
+ * 本函数用于校验并提交登录凭据,成功后保存会话并进入天体管理
+ * @returns {Promise&lt;void&gt;} 本次登录处理结束
+ * */
+async function login() {
+    if (isSubmitting.value === true || loginFormRef.value === null) {
+        return
+    }
+
+    isSubmitting.value = true
+
+    try {
+        /** @type {boolean} 本标量用于表示表单校验是否通过 */
+        const isValid = await loginFormRef.value.validate()
+
+        if (isValid === false) {
+            isSubmitting.value = false
+            return
+        }
+    } catch {
+        // 校验错误由表单项显示,恢复按钮后允许用户修改输入
+        isSubmitting.value = false
+        return
+    }
+
+    /** @type {import(&#x27;@/api/admin&#x27;).LoginAdmin} 本变量用于表示成功响应中的管理员信息 */
+    let admin
+
+    try {
+        admin = await loginAdmin(loginForm.username, loginForm.password)
+    } catch (error) {
+        isSubmitting.value = false
+        ElMessage.error(getLoginErrorMessage(error))
+        return
+    }
+
+    try {
+        await onLoginSuccess(admin.access_token, admin.username)
+        ElMessage.success(&#x27;登录成功&#x27;)
+    } catch {
+        ElMessage.error(&#x27;登录后的页面未能打开,请刷新页面后重试&#x27;)
+    } finally {
+        isSubmitting.value = false
+    }
+}
+
+/**
+ * 本函数用于解释登录专属业务错误，其他异常交给公共模块。
+ * @param {unknown} error 登录请求抛出的异常。
+ * @returns {string} 登录页可展示的错误说明。
+ */
+function getLoginErrorMessage(error) {
+    switch (getApiErrorCode(error)) {
+        case API_CODE.VALIDATION_ERROR:
+            return &#x27;登录信息格式不正确，请检查用户名和密码&#x27;
+        case API_CODE.LOGIN_CREDENTIAL_ERROR:
+            return &#x27;账号或密码错误&#x27;
+        case API_CODE.LOGIN_STATE_CHANGED:
+            return &#x27;账号状态已变化，请重新登录&#x27;
+        case API_CODE.LOGIN_RATE_LIMIT:
+            return &#x27;请求过于频繁，请稍后再试&#x27;
+    }
+    return getApiErrorMessage(error, &#x27;登录失败，请稍后重试&#x27;)
+}
+
+/**
+ * 本函数用于清空表单中的密码,保存服务端返回的会话并进入天体管理
+ * @param {string} token 服务端返回的 access_token
+ * @param {string} username 服务端返回的管理员用户名
+ * @returns {Promise&lt;void&gt;} 会话保存及页面跳转完成
+ * @throws {Error} 会话保存或路由跳转失败时抛出
+ * */
+async function onLoginSuccess(token, username) {
+    loginForm.password = &#x27;&#x27;
+    userStore.setSession(token, username)
+
+    /** @type {void | import(&#x27;vue-router&#x27;).NavigationFailure} 路由跳转的结果 */
+    const failure = await router.replace({name: &#x27;bodyList&#x27;})
+
+    if (isNavigationFailure(failure) === true) {
+        throw new Error(&#x27;未能进入天体管理页面&#x27;)
+    }
+}
+&lt;/script&gt;
+
+&lt;style scoped&gt;
+.login-page {
+    display: grid;
+    place-items: center;
+    min-height: 100vh;
+}
+
+.login-card {
+    width: 360px;
+    max-width: calc(100vw - 32px);
+}
+&lt;/style&gt;</code></pre></details><p>登录请求不携带旧 Authorization；用户名、密码仍按原值提交。登录失败不清除会话、不触发受保护接口的失效跳转；业务错误只由登录页提示一次。登录成功仍调用 <code>setSession(token, username)</code> 并跳转天体管理页。</p></section>
+<section id="flow"><h2>9. 刷新、并发和失败处理顺序</h2><div class="table-wrap"><table><thead><tr><th>场景</th><th>处理顺序</th></tr></thead><tbody><tr><td>进入页面 / 点击刷新</td><td>并行读取 list 与 status，各自显示 loading、错误和重试入口。两个请求不是数据库快照事务，短暂数量差异可再次刷新。</td></tr><tr><td>打开抽屉</td><td>清空旧表单 → 打开抽屉 → 刷新 status；读取过程中禁用表单和提交。</td></tr><tr><td>正常创建成功</td><td>POST create 得到 code 200 → 关闭抽屉并提示成功 → 重新读取 list/status，不向列表 push 空响应。</td></tr><tr><td>20101 重复创建</td><td>保留标题、简介 → 提示已创建 → 刷新 list/status；清除已经不可用的选中名称。</td></tr><tr><td>20003 / 20004</td><td>响应拦截器统一清理会话、提示、跳转；页面不再弹第二个创建错误，不自动重试 POST。</td></tr><tr><td>创建超时 / 网络断开</td><td>结果可能已写入数据库，先刷新 list/status 确认结果，保留输入；刷新也失败时待网络恢复后再核实，不自动重发。</td></tr><tr><td>创建明确成功，刷新失败</td><td>保留创建成功提示，列表或状态各自显示错误，可手动刷新。</td></tr><tr><td>列表中有未知 name</td><td>保留该记录和后端顺序，中文名称找不到时显示 name；不把它加入可创建选项。</td></tr></tbody></table></div>
+<p>状态接口只是查询时的快照，不是锁。即使 exist 当时为 false，另一个标签页或管理员仍可先创建；最终以 create 的返回结果为准。后端将同名冲突转换为 20101，不由前端列表推断是否一定能成功。</p></section>
+<section id="verify"><h2>10. 按此顺序完成真实联调</h2>
+<p>按第 8 节完成登录迁移后，先验证错误凭据、登录限流、成功登录和跳转均正常，再检查天体接口。先启动本地后端（使用项目现有开发配置），再启动前端。登录后打开 <code>http://localhost:5062/admin/bodies</code>，浏览器 Network 应看到 /api/v1/planet/list 和 /api/v1/planet/status。</p><details class="code-block" open><summary>终端 A · 后端<span>点击折叠 / 展开</span></summary><pre><code data-file="终端 A · 后端" data-kind="fragment">cd /Users/roach/Desktop/SolarNotesAdminAPI
+go run .</code></pre></details><details class="code-block" open><summary>终端 B · 前端<span>点击折叠 / 展开</span></summary><pre><code data-file="终端 B · 前端" data-kind="fragment">cd /Users/roach/Desktop/SolarNotesAdmin
+npm run dev</code></pre></details><div class="table-wrap"><table><thead><tr><th>检查项</th><th>预期结果</th></tr></thead><tbody><tr><td>登录后打开页面</td><td>两个 GET 请求都有 Authorization；HTTP 200 且业务码 200；列表读取 planets，状态有九项。</td></tr><tr><td>打开创建抽屉</td><td>新增一次 status 请求；已创建项展示“已创建”且禁用，其余为“可创建”。</td></tr><tr><td>创建一个尚未存在的天体</td><td>POST 请求体为 {planet:{name,title,intro}}；成功响应 data={}；随后 GET 列表和状态，新增记录并禁用选项。此步骤会实际写入数据库。</td></tr><tr><td>刷新整个浏览器</td><td>列表仍来自数据库，记录保留，不再显示“内存演示”通知。</td></tr><tr><td>空白标题 / 超长简介</td><td>前端表单报错且不发 POST；若绕过前端提交非法数据，后端返回 10101。</td></tr><tr><td>两个标签页先打开同一可用天体，再先后提交</td><td>共用当前有效会话；第一条成功，另一条收到 20101，保留标题简介并刷新状态。不要在测试中重新登录同一账号，否则会先触发旧令牌失效。</td></tr><tr><td>在另一个浏览器重新登录同一管理员，再刷新原页面</td><td>原令牌被撤销，GET 返回 HTTP 200 / code 20004；原页面只提示一次并返回登录页。</td></tr><tr><td>令牌自然过期</td><td>返回 20003，清理本地两个会话键并返回登录页。篡改 token 只能验证 20004，不能代替过期测试。</td></tr><tr><td>只让 status 请求失败</td><td>列表仍显示；下拉全部禁用，提供刷新状态按钮。缺少状态、重复名称、exist 是字符串时也应视为失败。</td></tr><tr><td>只让 list 请求失败</td><td>显示列表错误提示，可刷新；不能把失败画成“暂无天体”。</td></tr><tr><td>创建成功后让后续 GET 失败</td><td>仍提示创建成功，刷新区域显示失败；恢复后刷新，不再次创建同一天体。</td></tr><tr><td>快速双击确认 / 连续触发表单提交</td><td>校验阶段就加锁，最多发送一个创建 POST。</td></tr><tr><td>检查本地存储</td><td>仅沿用现有 token 与 username，不保存管理员密码，不伪造 ID。</td></tr></tbody></table></div>
+<p>状态失败、过期、并发和迟到响应等异常场景可通过临时模拟响应或浏览器请求拦截测试。真实写入测试应选未创建的天体；当前 API 未提供删除接口，不要为了测试随意删除已有业务记录。</p></section>
+<section id="codes"><h2>11. 业务响应码速查</h2><div class="table-wrap"><table><thead><tr><th>常量成员</th><th>响应数值</th><th>含义</th></tr></thead><tbody><tr><td><code>API_CODE.SUCCESS</code></td><td>200</td><td>业务成功。</td></tr><tr><td><code>API_CODE.INTERNAL_ERROR</code></td><td>500</td><td>服务端内部错误。</td></tr><tr><td><code>API_CODE.VALIDATION_ERROR</code></td><td>10101</td><td>请求参数校验失败。</td></tr><tr><td><code>API_CODE.DATABASE_ERROR</code></td><td>10201</td><td>数据库操作失败，包括鉴权查询数据库失败。</td></tr><tr><td><code>API_CODE.LOGIN_CREDENTIAL_ERROR</code></td><td>20001</td><td>登录账号或密码错误。</td></tr><tr><td><code>API_CODE.LOGIN_STATE_CHANGED</code></td><td>20002</td><td>登录过程中账号状态变化，需要重新登录。</td></tr><tr><td><code>API_CODE.TOKEN_EXPIRED</code></td><td>20003</td><td>登录令牌过期。</td></tr><tr><td><code>API_CODE.TOKEN_INVALID</code></td><td>20004</td><td>登录令牌缺失、无效或已撤销。</td></tr><tr><td><code>API_CODE.LOGIN_RATE_LIMIT</code></td><td>20005</td><td>登录请求触发访问频率限制。</td></tr><tr><td><code>API_CODE.BODY_ALREADY_EXISTS</code></td><td>20101</td><td>请求创建的天体已经存在。</td></tr></tbody></table></div><p>无业务码的超时、网络或响应格式异常继续走备用错误提示；创建结果未知时先读取列表确认。只有 TOKEN_EXPIRED 和 TOKEN_INVALID 表示需要清除当前失效会话，其他业务错误不自动登出。</p></section>
+<section id="checks"><h2>12. 示例校验与源码依据</h2>
+<div class="verification"><p>包含统一 API_CODE、共享类型与字段读取工具、独立公共错误模块、三个天体接口及登录迁移的完整示例已在临时项目中进行 Vue SFC 编译、严格 JSDoc 类型检查和 Vite 生产构建；使用实际安装的依赖验证，与当前登录 API、路由和 Store 一并检查。</p><p>模拟检查核对了十个常量与后端定义、三个天体请求、登录与天体专属提示、公共错误回退、HTTP 5xx 优先级、成功登录、HTTP 503、并发鉴权失败和旧令牌迟到响应；页面状态与提交分支通过了 12 组模拟检查，包含重复提交、20101、超时和创建后刷新失败。桌面及 390px 窄屏的文档排版、目录链接也已检查。</p><p>未使用真实管理员账号调用创建 API，未写入真实数据库。真实服务、数据库与账号的完整联调，请按第 10 节执行。</p></div>
+<p>构建存在项目原有的 Vite 配置模块格式和较大 chunk 提示，未阻断构建。构建通过不代表生产 API 地址已经配置完成。</p>
+<p class="source">接口依据：SolarNotesAdminAPI/main.go；controller/v1/planet/planet.go；param/req/v1/planet/create.go；param/resp/v1/planet/{show_status,list}.go；biz/{planet,admin}.go；middleware/admin_auth.go；resp_body/resp_body.go。前端依据：现有 src/api/body.js、BodyListPage.vue、request.js、constants/body.js、user Store 和路由配置。</p></section><footer>本指南提供可对照实现的完整代码。接口是否成功以响应业务码为准；创建结果以服务端持久化数据为准。</footer></article></main></body></html>
