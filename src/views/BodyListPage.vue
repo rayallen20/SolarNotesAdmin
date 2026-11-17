@@ -213,6 +213,7 @@ import {addBody, getBodyList, getBodyStatus} from "@/api/body";
 import {ArrowRight, Plus, Refresh} from "@element-plus/icons-vue";
 import {getApiErrorCode, getApiErrorMessage, isAuthError} from "@/utils/apiError";
 import {API_CODE} from "@/constants/apiCode";
+import {getBodyLabel} from "@/utils/body.js";
 
 defineOptions({
     name: 'BodyListPage',
@@ -342,21 +343,6 @@ const createdBodyCount = computed(getCreatedBodyCount)
  * @type {import('vue').ComputedRef<number>}
  * */
 const availableBodyCount = computed(getAvailableBodyCount)
-
-/**
- * 本函数用于根据天体的name获取对应的中文名称
- * @param {string} name 天体的匹配标识
- * @returns {string} name对应的中文名称(未匹配到则返回原始name)
- * */
-function getBodyLabel(name) {
-    for (const option of bodyOptions) {
-        if (option.name === name) {
-            return option.label
-        }
-    }
-
-    return name
-}
 
 /**
  * 本函数用于判定给定名称的天体是否已被创建,若未创建则返回false

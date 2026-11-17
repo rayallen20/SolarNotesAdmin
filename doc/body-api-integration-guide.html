@@ -171,7 +171,7 @@
 <p class="subtitle">统一业务响应码，先接入天体状态、创建和列表接口，再迁移已有登录请求与错误提示。</p>
 <div class="stack"><span>GET status / list</span><span>POST create</span><span>Bearer 鉴权</span><span>完整文件示例</span></div>
 <p class="source">根据 2026 年 11 月 16 日的项目源码编写 · <a href="body-management-guide.html">原天体页面参考</a> · <a href="admin-login-api-guide.html">登录 API 参考</a></p></header><nav aria-label="文档目录"><strong>实现顺序</strong><ol><li><a href="#scope">本次替换哪些内容</a></li><li><a href="#contract">先确认后端协议</a></li><li><a href="#connection">请求地址与鉴权链路</a></li><li><a href="#constants">统一定义业务响应码</a></li><li><a href="#request">分离公共工具与请求处理</a></li><li><a href="#api">替换天体 API 模块</a></li><li><a href="#page">更新 BodyListPage.vue</a></li><li><a href="#login">再迁移已有登录 API</a></li><li><a href="#flow">刷新、并发和失败处理顺序</a></li><li><a href="#verify">按此顺序完成真实联调</a></li><li><a href="#codes">业务响应码速查</a></li><li><a href="#checks">示例校验与源码依据</a></li></ol></nav>
-<section id="scope"><h2>1. 本次替换哪些内容</h2><p>本指南按“统一业务码 → 完成三个天体 API 与页面 → 迁移已有登录请求”的顺序组织。先定义共享常量，再让请求层和页面中的判断都使用常量名。</p><div class="table-wrap"><table><thead><tr><th>文件</th><th>操作</th></tr></thead><tbody><tr><td>src/constants/apiCode.js</td><td>第 4 节新增：集中定义后端现有全部业务码。</td></tr><tr><td>src/utils/typeGuard.js</td><td>第 5.1 节新增：定义共享 isObject()、isRecord() 及其 JSDoc 类型谓词。</td></tr><tr><td>src/utils/fieldReader.js</td><td>第 5.2 节新增：集中读取和校验字符串字段，提供通用异常文案。</td></tr><tr><td>src/utils/apiError.js</td><td>第 5.3 节新增：提供公共错误码提取、鉴权错误识别和通用提示，不执行页面操作。</td></tr><tr><td>src/utils/request.js</td><td>第 5.4 节替换：附加令牌、按业务码解包、统一处理鉴权失效行为。</td></tr><tr><td>src/api/body.js</td><td>第 6 节替换：完成状态、创建、列表三个真实请求，删除全部内存演示数据。</td></tr><tr><td>src/views/BodyListPage.vue</td><td>第 7 节替换：接入三个 API，getBodyErrorMessage() 处理天体专属提示，其他异常调用公共模块。</td></tr><tr><td>src/api/admin.js</td><td>第 8.1 节对照：复用已经更新的 request 实例，仍负责登录响应字段校验。</td></tr><tr><td>src/views/LoginPage.vue</td><td>第 8.2 节更新：getLoginErrorMessage() 处理登录专属提示，删除重复网络错误处理并复用公共模块。</td></tr><tr><td>src/constants/body.js、Store、路由、Vite</td><td>沿用现有天体选项和长度限制、setSession/clearSession、/admin/bodies 和 /api 开发代理。</td></tr></tbody></table></div><p>实现顺序：第 4 → 5 → 6 → 7 节完成天体对接，再按第 8 节迁移登录。示例先定义再导出，使用普通函数和 JSDoc；组件保持 template → script → style 顺序。</p></section>
+<section id="scope"><h2>1. 本次替换哪些内容</h2><p>本指南按“统一业务码 → 完成三个天体 API 与页面 → 迁移已有登录请求”的顺序组织。先定义共享常量，再让请求层和页面中的判断都使用常量名。</p><div class="table-wrap"><table><thead><tr><th>文件</th><th>操作</th></tr></thead><tbody><tr><td>src/constants/apiCode.js</td><td>第 4 节新增：集中定义后端现有全部业务码。</td></tr><tr><td>src/utils/typeGuard.js</td><td>第 5.1 节新增：定义共享 isObject()、isRecord() 及其 JSDoc 类型谓词。</td></tr><tr><td>src/utils/fieldReader.js</td><td>第 5.2 节新增：集中读取和校验字符串字段，提供通用异常文案。</td></tr><tr><td>src/utils/apiError.js</td><td>第 5.3 节新增：提供公共错误码提取、鉴权错误识别和通用提示，不执行页面操作。</td></tr><tr><td>src/utils/request.js</td><td>第 5.4 节替换：附加令牌、按业务码解包、统一处理鉴权失效行为。</td></tr><tr><td>src/utils/body.js</td><td>第 5.5 节新增：集中定义并导出 getBodyLabel()，供天体管理和书籍管理页面复用。</td></tr><tr><td>src/api/body.js</td><td>第 6 节替换：完成状态、创建、列表三个真实请求，删除全部内存演示数据。</td></tr><tr><td>src/views/BodyListPage.vue</td><td>第 7 节替换：接入三个 API，getBodyErrorMessage() 处理天体专属提示，其他异常调用公共模块；天体名称复用 src/utils/body.js。</td></tr><tr><td>src/api/admin.js</td><td>第 8.1 节对照：复用已经更新的 request 实例，仍负责登录响应字段校验。</td></tr><tr><td>src/views/LoginPage.vue</td><td>第 8.2 节更新：getLoginErrorMessage() 处理登录专属提示，删除重复网络错误处理并复用公共模块。</td></tr><tr><td>src/constants/body.js、Store、路由、Vite</td><td>沿用现有天体选项和长度限制、setSession/clearSession、/admin/bodies 和 /api 开发代理。</td></tr></tbody></table></div><p>实现顺序：第 4 → 5 → 6 → 7 节完成天体对接，再按第 8 节迁移登录。示例先定义再导出，使用普通函数和 JSDoc；组件保持 template → script → style 顺序。</p></section>
 <section id="contract"><h2>2. 先确认后端协议</h2><div class="table-wrap"><table><thead><tr><th>用途</th><th>方法与后端完整路径</th><th>解包后的结果</th></tr></thead><tbody><tr><td>下拉选项状态</td><td><code>GET /v1/planet/status</code></td><td><code>{planets: [{name, exist}]}</code>，固定九项</td></tr><tr><td>创建天体</td><td><code>POST /v1/planet/create</code></td><td><code>{}</code>，没有新记录或 ID</td></tr><tr><td>天体列表</td><td><code>GET /v1/planet/list</code></td><td><code>{planets: [{id, name, title, intro}]}</code>，没有分页参数</td></tr></tbody></table></div>
 <p>统一响应包为 <code>{code, message, data}</code>。这些控制器处理的成功、业务失败、鉴权失败均返回 <strong>HTTP 200</strong>；业务是否成功由 <code>code === API_CODE.SUCCESS</code> 决定。代理故障等仍可能产生 HTTP 5xx 或网络错误。</p>
 <h3>2.1 状态：exist 为 true 表示已经存在，必须禁用</h3><details class="code-block" open><summary>GET /v1/planet/status · 成功响应<span>点击折叠 / 展开</span></summary><pre><code data-file="GET /v1/planet/status · 成功响应" data-kind="fragment">{
@@ -284,7 +284,7 @@ const API_CODE = {
 }
 
 export {API_CODE}</code></pre></details><p><code>@enum {number}</code> 是 JavaScript 的 JSDoc 类型说明，不是 TypeScript enum。API_CODE 以具名方式导出，使用时写 <code>import {API_CODE} from '@/constants/apiCode'</code>。数值只在此处定义；其他业务判断使用具有含义的成员名。</p><p>例如令牌判断使用 <code>API_CODE.TOKEN_EXPIRED</code> / <code>API_CODE.TOKEN_INVALID</code>，天体冲突使用 <code>API_CODE.BODY_ALREADY_EXISTS</code>。后端新增业务码时在这里补充，再在对应功能中添加处理分支。</p><div class="note"><p><code>error.response.status &gt;= 500</code> 判断的是 HTTP 5xx 范围，保留该写法；不要替换为 <code>API_CODE.INTERNAL_ERROR</code>。后者只表示响应体中的业务内部错误。后面的 JSON 响应示例、协议表仍保留数字，便于核对网络响应。</p></div></section>
-<section id="request"><h2>5. 分离公共工具与请求处理</h2><p>先完成第 4 节常量定义，再按 5.1 → 5.2 → 5.3 → 5.4 的顺序实现。类型工具负责基础判断，字段工具负责读取与校验，公共错误模块负责解释错误，请求层负责发送请求和处理失效会话，页面负责解释自身业务错误并决定如何展示。</p><div class="table-wrap"><table><thead><tr><th>位置</th><th>职责</th></tr></thead><tbody><tr><td>src/utils/typeGuard.js</td><td>提供不依赖 Axios、Store 或页面的基础类型判断，供多个模块复用。</td></tr><tr><td>src/utils/fieldReader.js</td><td>读取字段并检查字符串类型及非空约束；校验失败抛出异常，不绑定天体或登录业务。</td></tr><tr><td>src/utils/apiError.js</td><td>依赖 Axios、API_CODE 和共享类型工具；提取可处理的业务码、识别鉴权错误、返回通用错误文字。</td></tr><tr><td>src/utils/request.js</td><td>配置 Axios、附加 Bearer、解包成功数据；对当前会话的失效执行一次清理、提示和跳转。</td></tr><tr><td>BodyListPage.vue</td><td>getBodyErrorMessage() 处理天体字段校验和重复创建；其余情况调用公共函数。</td></tr><tr><td>LoginPage.vue</td><td>getLoginErrorMessage() 处理登录字段校验、凭据错误、账号状态变化和登录限流；其余情况调用公共函数。</td></tr></tbody></table></div><h3>5.1 新增共享类型工具：typeGuard.js</h3><p>将 isObject() 与 isRecord() 集中到 <code>src/utils/typeGuard.js</code>。isRecord() 复用 isObject()，再排除数组；两个函数均不依赖错误处理、请求或天体业务模块。</p><details class="code-block" open><summary>src/utils/typeGuard.js<span>点击折叠 / 展开</span></summary><pre><code data-file="src/utils/typeGuard.js" data-kind="complete">/**
+<section id="request"><h2>5. 分离公共工具与请求处理</h2><p>先完成第 4 节常量定义，再按 5.1 → 5.2 → 5.3 → 5.4 → 5.5 的顺序实现。类型工具负责基础判断，字段工具负责读取与校验，公共错误模块负责解释错误，请求层负责发送请求和处理失效会话，天体展示工具负责名称转换，页面负责解释自身业务错误并决定如何展示。</p><div class="table-wrap"><table><thead><tr><th>位置</th><th>职责</th></tr></thead><tbody><tr><td>src/utils/typeGuard.js</td><td>提供不依赖 Axios、Store 或页面的基础类型判断，供多个模块复用。</td></tr><tr><td>src/utils/fieldReader.js</td><td>读取字段并检查字符串类型及非空约束；校验失败抛出异常，不绑定天体或登录业务。</td></tr><tr><td>src/utils/apiError.js</td><td>依赖 Axios、API_CODE 和共享类型工具；提取可处理的业务码、识别鉴权错误、返回通用错误文字。</td></tr><tr><td>src/utils/request.js</td><td>配置 Axios、附加 Bearer、解包成功数据；对当前会话的失效执行一次清理、提示和跳转。</td></tr><tr><td>src/utils/body.js</td><td>只依赖 bodyOptions，将天体标识转换为中文名称；未知标识原样返回，供天体与书籍页面共用。</td></tr><tr><td>BodyListPage.vue</td><td>getBodyErrorMessage() 处理天体字段校验和重复创建；其余情况调用公共函数。</td></tr><tr><td>LoginPage.vue</td><td>getLoginErrorMessage() 处理登录字段校验、凭据错误、账号状态变化和登录限流；其余情况调用公共函数。</td></tr></tbody></table></div><h3>5.1 新增共享类型工具：typeGuard.js</h3><p>将 isObject() 与 isRecord() 集中到 <code>src/utils/typeGuard.js</code>。isRecord() 复用 isObject()，再排除数组；两个函数均不依赖错误处理、请求或天体业务模块。</p><details class="code-block" open><summary>src/utils/typeGuard.js<span>点击折叠 / 展开</span></summary><pre><code data-file="src/utils/typeGuard.js" data-kind="complete">/**
  * 判断输入是否为非 null 的对象，数组也会通过此检查。
  * @param {unknown} value 待检查的值。
  * @returns {value is Record&lt;string, unknown&gt;} 是对象时返回 true。
@@ -524,7 +524,28 @@ async function unwrapResponse(response) {
 request.interceptors.request.use(attachToken)
 request.interceptors.response.use(unwrapResponse)
 
-export default request</code></pre></details><p>当前后端以 HTTP 200 返回业务鉴权码，拦截器在成功响应分支识别它；若未来后端改为 HTTP 401，还需增加相应的 rejected 分支处理。公共函数能够解析 HTTP 错误信息，并不等于请求层已经实现了 HTTP 401 自动登出。</p></section>
+export default request</code></pre></details><p>当前后端以 HTTP 200 返回业务鉴权码，拦截器在成功响应分支识别它；若未来后端改为 HTTP 401，还需增加相应的 rejected 分支处理。公共函数能够解析 HTTP 错误信息，并不等于请求层已经实现了 HTTP 401 自动登出。</p><h3 id="shared-body-label">5.5 新增共享天体展示工具：body.js</h3>
+<p>将两个页面原有的 <code>getBodyLabel()</code> 提取到 <code>src/utils/body.js</code>。本函数只依赖静态的 <code>bodyOptions</code>，不需要组件状态、请求或 Store；<code>src/constants/body.js</code> 继续保存选项和长度常量。两个页面删除各自的同名函数及其 JSDoc，统一导入这里的具名导出。</p>
+<details class="code-block" open><summary>src/utils/body.js<span>点击折叠 / 展开</span></summary><pre><code data-file="src/utils/body.js" data-kind="complete">import {bodyOptions} from &#x27;@/constants/body&#x27;
+
+/**
+ * 根据天体标识读取中文名称；未知标识保留原文。
+ * @param {string} name 区分大小写的天体标识。
+ * @returns {string} 中文名称或未匹配的原始标识。
+ */
+function getBodyLabel(name) {
+    /** @type {import(&#x27;@/constants/body&#x27;).BodyOption} 当前天体名称映射。 */
+    for (const option of bodyOptions) {
+        if (option.name === name) {
+            return option.label
+        }
+    }
+    return name
+}
+
+export {getBodyLabel}
+</code></pre></details>
+<p>函数先定义，最后使用 <code>export {getBodyLabel}</code> 导出。使用方统一写 <code>import {getBodyLabel} from '@/utils/body'</code>。天体管理页面的其他逻辑仍使用 <code>bodyOptions</code>，所以保留其常量导入；书籍管理页面提取函数后不再直接使用 <code>bodyOptions</code>，可删除对应导入。书籍页面的完整示例见<a href="book-management-guide.html#page">书籍管理页面实现参考第 5 节</a>。</p></section>
 <section id="api"><h2>6. 替换天体 API 模块</h2><p>本模块从 <code>@/utils/typeGuard</code> 导入 isRecord()，从 <code>@/utils/fieldReader</code> 导入 readStringField() 和 readRequiredStringField()，删除原有的同名本地定义。readPlanets()、isKnownBodyName() 等天体协议校验，以及三个请求函数继续保留在此模块。</p>
 <p>响应码由 request.js 使用 API_CODE 统一判定，此模块取得的已经是 data。因此不重复检查 code，也不为了使用常量而添加未使用的 API_CODE 导入。</p><p>保留页面熟悉的 <code>getBodyList()</code> 和 <code>addBody(form)</code>，新增 <code>getBodyStatus()</code>。Axios 已经返回 data，所以此处直接读取 <code>data.planets</code>，不再读取 <code>response.data.data</code>。</p>
 <p>状态模块检查九个已知名称是否齐全、唯一，exist 是否为布尔值。异常响应会作为加载失败处理。列表允许未知名称，字段结构仍需校验。以后若增加可创建天体，应同时调整后端枚举、前端选项和资源映射。</p><details class="code-block" open><summary>src/api/body.js<span>点击折叠 / 展开</span></summary><pre><code data-file="src/api/body.js" data-kind="complete">import {readStringField, readRequiredStringField} from &#x27;@/utils/fieldReader&#x27;
@@ -691,6 +712,7 @@ export {
     addBody,
 }</code></pre></details></section>
 <section id="page"><h2>7. 更新 BodyListPage.vue</h2>
+<p>先按第 5.5 节建立 <code>src/utils/body.js</code>。下面的完整组件已删除本地 <code>getBodyLabel()</code>，改为导入公共函数；原来的模板和 <code>getOptionLabel()</code> 调用方式保持不变。<code>bodyOptions</code> 仍用于选项循环、计数与状态检查，不能删除它的导入。</p>
 <p>本组件从 <code>@/utils/apiError</code> 导入公共错误工具，并定义 <code>getBodyErrorMessage()</code>：天体参数错误、重复创建在页面解释，其余异常交给公共函数。列表、选项状态和创建失败都调用这个页面函数。</p><p>本组件导入 API_CODE，在 submitBody() 中使用 <code>code === API_CODE.BODY_ALREADY_EXISTS</code> 判断重复创建，不再直接比较 20101。</p><p>下面是完整组件。列表和状态分别维护 loading/error：状态请求失败时，已成功取得的列表仍可查看；选项全部禁用，可单独刷新状态。每次打开抽屉都会重新读取状态。</p>
 <p>创建按钮允许打开抽屉以重新获取最新状态；确认创建按钮只在选择了服务端确认可创建的天体后启用。九个天体都已创建时，下拉框全部不可选。已选天体在刷新后变成已创建时，只清除名称，保留标题和简介。</p>
 <p><code>submitBody()</code> 的校验和请求使用两个同级 try/catch。创建成功后先确认成功，再独立刷新列表和状态。刷新失败不会诱导用户以为创建失败而重复提交。</p>
@@ -788,6 +810,7 @@ import {API_CODE} from &#x27;@/constants/apiCode&#x27;
 import {ArrowRight, Plus, Refresh} from &#x27;@element-plus/icons-vue&#x27;
 import {BODY_INTRO_MAX_LENGTH, BODY_TITLE_MAX_LENGTH, bodyOptions} from &#x27;@/constants/body&#x27;
 import {addBody, getBodyList, getBodyStatus} from &#x27;@/api/body&#x27;
+import {getBodyLabel} from &#x27;@/utils/body&#x27;
 import {getApiErrorCode, getApiErrorMessage, isAuthError} from &#x27;@/utils/apiError&#x27;
 
 defineOptions({name: &#x27;BodyListPage&#x27;})
@@ -832,20 +855,6 @@ const addFormRules = {
 const createdBodyCount = computed(getCreatedBodyCount)
 /** @type {import(&#x27;vue&#x27;).ComputedRef&lt;number&gt;} 当前可创建的固定天体数量。 */
 const availableBodyCount = computed(getAvailableBodyCount)
-
-/**
- * 根据匹配标识读取中文名称；历史未知名称保留原文。
- * @param {string} name 天体标识。
- * @returns {string} 展示名称。
- */
-function getBodyLabel(name) {
-    for (const option of bodyOptions) {
-        if (option.name === name) {
-            return option.label
-        }
-    }
-    return name
-}
 
 /**
  * 只有状态已加载且 exist 严格等于 false 时，才允许选择。

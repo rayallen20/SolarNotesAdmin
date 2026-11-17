@@ -35,14 +35,14 @@
                     </el-menu-item>
 
                     <el-menu-item
-                        :index="getMenuPath('userList')"
-                        title="用户管理"
-                        aria-label="用户管理"
+                        :index="getMenuPath('bookList')"
+                        title="书籍管理"
+                        aria-label="书籍管理"
                     >
                         <el-icon>
-                            <User></User>
+                            <Reading></Reading>
                         </el-icon>
-                        <span>用户管理</span>
+                        <span>书籍管理</span>
                     </el-menu-item>
 
                     <el-menu-item
@@ -104,7 +104,7 @@
 </template>
 
 <script setup>
-import {Document, Sunny, SwitchButton, User} from "@element-plus/icons-vue";
+import {Document, Reading, Sunny, SwitchButton, User} from "@element-plus/icons-vue";
 import {useRoute, useRouter} from "vue-router";
 import useUserStore from "@/stores/user";
 import {computed} from "vue";

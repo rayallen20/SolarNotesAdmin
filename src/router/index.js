@@ -36,12 +36,12 @@ const routes = [
                 },
             },
             {
-                path: 'users',
-                name: 'userList',
-                component: () => import('@/views/PlaceholderPage.vue'),
+                path: 'books',
+                name: 'bookList',
+                component: () => import('@/views/BookListPage.vue'),
                 meta: {
-                    title: '用户管理',
-                    description: '查看与管理用户信息'
+                    title: '书籍管理',
+                    description: '管理书籍/所属天体/排序/显示状态'
                 },
             },
             {

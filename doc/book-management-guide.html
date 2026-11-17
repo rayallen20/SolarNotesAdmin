@@ -1,0 +1,913 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="SolarNotesAdmin 书籍管理页面实现参考：基于真实 book 表结构，修改侧栏、配置子路由，使用现有天体 API 完成添加表单，预留书籍列表与创建接口。">
+<title>SolarNotesAdmin · 书籍管理页面实现参考</title><style>
+      :root {
+        color-scheme: light;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+          "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+        color: #273147;
+        background: #f5f6fb;
+        line-height: 1.8;
+        font-size: 16px;
+        --primary: #5964d6;
+        --border: #e3e7f0;
+        --muted: #657089;
+      }
+
+      * { box-sizing: border-box; }
+      body { margin: 0; }
+      main { max-width: 1000px; margin: 48px auto; padding: 0 28px; }
+      article {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 48px 56px;
+        box-shadow: 0 12px 40px rgb(39 49 71 / 4%);
+      }
+      header { padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+      .eyebrow {
+        margin: 0 0 12px;
+        color: var(--primary);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+      }
+      h1 { margin: 0 0 16px; font-size: 32px; line-height: 1.4; }
+      h2 { margin: 40px 0 16px; font-size: 23px; line-height: 1.5; }
+      h3 { margin: 26px 0 10px; font-size: 17px; }
+      p { margin: 12px 0; }
+      a { color: var(--primary); text-underline-offset: 3px; }
+      a:hover { color: #3d46ab; }
+      a:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; }
+      strong { color: #172137; }
+      .subtitle, .source, footer { color: var(--muted); }
+      .stack { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+      .stack span {
+        border-radius: 6px;
+        background: #f0f1fd;
+        color: #4d57ba;
+        padding: 3px 10px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      nav {
+        margin: 28px 0;
+        padding: 18px 24px;
+        background: #f8f9fc;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+      }
+      nav ol { margin: 8px 0 0; padding-left: 24px; }
+      nav a { text-decoration: none; }
+      section { scroll-margin-top: 24px; }
+      code {
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-size: 0.88em;
+      }
+      :not(pre) > code {
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: #f0f2f7;
+        overflow-wrap: anywhere;
+      }
+      .code-label {
+        margin: 18px 0 0;
+        padding: 8px 16px;
+        color: #d1d7ed;
+        background: #29334c;
+        border-radius: 9px 9px 0 0;
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 12px;
+        overflow-wrap: anywhere;
+      }
+      pre {
+        margin: 14px 0 20px;
+        padding: 18px 20px;
+        overflow-x: auto;
+        border-radius: 9px;
+        background: #1d263b;
+        color: #edf0fb;
+        line-height: 1.7;
+        tab-size: 2;
+      }
+      .code-label + pre { margin-top: 0; border-radius: 0 0 9px 9px; }
+      pre code { font-size: 13px; }
+      .note {
+        margin: 20px 0;
+        padding: 14px 18px;
+        border-left: 3px solid #727cf5;
+        border-radius: 0 8px 8px 0;
+        background: #f2f3fe;
+      }
+      .note p { margin: 0; }
+      .table-wrap { overflow-x: auto; margin: 18px 0; }
+      table { width: 100%; border-collapse: collapse; font-size: 14px; }
+      th, td { padding: 12px 14px; text-align: left; border: 1px solid var(--border); }
+      th { background: #f7f8fc; color: #35405b; }
+      .source { font-size: 13px; }
+      footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 13px; }
+
+      @media (max-width: 640px) {
+        main { margin: 16px auto; padding: 0 12px; }
+        article { padding: 28px 20px; border-radius: 12px; }
+        h1 { font-size: 25px; }
+        h2 { font-size: 21px; }
+        pre { padding: 14px; }
+        nav { padding: 14px 18px; }
+      }
+
+      @media print {
+        :root { background: #fff; font-size: 11pt; }
+        main { max-width: none; margin: 0; padding: 0; }
+        article { border: 0; border-radius: 0; padding: 0; box-shadow: none; }
+        nav { display: none; }
+        h1, h2, h3, .code-label { break-after: avoid; }
+        pre {
+          white-space: pre-wrap;
+          overflow-wrap: anywhere;
+          background: #f5f6f8;
+          color: #172137;
+          border: 1px solid #ddd;
+          break-inside: avoid;
+        }
+        .code-label { background: #e9ecf3; color: #273147; }
+        a { color: inherit; }
+        tr { break-inside: avoid; }
+      }
+
+    article { min-width: 0; }
+    .code-block { margin: 20px 0; min-width: 0; }
+    .code-block summary { display: flex; justify-content: space-between; gap: 12px; padding: 10px 16px; border-radius: 8px; color: #e3e8f8; background: #29334c; font-family: monospace; font-size: 13px; cursor: pointer; overflow-wrap: anywhere; }
+    .code-block summary span { flex-shrink: 0; font-family: inherit; font-size: 11px; color: #b4bed7; }
+    .code-block[open] summary { border-radius: 8px 8px 0 0; }
+    .code-block pre { margin: 0; border-radius: 0 0 8px 8px; max-height: 780px; }
+    .pill { display: inline-block; padding: 2px 9px; color: #5964d6; background: #f0f1fd; border-radius: 5px; font-size: 13px; }
+    .flow-steps { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 18px; border: 1px solid var(--border); border-radius: 10px; background: #fafbfe; }
+    .flow-steps span { padding: 5px 10px; border-radius: 6px; background: #eef0fe; color: #4d57ba; font-size: 14px; }
+
+    .connection { display: grid; gap: 10px; margin: 20px 0; }
+    .connection-row { padding: 14px 18px; border: 1px solid var(--border); background: #fafbfe; border-radius: 9px; }
+    .connection-row b { display: block; color: #35405b; }
+    .connection-row code { display: inline-block; margin-top: 4px; }
+    .case-panel { margin: 22px 0; padding: 20px; border: 1px solid var(--border); border-radius: 10px; background: #fafbfe; }
+    .case-panel label { font-weight: 600; }
+    .case-panel select { max-width: 100%; margin: 8px 0 4px 12px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font: inherit; font-size: 14px; color: #273147; background: #fff; }
+    .case-panel pre { margin: 12px 0; }
+    .case-panel p { margin-bottom: 0; }
+    .verification { padding: 16px 20px; border-left: 3px solid #4b9b77; border-radius: 0 8px 8px 0; background: #f1f9f4; }
+    .verification p { margin: 4px 0; }
+    summary:focus-visible, select:focus-visible { outline: 2px solid #727cf5; outline-offset: 3px; }
+    @media (max-width: 640px) {
+        .code-block summary { flex-direction: column; gap: 4px; }
+        .case-panel { padding: 14px; }
+        .case-panel select { display: block; margin-left: 0; }
+    }
+    @media print { .code-block pre { max-height: none; } }
+
+.code-block pre {max-height: 700px;} td {vertical-align: top;} .diagram {display:grid;gap:10px;margin:20px 0;} .diagram div {padding:12px 16px;background:#f0f1fd;border-radius:8px;} @media print {.code-block pre {max-height:none;}}
+
+.mock { position:relative; margin:22px 0; display:grid; grid-template-columns:120px minmax(0,1fr); border:1px solid var(--border); border-radius:12px; overflow:hidden; background:#fafbfe; font-size:13px; }
+.mock-sidebar { background:#2d3a4b; color:#b9c2d0; padding:20px 10px; }
+.mock-brand { color:white; margin-bottom:22px; font-weight:600; }
+.mock-menu { padding:12px 8px; border-radius:5px; }
+.mock-menu.active { background:#727cf5; color:white; }
+.mock-main { min-width:0; }
+.mock-top { padding:12px 18px; border-bottom:1px solid var(--border); background:white; }
+.mock-body { padding:18px; }
+.mock-card { padding:14px; background:white; border:1px solid var(--border); border-radius:7px; min-width:0; }
+.mock-action { display:inline-block; padding:3px 8px; background:#727cf5; color:white; border-radius:4px; margin:6px 0; }
+.mock-columns { border-block:1px solid var(--border); padding:8px 0; color:#657089; }
+.mock-rows > div { padding:10px 0; border-bottom:1px solid var(--border); color:#657089; overflow-wrap:anywhere; }
+.mock-rows > div:last-child { border-bottom:0; }
+.mock-visible { color:#27845a; }
+.mock-field { margin:8px 0 12px; padding:7px 10px; border:1px solid var(--border); border-radius:4px; color:#8590a4; }
+.mock-caption { margin-top:8px; color:var(--muted); font-size:13px; }
+.drawer-preview > summary { cursor:pointer; color:var(--primary); }
+.mock-drawer-state { min-height:450px; }
+.mock-shade { position:absolute; inset:0; background:rgb(0 0 0 / 38%); }
+.mock-drawer { position:absolute; inset:0 0 0 auto; width:min(280px,85%); padding:20px; overflow:auto; background:#fff; box-shadow:-6px 0 20px rgb(0 0 0 / 12%); }
+.mock-drawer > strong { display:block; margin-bottom:20px; }
+.mock-close { float:right; color:#8590a4; }
+@media(max-width:760px) { .mock { grid-template-columns:85px minmax(0,1fr); } .mock-body { grid-template-columns:minmax(0,1fr); padding:10px; } .mock-sidebar { padding:14px 6px; } }
+</style></head><body><main><article>
+<header><p class="eyebrow">SOLARNOTESADMIN / 页面实现参考</p><h1>书籍管理页面实现参考</h1>
+<p class="subtitle">基于真实 book 表结构，完成菜单、列表与添加表单；所属天体复用现有 API，书籍数据接口后续接入。</p>
+<div class="stack"><span>Reading 图标</span><span>/admin/books</span><span>真实天体选项</span><span>完整 Vue 示例</span></div>
+<p class="source">根据 2026 年 11 月 17 日的数据库结构与当前项目源码编写。</p></header>
+<nav aria-label="文档目录"><strong>实现顺序</strong><ol><li><a href="#scope">页面与文件</a></li><li><a href="#schema">book 表结构与约束</a></li><li><a href="#menu">修改第二项菜单</a></li><li><a href="#router">配置书籍子路由</a></li><li><a href="#page">提取公共函数并更新页面</a></li><li><a href="#flow">交互与错误处理</a></li><li><a href="#future">后续 API 接入位置</a></li><li><a href="#verify">实现后的检查顺序</a></li><li><a href="#sources">依据与示例验证</a></li></ol></nav><section id="scope"><h2>1. 本次完成的页面与文件</h2>
+<p>第二项侧边栏由“用户管理”调整为“书籍管理”，点击后打开 <code>/admin/books</code>。右侧沿用天体管理的面包屑、列表卡片和添加抽屉。新增表单包含所属天体、书籍标题、排序值、显示状态四个字段。</p>
+<p><strong>所属天体复用已有的真实列表接口。</strong>书籍列表先展示四条写死的示例记录，数据沿用你在组件中定义的太阳与地球各两条记录，便于观察列宽和状态标签；点击“确认添加”完成字段校验，提示本次内容未保存，并保留抽屉中的输入。后续再联调书籍列表和创建接口。</p>
+<p><strong>默认状态：右侧内容区只显示书籍列表。</strong></p><div class="mock" role="img" aria-label="默认页面：侧栏和书籍列表，未打开添加表单"><div class="mock-sidebar"><div class="mock-brand">SolarNotes</div><div class="mock-menu">天体管理</div><div class="mock-menu active">▤ 书籍管理</div><div class="mock-menu">笔记管理</div></div><div class="mock-main"><div class="mock-top">书籍管理</div><div class="mock-body"><div class="mock-card"><strong>书籍列表</strong><br><span class="mock-action">＋ 添加书籍</span><div class="mock-columns">标题 · 天体 · 排序 · 状态</div><div class="mock-rows"><div><strong>太阳观测入门1</strong><br>太阳 · 1 · <span class="mock-visible">显示</span></div><div><strong>太阳观测入门2</strong><br>太阳 · 2 · 隐藏</div><div><strong>地球观测入门1</strong><br>地球 · 1 · <span class="mock-visible">显示</span></div><div><strong>地球观测入门2</strong><br>地球 · 2 · 隐藏</div></div></div></div></div></div><details class="drawer-preview"><summary>查看点击“添加书籍”后的抽屉示意</summary><div class="mock mock-drawer-state" role="img" aria-label="添加抽屉覆盖在页面右侧，背景列表被遮罩覆盖"><div class="mock-sidebar"><div class="mock-brand">SolarNotes</div><div class="mock-menu">天体管理</div><div class="mock-menu active">▤ 书籍管理</div><div class="mock-menu">笔记管理</div></div><div class="mock-main"><div class="mock-top">书籍管理</div><div class="mock-body"><div class="mock-card"><strong>书籍列表</strong><br><span class="mock-action">＋ 添加书籍</span><div class="mock-columns">标题 · 天体 · 排序 · 状态</div><div class="mock-rows"><div><strong>太阳观测入门1</strong><br>太阳 · 1 · <span class="mock-visible">显示</span></div><div><strong>太阳观测入门2</strong><br>太阳 · 2 · 隐藏</div><div><strong>地球观测入门1</strong><br>地球 · 1 · <span class="mock-visible">显示</span></div><div><strong>地球观测入门2</strong><br>地球 · 2 · 隐藏</div></div></div></div></div><div class="mock-shade"></div><div class="mock-drawer"><strong>添加书籍 <span class="mock-close">×</span></strong><div>所属天体</div><div class="mock-field">选择真实天体</div><div>书籍标题</div><div class="mock-field">输入书名</div><div>排序值</div><div class="mock-field">1</div><div>显示状态</div><div class="mock-field">显示</div><span class="mock-action">确认添加</span></div></div></details><p class="mock-caption">示例沿用当前 list 的太阳与地球各两条记录。完整页面展示书籍 ID、书籍标题、所属天体、排序值、显示状态五列；添加表单通过右侧 el-drawer 覆盖显示，关闭后恢复列表视图。</p>
+<div class="table-wrap"><table><thead><tr><th>文件</th><th>本次操作</th></tr></thead><tbody>
+<tr><td><code>src/views/LayoutPage.vue</code></td><td>替换第二项菜单，增加 Reading 图标导入。</td></tr>
+<tr><td><code>src/router/index.js</code></td><td>将 users / userList 占位路由替换为 books / bookList。</td></tr>
+<tr><td><code>src/utils/body.js</code></td><td>提取并命名导出 getBodyLabel()，供两个页面共享。</td></tr>
+<tr><td><code>src/views/BodyListPage.vue</code></td><td>删除本地 getBodyLabel()，导入公共函数，保留 bodyOptions 导入。</td></tr>
+<tr><td><code>src/views/BookListPage.vue</code></td><td>使用公共 getBodyLabel()，复用现有 getBodyList()，完整代码见第 5.3 节。</td></tr>
+<tr><td><code>src/api/body.js</code>、<code>src/utils/request.js</code></td><td>沿用当前实现，继续负责响应校验、令牌和鉴权失效处理。</td></tr>
+</tbody></table></div>
+<p>本阶段不新增 <code>src/api/book.js</code>，不编造书籍接口地址或请求体，也不实现本地书籍增删、运行时 ID 生成或 localStorage 持久化。列表中的固定 ID 仅用于展示，添加表单仍只选择接口返回的真实天体。表单输入的响应式状态仍是必要的，和维护一份模拟书籍数据库是两回事。</p></section><section id="schema"><h2>2. book 表结构与页面约束</h2>
+<p>以下依据本地 <code>solar_notes.book</code> 的实际 <code>SHOW CREATE TABLE</code> 结果，读取日期为 2026 年 11 月 17 日。本次仅查询结构，没有改表或写入数据。</p>
+<div class="table-wrap"><table><thead><tr><th>字段</th><th>数据库定义</th><th>页面处理</th></tr></thead><tbody>
+<tr><td><code>id</code></td><td>BIGINT，非空，主键；注释约定存储雪花 ID</td><td>列表展示，前端使用 string；添加时不填写，后续由服务端生成。</td></tr>
+<tr><td><code>planet_id</code></td><td>BIGINT，非空</td><td>添加表单必选真实 planet.id 字符串；列表响应以嵌套 planet 对象返回关联信息。</td></tr>
+<tr><td><code>title</code></td><td>VARCHAR(50)，非空，默认空字符串；注释标明业务限长 20 个字符</td><td>必填，校验前 trim，最多 20 个字符；存储上限和业务上限分开理解。</td></tr>
+<tr><td><code>sort</code></td><td>有符号 INT，非空，无默认值</td><td>必填整数；范围 −2147483648 至 2147483647；表单默认 1。</td></tr>
+<tr><td><code>display_status</code></td><td>ENUM('visible', 'hidden')，非空，默认 visible</td><td>显示 / 隐藏下拉框，初始选“显示”；字段值保持英文枚举。</td></tr>
+<tr><td><code>created_at</code></td><td>DATETIME，非空，默认 CURRENT_TIMESTAMP</td><td>当前列表项不包含此字段，因此本页不展示；添加时也不填写。</td></tr>
+<tr><td><code>updated_at</code></td><td>DATETIME，非空，默认 CURRENT_TIMESTAMP，更新时自动更新</td><td>当前列表项不包含此字段，因此本页不展示；未来需要时再扩展响应约定。</td></tr>
+</tbody></table></div>
+<h3>2.1 所属天体是 ID 关联，不是 name 匹配</h3>
+<p>一条书籍记录的 <code>planet_id</code> 对应天体表的 <code>planet.id</code>。当前表定义中没有外键约束，后续创建接口仍需验证天体是否存在。<code>name</code> 和中文 <code>label</code> 只用于下拉框显示；不能把 <code>'Earth'</code> 或 <code>'地球'</code> 赋给 <code>planet_id</code>。</p>
+<p>现有 <code>getBodyList()</code> 返回已创建天体及其字符串 ID，因此直接作为选项来源。<code>getBodyStatus()</code> 只有名称与存在状态，没有 ID，不适合这里。已有 <code>bodyOptions</code> 仅用于中文名称映射，不用于生成可选天体或伪造 ID。</p>
+<h3>2.2 排序唯一性由服务端和数据库最终确认</h3>
+<p>联合唯一索引是 <code>uk_planet_sort (planet_id, sort)</code>。同一天体下排序值不能重复；不同天体可以使用相同排序值。即使书籍处于隐藏状态，该记录仍占用排序值，因为索引不包含显示状态。书籍标题没有唯一索引，不能据此推断禁止同名书籍。</p>
+<p>数据库没有“必须大于 0”的约束，本例允许整个有符号 INT 范围。默认 <code>1</code> 只是输入初始值，不代表此值可用。当前尚未读取书籍列表，因此不做本地查重。未来即便加入前端检查，仍需处理后端返回的排序冲突。</p>
+<h3>2.3 标题长度与系统字段</h3>
+<p>页面依据表注释采用 20 字业务规则，后续书籍创建接口应保持一致。数据库的非空定义本身不会拒绝空字符串或纯空白，因此表单另外做必填、非空白校验。沿用当前表单校验库的 Unicode 码点计数，避免原生 <code>maxlength</code> 按 UTF-16 代码单元截断表情；组合字符仍可能由多个码点组成。</p>
+<p>浏览器不生成书籍 ID，不填写创建时间或更新时间，也不把 ID 转成 Number。书籍表目前没有封面、作者、简介、ISBN 等字段，本次表单先按已有结构实现。</p><h3>2.4 列表响应采用嵌套 planet 对象</h3>
+<p>以你当前 <code>BookListPage.vue</code> 的 <code>list</code> 为准，每条书籍响应项的顶层字段为 <code>id</code>、<code>title</code>、<code>sort</code>、<code>display_status</code>、<code>planet</code>。其中 <code>planet</code> 是必需对象，包含 <code>id</code>、<code>name</code>、<code>title</code>、<code>intro</code>；书籍 ID 和天体 ID 均使用字符串。</p>
+<details class="code-block" open><summary>预期的单条书籍响应项<span>点击折叠 / 展开</span></summary><pre><code>{
+    id: &#x27;1000000000000000003&#x27;,
+    title: &#x27;太阳观测入门1&#x27;,
+    sort: 1,
+    display_status: &#x27;visible&#x27;,
+    planet: {
+        id: &#x27;2000000000000000002&#x27;,
+        name: &#x27;Sun&#x27;,
+        title: &#x27;太阳的标题&#x27;,
+        intro: &#x27;太阳的简介&#x27;,
+    },
+}</code></pre></details>
+<p>上面的数据库字段说明用于解释存储约束；列表项采用你约定的嵌套结构，不是数据库行的逐字段复制。列表没有顶层 <code>planet_id</code>、<code>planet_name</code>、<code>created_at</code>、<code>updated_at</code>，因此类型、固定数据和表格均不再读取这些顶层字段。天体的标题和简介属于 <code>planet</code>，不要与书籍的 <code>title</code> 混淆。</p>
+<p><strong>添加表单继续用 <code>addForm.planet_id</code> 保存所选真实天体 ID。</strong>列表返回完整天体对象，不代表创建书籍时也应提交该对象。创建请求体如何封装，等后端接口确定后再对接。本次约定的是列表中的元素结构，不据此假设外层一定叫 books、list 或包含某种分页字段。</p></section><section id="menu"><h2>3. 修改第二项菜单及图标</h2>
+<p>在 <code>src/views/LayoutPage.vue</code> 中替换原来的图标导入。<code>Reading</code> 是当前已安装图标库导出的书籍图标，无需增加依赖。<strong>保留 User 导入</strong>，右上角头像仍在使用它。</p><details class="code-block" open><summary>src/views/LayoutPage.vue · 替换图标导入<span>点击折叠 / 展开</span></summary><pre><code data-file="src/views/LayoutPage.vue · 替换图标导入" data-kind="fragment">import {Document, Reading, Sunny, SwitchButton, User} from &#x27;@element-plus/icons-vue&#x27;</code></pre></details><p>只替换原来的“用户管理”菜单项：</p><details class="code-block" open><summary>src/views/LayoutPage.vue · 替换第二项菜单<span>点击折叠 / 展开</span></summary><pre><code data-file="src/views/LayoutPage.vue · 替换第二项菜单" data-kind="fragment">&lt;el-menu-item
+    :index=&quot;getMenuPath(&#x27;bookList&#x27;)&quot;
+    title=&quot;书籍管理&quot;
+    aria-label=&quot;书籍管理&quot;
+&gt;
+    &lt;el-icon&gt;
+        &lt;Reading&gt;&lt;/Reading&gt;
+    &lt;/el-icon&gt;
+    &lt;span&gt;书籍管理&lt;/span&gt;
+&lt;/el-menu-item&gt;</code></pre></details><p>沿用 <code>getMenuPath()</code> 和 <code>activeMenuPath</code>。菜单从命名路由 <code>bookList</code> 解析路径，无需在菜单中再硬编码 <code>/admin/books</code>。侧栏提示、辅助标签和可见文字同步修改，窄屏隐藏文字后仍可辨识此项。</p></section><section id="router"><h2>4. 配置书籍管理子路由</h2>
+<p>将 <code>users / userList</code> 占位项替换为 <code>books / bookList</code>，不是再增加一项菜单。子路由挂在 <code>/admin</code> 下，继续继承父级的登录检查。以下是按当前文件整理的完整代码：</p><details class="code-block" open><summary>src/router/index.js<span>点击折叠 / 展开</span></summary><pre><code data-file="src/router/index.js" data-kind="complete">import {createRouter, createWebHistory} from &quot;vue-router&quot;;
+import useUserStore from &quot;@/stores/user&quot;;
+import pinia from &quot;@/stores&quot;;
+
+/**
+ * 路由列表
+ * @type {import(&#x27;vue-router&#x27;).RouteRecordRaw[]}
+ * */
+const routes = [
+    {
+        path: &#x27;/&#x27;,
+        redirect: &#x27;/admin&#x27;,
+    },
+    {
+        path: &#x27;/login&#x27;,
+        name: &#x27;login&#x27;,
+        component: () =&gt; import(&#x27;@/views/LoginPage.vue&#x27;)
+    },
+    {
+        path: &#x27;/admin&#x27;,
+        component: () =&gt; import(&#x27;@/views/LayoutPage.vue&#x27;),
+        redirect: {
+            name: &#x27;bodyList&#x27;
+        },
+        meta: {
+            requiresAuth: true,
+        },
+        children: [
+            {
+                path: &#x27;bodies&#x27;,
+                name: &#x27;bodyList&#x27;,
+                component: () =&gt; import(&#x27;@/views/BodyListPage.vue&#x27;),
+                meta: {
+                    title: &#x27;天体管理&#x27;,
+                    description: &#x27;管理太阳与八大行星的简介信息&#x27;,
+                },
+            },
+            {
+                path: &#x27;books&#x27;,
+                name: &#x27;bookList&#x27;,
+                component: () =&gt; import(&#x27;@/views/BookListPage.vue&#x27;),
+                meta: {
+                    title: &#x27;书籍管理&#x27;,
+                    description: &#x27;管理书籍、所属天体、排序和显示状态&#x27;
+                },
+            },
+            {
+                path: &#x27;notes&#x27;,
+                name: &#x27;noteList&#x27;,
+                component: () =&gt; import(&#x27;@/views/PlaceholderPage.vue&#x27;),
+                meta: {
+                    title: &#x27;笔记管理&#x27;,
+                    description: &#x27;查看和管理笔记内容&#x27;,
+                },
+            },
+        ],
+    }
+]
+
+/**
+ * 路由配置
+ * @type {import(&#x27;vue-router&#x27;).RouterOptions}
+ * */
+const option = {
+    routes,
+    history: createWebHistory(import.meta.env.BASE_URL),
+}
+
+/**
+ * 路由实例
+ * @type {import(&#x27;vue-router&#x27;).Router}
+ * */
+const router = createRouter(option)
+
+/**
+ * 本函数用于在访问后台页面前检查本地是否持有令牌
+ * @param {import(&#x27;vue-router&#x27;).RouteLocationNormalized} to 即将进入的路由
+ * @returns {true | import(&#x27;vue-router&#x27;).RouteLocationRaw} 允许继续或返回登录页地址
+ * */
+function checkLogin(to) {
+    /** 当前 Pinia 实例中的用户 Store,在组件外显式传入 pinia */
+    const userStore = /** @type {import(&#x27;@/stores/user&#x27;).UserStore} */ (useUserStore(pinia))
+
+    if (to.meta.requiresAuth === true &amp;&amp; userStore.token === &#x27;&#x27;) {
+        return {
+            name: &#x27;login&#x27;,
+            replace: true,
+        }
+    }
+
+    return true
+}
+
+router.beforeEach(checkLogin)
+
+export default router
+</code></pre></details><p>路由仍按“routes → option → router → 导出”组织，component 使用懒加载箭头函数。默认后台入口继续进入天体管理。原 <code>/admin/users</code> 是待实现的占位地址，本例将其替换，不另外增加兼容重定向。</p></section><section id="page"><h2>5. 提取公共函数并更新两个页面</h2>
+<p><code>getBodyLabel()</code> 只依赖固定天体选项，没有组件状态。将其提取为公共函数后，天体管理和书籍管理使用同一套名称转换逻辑。按 5.1 → 5.2 → 5.3 的顺序调整。</p>
+<h3 id="body-label">5.1 新增公共函数：src/utils/body.js</h3>
+<p><code>src/constants/body.js</code> 继续保存选项和长度常量；<code>src/utils/body.js</code> 导入 <code>bodyOptions</code> 并负责名称转换。使用普通具名函数，定义完成后再命名导出。</p>
+<details class="code-block" open><summary>src/utils/body.js<span>点击折叠 / 展开</span></summary><pre><code data-file="src/utils/body.js" data-kind="complete">import {bodyOptions} from &#x27;@/constants/body&#x27;
+
+/**
+ * 根据天体标识读取中文名称；未知标识保留原文。
+ * @param {string} name 区分大小写的天体标识。
+ * @returns {string} 中文名称或未匹配的原始标识。
+ */
+function getBodyLabel(name) {
+    /** @type {import(&#x27;@/constants/body&#x27;).BodyOption} 当前天体名称映射。 */
+    for (const option of bodyOptions) {
+        if (option.name === name) {
+            return option.label
+        }
+    }
+    return name
+}
+
+export {getBodyLabel}
+</code></pre></details>
+<p>例如 <code>getBodyLabel('Sun')</code> 返回“太阳”，<code>getBodyLabel('Earth')</code> 返回“地球”；没有匹配到的名称原样返回，保持现有大小写匹配行为。</p>
+<h3 id="reuse-body-label">5.2 天体管理页面改为导入公共函数</h3>
+<p>在 <code>src/views/BodyListPage.vue</code> 中删除原来的 <code>getBodyLabel()</code> 函数及其 JSDoc，增加公共函数导入。原来的常量导入保留，相关两行如下：</p>
+<details class="code-block" open><summary>src/views/BodyListPage.vue · 常量与公共函数导入<span>点击折叠 / 展开</span></summary><pre><code data-file="src/views/BodyListPage.vue · 常量与公共函数导入" data-kind="fragment">import {BODY_INTRO_MAX_LENGTH, BODY_TITLE_MAX_LENGTH, bodyOptions} from &#x27;@/constants/body&#x27;
+import {getBodyLabel} from &#x27;@/utils/body&#x27;</code></pre></details>
+<p>该页面的下拉选项、数量统计等仍依赖 <code>bodyOptions</code>。表格中的 <code>getBodyLabel(scope.row.name)</code> 和 <code>getOptionLabel()</code> 内的调用保持原样，都会使用导入的公共函数。<a href="body-api-integration-guide.html#page">天体 API 指南的完整页面示例</a>也已同步。</p>
+<h3 id="book-page">5.3 书籍管理页面使用同一公共函数</h3>
+<p>在 <code>src/views/BookListPage.vue</code> 中删除本地 <code>getBodyLabel()</code> 及其 JSDoc，把 <code>bodyOptions</code> 导入替换为 <code>getBodyLabel</code> 导入。本页不再直接读取 <code>bodyOptions</code>。以下完整组件已包含这些调整，仍保持 template → script → style 顺序；仅本页使用的常量和类型继续定义在组件内。</p>
+<div class="note"><p>表单的 <code>planet_id</code> 来自真实天体接口；<code>list</code> 沿用当前组件中的四条固定记录，包含太阳与地球各两条及显示 / 隐藏两种状态。<code>BookRecord</code> 按你约定的后端列表项结构定义，其中 <code>planet</code> 复用现有 <code>BodyRecord</code> 类型。固定记录不会写入数据库，也不作为添加表单的选项。<code>AddBookForm</code> 仍只描述表单状态；创建接口的请求体及列表接口的外层响应包尚待确定。</p></div>
+<details class="code-block" open><summary>src/views/BookListPage.vue<span>点击折叠 / 展开</span></summary><pre><code data-file="src/views/BookListPage.vue" data-kind="complete">&lt;template&gt;
+    &lt;section class=&quot;book-list-page&quot;&gt;
+        &lt;el-breadcrumb :separator-icon=&quot;ArrowRight&quot;&gt;
+            &lt;el-breadcrumb-item&gt;管理后台&lt;/el-breadcrumb-item&gt;
+            &lt;el-breadcrumb-item&gt;书籍管理&lt;/el-breadcrumb-item&gt;
+        &lt;/el-breadcrumb&gt;
+
+        &lt;h1&gt;书籍管理&lt;/h1&gt;
+        &lt;p class=&quot;page-description&quot;&gt;按所属天体管理书籍、排序和显示状态&lt;/p&gt;
+
+        &lt;el-alert
+            class=&quot;page-notice&quot;
+            title=&quot;当前列表为固定示例数据，仅供预览；添加表单尚未接入保存。&quot;
+            type=&quot;info&quot;
+            show-icon
+            :closable=&quot;false&quot;
+        &gt;&lt;/el-alert&gt;
+
+        &lt;el-card shadow=&quot;never&quot;&gt;
+            &lt;template #header&gt;
+                &lt;div class=&quot;list-toolbar&quot;&gt;
+                    &lt;strong&gt;书籍列表&lt;/strong&gt;
+                    &lt;el-button type=&quot;primary&quot; :icon=&quot;Plus&quot; @click=&quot;openAddDrawer&quot;&gt;
+                        添加书籍
+                    &lt;/el-button&gt;
+                &lt;/div&gt;
+            &lt;/template&gt;
+
+            &lt;el-table :data=&quot;list&quot; row-key=&quot;id&quot; stripe class=&quot;book-table&quot;&gt;
+                &lt;el-table-column prop=&quot;id&quot; label=&quot;书籍 ID&quot; min-width=&quot;190&quot;&gt;&lt;/el-table-column&gt;
+                &lt;el-table-column prop=&quot;title&quot; label=&quot;书籍标题&quot; min-width=&quot;180&quot;&gt;&lt;/el-table-column&gt;
+                &lt;el-table-column label=&quot;所属天体&quot; min-width=&quot;180&quot;&gt;
+                    &lt;template #default=&quot;scope&quot;&gt;
+                        {{ getBodyLabel(scope.row.planet.name) }}
+                    &lt;/template&gt;
+                &lt;/el-table-column&gt;
+                &lt;el-table-column prop=&quot;sort&quot; label=&quot;排序值&quot; width=&quot;110&quot;&gt;&lt;/el-table-column&gt;
+                &lt;el-table-column label=&quot;显示状态&quot; width=&quot;110&quot;&gt;
+                    &lt;template #default=&quot;scope&quot;&gt;
+                        &lt;el-tag v-if=&quot;scope.row.display_status === &#x27;visible&#x27;&quot; type=&quot;success&quot;&gt;显示&lt;/el-tag&gt;
+                        &lt;el-tag v-else-if=&quot;scope.row.display_status === &#x27;hidden&#x27;&quot; type=&quot;info&quot;&gt;隐藏&lt;/el-tag&gt;
+                        &lt;el-tag v-else type=&quot;warning&quot;&gt;未知状态&lt;/el-tag&gt;
+                    &lt;/template&gt;
+                &lt;/el-table-column&gt;
+                &lt;template #empty&gt;
+                    &lt;el-empty description=&quot;暂无书籍&quot;&gt;&lt;/el-empty&gt;
+                &lt;/template&gt;
+            &lt;/el-table&gt;
+        &lt;/el-card&gt;
+
+        &lt;el-drawer
+            v-model=&quot;drawerVisible&quot;
+            title=&quot;添加书籍&quot;
+            direction=&quot;rtl&quot;
+            size=&quot;min(520px, 100vw)&quot;
+            :close-on-click-modal=&quot;false&quot;
+            :close-on-press-escape=&quot;isValidating === false&quot;
+            :show-close=&quot;isValidating === false&quot;
+            :before-close=&quot;beforeCloseDrawer&quot;
+            @closed=&quot;resetAddForm&quot;
+        &gt;
+            &lt;el-alert
+                v-if=&quot;isPlanetLoading === false &amp;&amp; planetLoadFailed === true&quot;
+                class=&quot;page-notice&quot;
+                :title=&quot;planetError&quot;
+                type=&quot;error&quot;
+                show-icon
+                :closable=&quot;false&quot;
+            &gt;&lt;/el-alert&gt;
+            &lt;el-alert
+                v-else-if=&quot;isPlanetLoading === false &amp;&amp; planetOptions.length === 0&quot;
+                class=&quot;page-notice&quot;
+                title=&quot;暂无可选天体，请先在天体管理中创建天体，再刷新选项。&quot;
+                type=&quot;info&quot;
+                show-icon
+                :closable=&quot;false&quot;
+            &gt;&lt;/el-alert&gt;
+
+            &lt;el-button
+                class=&quot;refresh-planets&quot;
+                :icon=&quot;Refresh&quot;
+                :loading=&quot;isPlanetLoading&quot;
+                :disabled=&quot;isPlanetLoading || isValidating&quot;
+                @click=&quot;loadPlanetOptions&quot;
+            &gt;
+                刷新天体选项
+            &lt;/el-button&gt;
+
+            &lt;el-form
+                ref=&quot;addFormRef&quot;
+                :model=&quot;addForm&quot;
+                :rules=&quot;addFormRules&quot;
+                :disabled=&quot;isValidating&quot;
+                label-position=&quot;top&quot;
+                @submit.prevent=&quot;submitBook&quot;
+            &gt;
+                &lt;el-form-item label=&quot;所属天体&quot; prop=&quot;planet_id&quot;&gt;
+                    &lt;el-select
+                        v-model=&quot;addForm.planet_id&quot;
+                        class=&quot;full-width&quot;
+                        placeholder=&quot;请选择已创建的天体&quot;
+                        :loading=&quot;isPlanetLoading&quot;
+                        :disabled=&quot;isPlanetLoading || planetLoadFailed || planetOptions.length === 0&quot;
+                    &gt;
+                        &lt;el-option
+                            v-for=&quot;planet in planetOptions&quot;
+                            :key=&quot;planet.id&quot;
+                            :label=&quot;getBodyLabel(planet.name)&quot;
+                            :value=&quot;planet.id&quot;
+                        &gt;&lt;/el-option&gt;
+                    &lt;/el-select&gt;
+                &lt;/el-form-item&gt;
+
+                &lt;el-form-item label=&quot;书籍标题&quot; prop=&quot;title&quot;&gt;
+                    &lt;el-input v-model=&quot;addForm.title&quot; placeholder=&quot;请输入书籍标题&quot;&gt;&lt;/el-input&gt;
+                    &lt;p class=&quot;field-help&quot;&gt;最多 {{ BOOK_TITLE_MAX_LENGTH }} 个字符，首尾空白会在校验时移除。&lt;/p&gt;
+                &lt;/el-form-item&gt;
+
+                &lt;el-form-item label=&quot;排序值&quot; prop=&quot;sort&quot;&gt;
+                    &lt;el-input-number
+                        v-model=&quot;addForm.sort&quot;
+                        class=&quot;full-width&quot;
+                        :min=&quot;BOOK_SORT_MIN&quot;
+                        :max=&quot;BOOK_SORT_MAX&quot;
+                        :step=&quot;1&quot;
+                        controls-position=&quot;right&quot;
+                    &gt;&lt;/el-input-number&gt;
+                    &lt;p class=&quot;field-help&quot;&gt;请输入整数；同一天体下不同书籍的排序值不能重复。&lt;/p&gt;
+                &lt;/el-form-item&gt;
+
+                &lt;el-form-item label=&quot;显示状态&quot; prop=&quot;display_status&quot;&gt;
+                    &lt;el-select v-model=&quot;addForm.display_status&quot; class=&quot;full-width&quot;&gt;
+                        &lt;el-option
+                            v-for=&quot;option in displayStatusOptions&quot;
+                            :key=&quot;option.value&quot;
+                            :label=&quot;option.label&quot;
+                            :value=&quot;option.value&quot;
+                        &gt;&lt;/el-option&gt;
+                    &lt;/el-select&gt;
+                &lt;/el-form-item&gt;
+            &lt;/el-form&gt;
+
+            &lt;template #footer&gt;
+                &lt;el-button :disabled=&quot;isValidating&quot; @click=&quot;closeAddDrawer&quot;&gt;取消&lt;/el-button&gt;
+                &lt;el-button
+                    type=&quot;primary&quot;
+                    :loading=&quot;isValidating&quot;
+                    :disabled=&quot;isValidating || isPlanetLoading || planetLoadFailed || planetOptions.length === 0&quot;
+                    @click=&quot;submitBook&quot;
+                &gt;
+                    确认添加
+                &lt;/el-button&gt;
+            &lt;/template&gt;
+        &lt;/el-drawer&gt;
+    &lt;/section&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import {nextTick, reactive, ref} from &#x27;vue&#x27;
+import {ArrowRight, Plus, Refresh} from &#x27;@element-plus/icons-vue&#x27;
+import {ElMessage} from &#x27;element-plus&#x27;
+import {getBodyList} from &#x27;@/api/body&#x27;
+import {getBodyLabel} from &#x27;@/utils/body&#x27;
+import {getApiErrorMessage} from &#x27;@/utils/apiError&#x27;
+
+defineOptions({name: &#x27;BookListPage&#x27;})
+
+/** @typedef {&#x27;visible&#x27; | &#x27;hidden&#x27;} BookDisplayStatus 书籍显示状态。 */
+
+/**
+ * 按当前 list 约定的后端书籍响应项，所属天体以完整对象返回。
+ * @typedef {Object} BookRecord
+ * @property {string} id 书籍 ID，始终保留字符串。
+ * @property {string} title 书籍标题。
+ * @property {number} sort 同一天体下唯一的排序整数。
+ * @property {BookDisplayStatus} display_status 显示状态。
+ * @property {import(&#x27;@/api/body&#x27;).BodyRecord} planet 所属天体，包含字符串 id、name、title、intro。
+ */
+
+/**
+ * 添加表单；不等同于尚未定义的创建接口请求体。
+ * @typedef {Object} AddBookForm
+ * @property {string} planet_id 已创建天体的字符串 ID。
+ * @property {string} title 书籍标题。
+ * @property {number | undefined} sort 排序值；清空数字输入框时可能没有值。
+ * @property {BookDisplayStatus} display_status 显示状态。
+ */
+
+/** @type {number} 表注释规定的书籍标题业务长度上限。 */
+const BOOK_TITLE_MAX_LENGTH = 20
+/** @type {number} MySQL 有符号 INT 的最小值。 */
+const BOOK_SORT_MIN = -2147483648
+/** @type {number} MySQL 有符号 INT 的最大值。 */
+const BOOK_SORT_MAX = 2147483647
+/** @type {number} 新表单的排序初始值，仅是默认值，不保证未被占用。 */
+const BOOK_DEFAULT_SORT = 1
+/** @type {{value: BookDisplayStatus, label: string}[]} 显示状态选项。 */
+const displayStatusOptions = [
+    {value: &#x27;visible&#x27;, label: &#x27;显示&#x27;},
+    {value: &#x27;hidden&#x27;, label: &#x27;隐藏&#x27;},
+]
+
+/**
+ * 沿用当前组件中的四条固定书籍数据，结构与预期的后端列表项一致。
+ * 示例记录仅供展示；添加表单不会修改此数组，接入列表 API 时删除这些初始记录。
+ * @type {import(&#x27;vue&#x27;).Ref&lt;BookRecord[]&gt;}
+ */
+const list = ref([
+    {
+        id: &#x27;1000000000000000003&#x27;,
+        title: &#x27;太阳观测入门1&#x27;,
+        sort: 1,
+        display_status: &#x27;visible&#x27;,
+        planet: {
+            id: &#x27;2000000000000000002&#x27;,
+            name: &#x27;Sun&#x27;,
+            title: &#x27;太阳的标题&#x27;,
+            intro: &#x27;太阳的简介&#x27;,
+        },
+    },
+    {
+        id: &#x27;1000000000000000004&#x27;,
+        title: &#x27;太阳观测入门2&#x27;,
+        sort: 2,
+        display_status: &#x27;hidden&#x27;,
+        planet: {
+            id: &#x27;2000000000000000002&#x27;,
+            name: &#x27;Sun&#x27;,
+            title: &#x27;太阳的标题&#x27;,
+            intro: &#x27;太阳的简介&#x27;,
+        },
+    },
+    {
+        id: &#x27;1000000000000000001&#x27;,
+        title: &#x27;地球观测入门1&#x27;,
+        sort: 1,
+        display_status: &#x27;visible&#x27;,
+        planet: {
+            id: &#x27;2000000000000000001&#x27;,
+            name: &#x27;Earth&#x27;,
+            title: &#x27;地球的标题&#x27;,
+            intro: &#x27;地球的简介&#x27;,
+        },
+    },
+    {
+        id: &#x27;1000000000000000002&#x27;,
+        title: &#x27;地球观测入门2&#x27;,
+        sort: 2,
+        display_status: &#x27;hidden&#x27;,
+        planet: {
+            id: &#x27;2000000000000000001&#x27;,
+            name: &#x27;Earth&#x27;,
+            title: &#x27;地球的标题&#x27;,
+            intro: &#x27;地球的简介&#x27;,
+        },
+    },
+])
+/** @type {import(&#x27;vue&#x27;).Ref&lt;import(&#x27;@/api/body&#x27;).BodyRecord[]&gt;} 真实天体列表，选择值取 id。 */
+const planetOptions = ref([])
+/** @type {import(&#x27;vue&#x27;).Ref&lt;boolean&gt;} 是否正在读取天体选项。 */
+const isPlanetLoading = ref(false)
+/** @type {import(&#x27;vue&#x27;).Ref&lt;boolean&gt;} 天体选项是否不可用，初次读取前也视为不可用。 */
+const planetLoadFailed = ref(true)
+/** @type {import(&#x27;vue&#x27;).Ref&lt;string&gt;} 天体选项读取失败的说明。 */
+const planetError = ref(&#x27;天体选项尚未加载&#x27;)
+/** @type {import(&#x27;vue&#x27;).Ref&lt;boolean&gt;} 添加抽屉是否打开。 */
+const drawerVisible = ref(false)
+/** @type {import(&#x27;vue&#x27;).Ref&lt;boolean&gt;} 是否正在校验表单，用于防止重复操作。 */
+const isValidating = ref(false)
+/** @type {import(&#x27;vue&#x27;).Ref&lt;import(&#x27;element-plus&#x27;).FormInstance | null&gt;} 表单组件实例。 */
+const addFormRef = ref(null)
+/** @type {AddBookForm} 添加表单，只维护尚未保存的输入内容。 */
+const addForm = reactive({
+    planet_id: &#x27;&#x27;,
+    title: &#x27;&#x27;,
+    sort: BOOK_DEFAULT_SORT,
+    display_status: &#x27;visible&#x27;,
+})
+
+/** @type {import(&#x27;element-plus&#x27;).FormRules&lt;AddBookForm&gt;} 添加表单的字段校验规则。 */
+const addFormRules = {
+    planet_id: [{required: true, validator: validatePlanetId, trigger: &#x27;change&#x27;}],
+    title: [
+        {required: true, whitespace: true, message: &#x27;请输入书籍标题&#x27;, trigger: &#x27;blur&#x27;},
+        {max: BOOK_TITLE_MAX_LENGTH, message: &#x27;书籍标题最多 20 个字符&#x27;, trigger: &#x27;blur&#x27;},
+    ],
+    sort: [
+        {required: true, type: &#x27;integer&#x27;, message: &#x27;请输入有效的排序整数&#x27;, trigger: [&#x27;blur&#x27;, &#x27;change&#x27;]},
+        {type: &#x27;integer&#x27;, min: BOOK_SORT_MIN, max: BOOK_SORT_MAX, message: &#x27;排序值超出 INT 范围&#x27;, trigger: [&#x27;blur&#x27;, &#x27;change&#x27;]},
+    ],
+    display_status: [
+        {required: true, type: &#x27;enum&#x27;, enum: [&#x27;visible&#x27;, &#x27;hidden&#x27;], message: &#x27;请选择显示或隐藏&#x27;, trigger: &#x27;change&#x27;},
+    ],
+}
+
+/**
+ * 检查 ID 是否存在于当前成功读取的天体列表中。
+ * @param {string} planetId 待检查的天体 ID。
+ * @returns {boolean} 是否允许选择此天体。
+ */
+function isPlanetSelectable(planetId) {
+    if (isPlanetLoading.value === true || planetLoadFailed.value === true || planetId === &#x27;&#x27;) {
+        return false
+    }
+    /** @type {import(&#x27;@/api/body&#x27;).BodyRecord} 当前天体。 */
+    for (const planet of planetOptions.value) {
+        if (planet.id === planetId) {
+            return true
+        }
+    }
+    return false
+}
+
+/**
+ * 校验所属天体字段；不能用天体名称代替关联 ID。
+ * @param {unknown} rule 当前校验规则，本函数无需读取。
+ * @param {unknown} value 待校验的字段值。
+ * @param {(error?: string | Error) =&gt; void} callback 校验结果回调。
+ * @returns {void}
+ */
+function validatePlanetId(rule, value, callback) {
+    if (typeof value !== &#x27;string&#x27; || isPlanetSelectable(value) === false) {
+        callback(new Error(&#x27;请选择当前列表中的已创建天体&#x27;))
+        return
+    }
+    callback()
+}
+
+/**
+ * 复用现有天体列表接口；失败后仍可点击刷新重试。
+ * @returns {Promise&lt;void&gt;} 本轮读取结束，失败状态保存在页面中。
+ */
+async function loadPlanetOptions() {
+    if (isPlanetLoading.value === true || isValidating.value === true) {
+        return
+    }
+    isPlanetLoading.value = true
+    planetError.value = &#x27;&#x27;
+    try {
+        planetOptions.value = await getBodyList()
+        planetLoadFailed.value = false
+    } catch (error) {
+        planetOptions.value = []
+        planetLoadFailed.value = true
+        planetError.value = getApiErrorMessage(error, &#x27;天体选项加载失败&#x27;) + &#x27;，请刷新重试&#x27;
+    } finally {
+        isPlanetLoading.value = false
+    }
+
+    // 刷新后所选天体已不可用时，只清空关联字段，保留其他输入。
+    if (addForm.planet_id !== &#x27;&#x27; &amp;&amp; isPlanetSelectable(addForm.planet_id) === false) {
+        addForm.planet_id = &#x27;&#x27;
+    }
+}
+
+/**
+ * 重置表单及旧校验提示；关闭抽屉或再次打开时调用。
+ * @returns {void}
+ */
+function resetAddForm() {
+    addForm.planet_id = &#x27;&#x27;
+    addForm.title = &#x27;&#x27;
+    addForm.sort = BOOK_DEFAULT_SORT
+    addForm.display_status = &#x27;visible&#x27;
+    if (addFormRef.value !== null) {
+        addFormRef.value.clearValidate()
+    }
+}
+
+/**
+ * 打开抽屉并刷新真实天体选项，等待表单挂载后清除旧提示。
+ * @returns {Promise&lt;void&gt;} 抽屉打开及本轮选项读取处理结束。
+ */
+async function openAddDrawer() {
+    if (isValidating.value === true || drawerVisible.value === true) {
+        return
+    }
+    resetAddForm()
+    drawerVisible.value = true
+    /** @type {Promise&lt;void&gt;} 立即启动的选项读取，防止短暂使用旧数据。 */
+    const loading = loadPlanetOptions()
+    await nextTick()
+    if (addFormRef.value !== null) {
+        addFormRef.value.clearValidate()
+    }
+    await loading
+}
+
+/**
+ * 校验期间阻止抽屉关闭。
+ * @param {() =&gt; void} done 抽屉提供的关闭回调。
+ * @returns {void}
+ */
+function beforeCloseDrawer(done) {
+    if (isValidating.value === false) {
+        done()
+    }
+}
+
+/**
+ * 响应取消按钮，实际重置由 closed 事件完成。
+ * @returns {void}
+ */
+function closeAddDrawer() {
+    if (isValidating.value === false) {
+        drawerVisible.value = false
+    }
+}
+
+/**
+ * 校验添加表单；本阶段不发送创建请求，也不向列表追加记录。
+ * @returns {Promise&lt;void&gt;} 本轮校验结束。
+ */
+async function submitBook() {
+    if (isValidating.value === true || drawerVisible.value === false || addFormRef.value === null) {
+        return
+    }
+    if (isPlanetLoading.value === true || planetLoadFailed.value === true) {
+        ElMessage.warning(&#x27;请先成功加载天体选项&#x27;)
+        return
+    }
+
+    isValidating.value = true
+    try {
+        addForm.title = addForm.title.trim()
+        /** @type {boolean} 所有字段是否通过校验。 */
+        const isValid = await addFormRef.value.validate()
+        if (isValid === false) {
+            return
+        }
+    } catch {
+        // 字段错误由 el-form-item 展示，保留本次输入以便修正。
+        return
+    } finally {
+        isValidating.value = false
+    }
+
+    // 后续在这里接入书籍创建 API；现在不关闭抽屉、不清空、不提示创建成功。
+    ElMessage.info(&#x27;表单校验通过；保存功能尚未开放，本次内容未保存&#x27;)
+}
+&lt;/script&gt;
+
+&lt;style scoped lang=&quot;scss&quot;&gt;
+.book-list-page h1 {
+    margin: 20px 0 8px;
+    color: #35405b;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.page-description {
+    margin: 0 0 20px;
+    color: #657089;
+    line-height: 1.6;
+}
+
+.page-notice { margin-bottom: 20px; }
+
+.list-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.book-table,
+.full-width { width: 100%; }
+
+.book-table :deep(.cell) {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.field-help {
+    margin: 6px 0 0;
+    color: #657089;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.refresh-planets { margin-bottom: 20px; }
+
+.book-list-page :deep(.el-card) {
+    border-color: #e8ecf3;
+    border-radius: 8px;
+}
+
+@media (max-width: 640px) {
+    .list-toolbar { align-items: flex-start; }
+}
+&lt;/style&gt;
+</code></pre></details><p>列表直接读取每条记录的 <code>planet.name</code>，通过从 <code>@/utils/body</code> 导入的 <code>getBodyLabel()</code> 显示中文天体名，因此进入页面即可展示名称，无需先请求天体选项。<code>planet.title</code> 和 <code>planet.intro</code> 保留在数据中，本页五列暂不展示它们。只有打开抽屉和点击“刷新天体选项”才调用 <code>getBodyList()</code>，为添加表单获取真实可选天体；表单不从固定书籍列表中提取天体选项。</p></section><section id="flow"><h2>6. 交互与错误处理说明</h2>
+<div class="flow-steps"><span>打开添加抽屉</span>→<span>读取真实天体</span>→<span>填写四个字段</span>→<span>校验</span>→<span>提示尚未保存，保留输入</span></div>
+<div class="table-wrap"><table><thead><tr><th>场景</th><th>页面行为</th></tr></thead><tbody>
+<tr><td>首次打开 / 每次重新打开</td><td>重置上次输入，刷新天体选项；加载期间禁止选择天体和确认添加。</td></tr>
+<tr><td>天体接口成功但数组为空</td><td>提示先去天体管理创建天体；用户可取消抽屉，之后回来刷新选项。</td></tr>
+<tr><td>天体接口失败</td><td>显示错误，清空并禁用旧选项；“刷新天体选项”按钮保持可重试。</td></tr>
+<tr><td>鉴权失效</td><td>沿用 request.js 清理登录状态与跳转；页面不再重复弹出鉴权消息。</td></tr>
+<tr><td>手动刷新后原天体不在列表中</td><td>只清空 planet_id，保留标题、排序和显示状态；后续保存仍须服务端确认关联有效。</td></tr>
+<tr><td>校验失败</td><td>字段下方显示提示，解除操作锁，保留输入与抽屉。</td></tr>
+<tr><td>校验通过</td><td>明确提示内容未保存；不 push 新记录、不清空表单、不自动关闭抽屉。</td></tr>
+<tr><td>取消 / 关闭抽屉</td><td>closed 事件重置表单；校验期间禁止关闭，避免与本轮校验交叉。</td></tr>
+</tbody></table></div>
+<p>数字输入框的 <code>step</code> 设为 1；没有使用 <code>precision="0"</code> 或 <code>step-strictly</code> 来隐式取整。小数会被整数规则拒绝；清空输入产生的 undefined 也会触发必填校验。组件的 min / max 可能将用户输入规范到边界，规则仍另外验证 INT 范围。</p>
+<p>表单只确认“输入格式满足当前规则”，无法确认排序未被其他书籍占用。提示中故意区分“校验通过”和“创建成功”。</p></section><section id="future"><h2>7. 后续书籍 API 接入位置</h2>
+<p>当前后端路由代码只有登录和三个天体接口，尚未注册书籍管理接口。先完成本页，再按后端最终协议增加 <code>src/api/book.js</code>。</p>
+<ol><li><strong>列表：</strong>确定接口路径、外层响应包、分页及排序规则；列表项采用本指南约定的嵌套 <code>planet</code> 结构。先移除四条固定记录，将 <code>list</code> 初始化为 <code>ref([])</code>；校验每个书籍项及其 <code>planet.id / name / title / intro</code> 后，整体赋给 <code>list.value</code>。同步移除示例提示，补齐加载、失败重试和真实空列表提示；请求失败时不要回退显示示例数据。</li>
+<li><strong>创建：</strong>在 <code>submitBook()</code> 校验之后增加真实请求。根据后端协议构建请求体，只提交所属天体 ID、标题、排序和显示状态；不假设一定存在某个嵌套字段。字符串 ID 原样发送，sort 通过整数校验后按数字发送。</li>
+<li><strong>提交锁：</strong>当前 isValidating 只覆盖校验。接入请求后，把锁扩展到“校验 + 创建请求”，保持单层、同级的 try / catch 结构，并确保所有退出分支释放锁。</li>
+<li><strong>成功与失败：</strong>收到后端明确成功后再提示、关闭抽屉、重新读取列表。创建成功后列表读取失败要单独提示。超时或断网时先核对实际结果，不自动重复创建。</li>
+<li><strong>公共错误处理：</strong>请求复用现有 request 实例，携带 Bearer 令牌；公共错误继续交给 apiError.js。新增的书籍业务响应码加入 apiCode.js，排序冲突等页面专属说明放在书籍页面。</li>
+<li><strong>数据约束：</strong>服务端生成 ID，校验天体存在、标题业务长度、整数范围、枚举以及联合唯一索引冲突。列表如何排序仍需明确；当前约定的列表项不含时间字段，若未来增加，再约定其格式和时区。</li></ol>
+<p>建议未来按所属天体分组、组内按 sort 升序展示；这是一项待后端确认的展示约定，当前数据库索引本身不保证查询结果顺序。本阶段不添加书籍编辑、删除、筛选、分页或目录管理。</p></section><section id="verify"><h2>8. 实现后的检查顺序</h2>
+<ol><li>先按第 3、4、5 节完成文件清单中的调整，确认公共函数已导出、两个页面均已导入，再运行构建并启动开发服务：</li></ol><details class="code-block" open><summary>在工程根目录执行<span>点击折叠 / 展开</span></summary><pre><code data-file="在工程根目录执行" data-kind="fragment">npm run build
+npm run dev</code></pre></details><ol start="2"><li>使用现有登录流程进入后台。第二项应为书籍图标与“书籍管理”；点击后地址为 <code>/admin/books</code>，菜单高亮、顶栏标题和面包屑一致；天体管理和笔记占位页仍可切换。无需打开添加抽屉，表格应立即显示太阳、地球各两条固定书籍；五列分别是书籍 ID、书籍标题、所属天体、排序值、显示状态。天体名称来自嵌套 planet.name，ID 保持原字符串，表格没有创建时间和更新时间列。</li>
+<li>检查天体列表、天体创建下拉框、书籍列表和书籍添加下拉框的中文名称均正常；公共模块只定义一次 getBodyLabel()，两个页面中没有重复的本地定义。</li>
+<li>点击“添加书籍”。确认 Network 中读取的是现有 <code>/api/v1/planet/list</code>，下拉选项只包含已创建的真实天体，value 是字符串 ID。该请求复用现有鉴权配置。</li>
+<li>选择天体，空书名、纯空白书名、21 个普通字符应报错；20 个字符及 20 个单码点表情可通过长度规则。输入前后带空格时，确认添加会先去除首尾空白再校验。</li>
+<li>检查排序初始值为 1，清空或输入 1.5 时出现整数校验错误；0 和负整数可通过当前字段规则。分别选择显示和隐藏，确认枚举值为 visible / hidden。</li>
+<li>有效表单确认后，应提示未保存，并保持抽屉与内容；书籍列表仍保持原有四条固定记录，Network 中没有书籍创建请求。</li>
+<li>在开发者工具中暂时阻断天体列表请求，确认失败有文字提示、下拉框和确认按钮禁用、刷新按钮仍能点击；解除阻断后重试应恢复。若真实库还没有天体，成功空列表应显示“请先创建天体”的提示。</li>
+<li>取消后重新打开，表单恢复默认值；检查窄屏下侧栏图标、表格内部横向滚动、抽屉宽度和底部按钮可用。</li></ol>
+<p>以上是你实现后的验收步骤；无需为测试临时改写数据库。书籍列表真实数据、排序冲突和创建成功后的刷新，需要等书籍接口完成后再验证。</p></section><section id="sources"><h2>9. 依据与示例验证</h2>
+<div class="verification"><p>已读取本地 book 表的真实 DDL，并对照当前 LayoutPage.vue、路由、天体页面和请求模块编写示例。将示例放入独立临时工程后，Vite 生产构建通过；检查未调用书籍写入接口，也没有修改数据库。</p><p>示例另通过 30 个表单规则与状态流程用例，以及严格 JSDoc 类型检查。HTML 目录链接与桌面、390px 窄屏显示已检查。这些验证使用临时工程与模拟响应，不等同于真实后端联调。文档中的修改供你参考实施，本次调整仅更新书籍管理文档与天体 API 指南。</p></div>
+<p>实现依据：</p><ul>
+<li>本地 <code>solar_notes.book</code> 的字段、注释、默认值及 <code>uk_planet_sort</code> 联合唯一索引，以及当前 <code>src/views/BookListPage.vue</code> 中 <code>list</code> 约定的嵌套列表项结构。</li>
+<li>当前工程的 <code>src/views/LayoutPage.vue</code>、<code>src/router/index.js</code>、<code>src/views/BodyListPage.vue</code>、<code>src/api/body.js</code>、<code>src/utils/request.js</code>、<code>src/constants/body.js</code>，以及本指南第 5.1 节定义的 <code>src/utils/body.js</code>。</li>
+<li>后端 <code>SolarNotesAdminAPI/main.go</code> 当前注册的接口。</li>
+<li><a href="https://element-plus.org/en-US/component/form.html">Element Plus Form</a>：字段规则与异步 validate；<a href="https://element-plus.org/en-US/component/input-number.html">Input Number</a>：数值绑定、步长及范围；<a href="https://element-plus.org/en-US/component/drawer.html">Drawer</a>：抽屉显示与关闭回调。</li></ul>
+<p class="source">相关文档：<a href="body-api-integration-guide.html">天体 API 联调指南</a> · <a href="body-management-guide.html">天体管理页面参考</a> · <a href="admin-layout-guide.html">后台布局参考</a></p></section><footer>本阶段完成书籍管理页面结构与输入校验。书籍列表读取、持久化保存与业务冲突处理将在后端接口确定后接入。</footer></article></main></body></html>
