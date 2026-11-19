@@ -23,6 +23,10 @@ const API_CODE = {
     LOGIN_RATE_LIMIT: 20005,
     /** 请求创建的天体已经存在 */
     BODY_ALREADY_EXISTS: 20101,
+    /** 创建书籍时所选天体已不存在 */
+    BOOK_PLANET_NOT_FOUND: 20102,
+    /** 同一天体下的书籍排序值已被占用 */
+    BOOK_SORT_OCCUPIED: 20201,
 }
 
 export {API_CODE}

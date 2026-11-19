@@ -8,27 +8,40 @@
         <h1>书籍管理</h1>
         <p class="page-description">按所属天体管理书籍/排序/显示状态</p>
 
-        <el-alert
-            class="page-notice"
-            title="当前列表为固定示例数据,仅供预览.添加表单尚未接入保存"
-            type="info"
-            show-icon
-            :closable="false"
-        >
-        </el-alert>
-
         <el-card shadow="never">
             <template #header>
                 <div class="list-toolbar">
                     <strong>书籍列表</strong>
 
-                    <el-button type="primary" :icon="Plus" @click="openAddDrawer">
-                        添加书籍
-                    </el-button>
+                    <div class="toolbar-actions">
+                        <el-button
+                            :icon="Refresh"
+                            :loading="isLoading"
+                            :disabled="isLoading || isSubmitting"
+                            @click="refreshBooks"
+                        >刷新列表</el-button>
+                        <el-button
+                            type="primary"
+                            :icon="Plus"
+                            :disabled="isLoading || isSubmitting"
+                            @click="openAddDrawer"
+                        >添加书籍</el-button>
+                    </div>
                 </div>
             </template>
 
+            <el-alert
+                v-if="loadFailed === true"
+                :title="listError"
+                type="error"
+                show-icon
+                :closable="false"
+            >
+            </el-alert>
+
             <el-table
+                v-else
+                v-loading="isLoading"
                 :data="list"
                 row-key="id"
                 stripe
@@ -71,9 +84,25 @@
                 </el-table-column>
 
                 <template #empty>
-                    <el-empty description="暂无书籍"></el-empty>
+                    <el-empty v-if="isLoading === false" :description="getEmptyDescription()"></el-empty>
+
+                    <span v-else>正在读取书籍</span>
                 </template>
             </el-table>
+            <div v-if="loadFailed === false" class="pagination-wrap">
+                <el-pagination
+                    :current-page="pagination.currentPage"
+                    :page-size="pagination.itemPerPage"
+                    :page-sizes="PAGE_SIZES"
+                    :total="pagination.totalItem"
+                    :pager-count="5"
+                    :disabled="isLoading || isSubmitting"
+                    layout="total, sizes, prev, pager, next"
+                    @update:current-page="changePage"
+                    @update:page-size="changePageSize"
+                >
+                </el-pagination>
+            </div>
         </el-card>
 
         <el-drawer
@@ -82,8 +111,8 @@
             direction="rtl"
             size="min(520px, 100vw)"
             :close-on-click-modal="false"
-            :close-on-press-escape="isValidating === false"
-            :show-close="isValidating === false"
+            :close-on-press-escape="isSubmitting === false"
+            :show-close="isSubmitting === false"
             :before-close="beforeCloseDrawer"
             @closed="resetAddForm"
         >
@@ -111,7 +140,7 @@
                 class="refresh-planets"
                 :icon="Refresh"
                 :loading="isPlanetLoading"
-                :disabled="isPlanetLoading || isValidating"
+                :disabled="isPlanetLoading || isSubmitting"
                 @click="loadPlanetOptions"
             >
                 刷新天体选项
@@ -121,7 +150,7 @@
                 ref="addFormRef"
                 :model="addForm"
                 :rules="addFormRules"
-                :disabled="isValidating"
+                :disabled="isSubmitting"
                 label-position="top"
                 @submit.prevent="submitBook"
             >
@@ -160,11 +189,14 @@
                     >
                     </el-input-number>
 
-                    <p class="field-help">请输入整数,同一天体下不同书籍的排序值不能重复</p>
+                    <p class="field-help">排序必须是从 1 开始的正整数, 与显示状态无关. 同一天体下排序值不能重复</p>
                 </el-form-item>
 
                 <el-form-item label="显示状态" prop="display_status">
-                    <el-select v-model="addForm.display_status" class="full-width">
+                    <el-select
+                        v-model="addForm.display_status"
+                        class="full-width"
+                    >
                         <el-option
                             v-for="option in displayStatusOptions"
                             :key="option.value"
@@ -178,7 +210,7 @@
 
             <template #footer>
                 <el-button
-                    :disabled="isValidating"
+                    :disabled="isSubmitting"
                     @click="closeAddDrawer"
                 >
                     取消
@@ -186,8 +218,8 @@
 
                 <el-button
                     type="primary"
-                    :loading="isValidating"
-                    :disabled="isValidating || isPlanetLoading || planetLoadFailed || planetOptions.length === 0"
+                    :loading="isSubmitting"
+                    :disabled="isSubmitting || isLoading || isPlanetLoading || planetLoadFailed || planetOptions.length === 0"
                     @click="submitBook"
                 >
                     确认添加
@@ -198,8 +230,18 @@
 </template>
 
 <script setup>
-import {nextTick, reactive, ref} from "vue";
-import {getApiErrorMessage} from "@/utils/apiError.js";
+import {nextTick, onMounted, reactive, ref} from "vue";
+import {getApiErrorCode, getApiErrorMessage, isAuthError} from '@/utils/apiError'
+import {API_CODE} from '@/constants/apiCode'
+import {addBook, getBookList} from '@/api/book'
+import {
+    BOOK_TITLE_MAX_LENGTH,
+    BOOK_SORT_MIN,
+    BOOK_SORT_MAX,
+    BOOK_DEFAULT_SORT,
+    displayStatusOptions,
+} from '@/constants/book'
+import {DEFAULT_PAGE_SIZE, PAGE_SIZES} from '@/constants/pagination'
 import {getBodyList} from "@/api/body.js";
 import {ElMessage} from "element-plus";
 import {ArrowRight, Plus, Refresh} from "@element-plus/icons-vue";
@@ -210,126 +252,51 @@ defineOptions({
 })
 
 /**
- * 书籍显示状态
- * @typedef {'visible' | 'hidden'} BookDisplayStatus
- *  */
-
-/**
- * 书籍对象
- * @typedef {Object} BookRecord
- * @property {string} id 书籍 ID
- * @property {string} title 书籍标题
- * @property {number} sort 同一天体下唯一的排序整数
- * @property {BookDisplayStatus} display_status 显示状态
- * @property {import('@/api/body').BodyRecord} planet 所属天体
- * */
-
-/**
- * 添加表单
+ * 添加书籍表单, 校验后转换为 CreateBookInput
  * @typedef {Object} AddBookForm
- * @property {string} planet_id 已创建天体的字符串 ID
+ * @property {string} planet_id 所选真实天体的字符串 ID
  * @property {string} title 书籍标题
- * @property {number | undefined} sort 排序值(清空数字输入框时可能没有值)
- * @property {BookDisplayStatus} display_status 显示状态
+ * @property {number | null | undefined} sort 排序整数
+ * @property {import('@/constants/book').BookDisplayStatus} display_status 显示状态
  * */
 
 /**
- * 书籍标题业务长度上限
- * @type {number}
+ * 本常量用于表示当前页书籍列表
+ * @type {import('vue').Ref<import('@/api/book').BookRecord[]>}
  * */
-const BOOK_TITLE_MAX_LENGTH = 20
+const list = ref([])
 
 /**
- * MySQL 有符号 INT 的最小值
- * @type {number}
+ * 本常量用于表示当前查询与后端返回的分页信息
+ * @type {import('@/types/pagination').Pagination}
  * */
-const BOOK_SORT_MIN = -2147483648
+const pagination = reactive({
+    currentPage: 1,
+    itemPerPage: DEFAULT_PAGE_SIZE,
+    totalPage: 0,
+    totalItem: 0,
+})
 
 /**
- * MySQL 有符号 INT 的最大值
- * @type {number}
+ * 本标量用于表示是否正在读取书籍列表
+ * @type {import('vue').Ref<boolean>}
  * */
-const BOOK_SORT_MAX = 2147483647
+const isLoading = ref(false)
 
 /**
- * 新表单的排序初始值(仅是默认值,不保证未被占用)
- * @type {number}
+ * 本标量用于表示最近一次列表读取是否失败
+ * @type {import('vue').Ref<boolean>}
  * */
-const BOOK_DEFAULT_SORT = 1
+const loadFailed = ref(false)
 
 /**
- * 显示状态选项
- * @type {{value: BookDisplayStatus, label: string}[]}
+ * 本常量用于表示列表读取失败的说明
+ * @type {import('vue').Ref<string>}
  * */
-const displayStatusOptions = [
-    {
-        value: 'visible',
-        label: '显示'
-    },
-    {
-        value: 'hidden',
-        label: '隐藏'
-    },
-]
+const listError = ref('')
 
 /**
- * 沿用当前组件中的四条固定书籍数据,结构与预期的后端列表项一致
- * 示例记录仅供展示.添加表单不会修改此数组.接入列表 API 时删除这些初始记录
- * @type {import('vue').Ref<BookRecord[]>}
- * */
-const list = ref([
-    {
-        id: '1000000000000000003',
-        title: '太阳观测入门1',
-        sort: 1,
-        display_status: 'visible',
-        planet: {
-            id: '2000000000000000002',
-            name: 'Sun',
-            title: '太阳的标题',
-            intro: '太阳的简介',
-        },
-    },
-    {
-        id: '1000000000000000004',
-        title: '太阳观测入门2',
-        sort: 2,
-        display_status: 'hidden',
-        planet: {
-            id: '2000000000000000002',
-            name: 'Sun',
-            title: '太阳的标题',
-            intro: '太阳的简介',
-        },
-    },
-    {
-        id: '1000000000000000001',
-        title: '地球观测入门1',
-        sort: 1,
-        display_status: 'visible',
-        planet: {
-            id: '2000000000000000001',
-            name: 'Earth',
-            title: '地球的标题',
-            intro: '地球的简介',
-        },
-    },
-    {
-        id: '1000000000000000002',
-        title: '地球观测入门2',
-        sort: 2,
-        display_status: 'hidden',
-        planet: {
-            id: '2000000000000000001',
-            name: 'Earth',
-            title: '地球的标题',
-            intro: '地球的简介',
-        },
-    },
-])
-
-/**
- * 真实天体列表,选择值取 id
+ * 本常量用于表示天体列表,下拉框中的选项值取 id
  * @type {import('vue').Ref<import('@/api/body').BodyRecord[]>}
  * */
 const planetOptions = ref([])
@@ -359,10 +326,10 @@ const planetError = ref('天体选项尚未加载')
 const drawerVisible = ref(false)
 
 /**
- * 是否正在校验表单(用于防止重复操作)
+ * 是否正在校验或请求创建书籍(用于防止重复操作)
  * @type {import('vue').Ref<boolean>}
  * */
-const isValidating = ref(false)
+const isSubmitting = ref(false)
 
 /**
  * 表单组件实例
@@ -407,19 +374,7 @@ const addFormRules = {
         }
     ],
     sort: [
-        {
-            required: true,
-            type: 'integer',
-            message: '请输入有效的排序整数',
-            trigger: ['blur', 'change']
-        },
-        {
-            type: 'integer',
-            min: BOOK_SORT_MIN,
-            max: BOOK_SORT_MAX,
-            message: '排序值超出 INT 范围',
-            trigger: ['blur', 'change']
-        },
+        {required: true, validator: validateBookSort, trigger: ['blur', 'change']},
     ],
     display_status: [
         {
@@ -430,6 +385,141 @@ const addFormRules = {
             trigger: 'change'
         },
     ],
+}
+
+/**
+ * 本函数用于解释书籍业务错误, 其余错误复用公共提示
+ * @param {unknown} error 捕获的异常
+ * @param {string} fallback 没有可用说明时的提示
+ * @returns {string} 页面错误说明
+ * */
+function getBookErrorMessage(error, fallback) {
+    switch (getApiErrorCode(error)) {
+        case API_CODE.VALIDATION_ERROR:
+            return '请求参数不符合要求, 请检查书籍字段或分页参数'
+        case API_CODE.BOOK_PLANET_NOT_FOUND:
+            return '所选天体已不存在, 请重新选择天体'
+        case API_CODE.BOOK_SORT_OCCUPIED:
+            return '该天体下的排序值已被占用, 请更换排序值'
+    }
+
+    return getApiErrorMessage(error, fallback)
+}
+
+/**
+ * 本函数用于校验排序字段值
+ * @param {unknown} rule 当前规则, 本函数无需读取
+ * @param {unknown} value 待校验的排序值
+ * @param {(error?: string | Error) => void} callback 校验结果回调
+ * @returns {void}
+ * */
+function validateBookSort(rule, value, callback) {
+    if (typeof value !== 'number' || Number.isInteger(value) === false) {
+        callback(new Error('请输入有效的排序整数'))
+        return
+    }
+
+    if (value < BOOK_SORT_MIN || value > BOOK_SORT_MAX) {
+        callback(new Error('排序值必须是 ' + BOOK_SORT_MIN + ' 到 ' + BOOK_SORT_MAX + ' 之间的正整数'))
+        return
+    }
+
+    callback()
+}
+
+/**
+ * 本函数用于根据真实总数提供空态说明, 不把越界页误报为数据库没有书籍
+ * @returns {string} 表格空态文字
+ * */
+function getEmptyDescription() {
+    if (pagination.totalItem === 0) {
+        return '暂无书籍, 请点击添加书籍'
+    }
+
+    return '当前页暂无书籍, 请刷新列表'
+}
+
+/**
+ * 本函数读取指定页 (加载期间禁止并发翻页, 越界时最多补读一次有效末页)
+ * @param {number} currentPage 请求页码
+ * @param {number} itemPerPage 请求每页条数
+ * @returns {Promise<void>} 本轮列表读取结束
+ * */
+async function loadBooks(currentPage, itemPerPage) {
+    if (isLoading.value === true || isSubmitting.value === true) {
+        return
+    }
+
+    isLoading.value = true
+    loadFailed.value = false
+    listError.value = ''
+    list.value = []
+    pagination.currentPage = currentPage
+    pagination.itemPerPage = itemPerPage
+
+    try {
+        /** @type {import('@/api/book').BookListResult} 本轮列表结果 */
+        let result = await getBookList(currentPage, itemPerPage)
+        if (result.pagination.totalPage > 0 && currentPage > result.pagination.totalPage) {
+            result = await getBookList(result.pagination.totalPage, itemPerPage)
+        }
+
+        if (result.pagination.totalPage > 0 && result.pagination.currentPage > result.pagination.totalPage) {
+            pagination.currentPage = result.pagination.totalPage
+            loadFailed.value = true
+            listError.value = '列表在读取期间发生变化, 请刷新重试'
+            return
+        }
+
+        list.value = result.books
+        pagination.currentPage = result.pagination.currentPage
+        pagination.itemPerPage = result.pagination.itemPerPage
+        pagination.totalPage = result.pagination.totalPage
+        pagination.totalItem = result.pagination.totalItem
+
+        if (pagination.totalItem === 0) {
+            pagination.currentPage = 1
+        }
+    } catch (error) {
+        loadFailed.value = true
+        listError.value = getBookErrorMessage(error, '书籍列表加载失败') + ', 请刷新重试'
+    } finally {
+        isLoading.value = false
+    }
+}
+
+/**
+ * 本函数用于刷新当前页, 失败后保留相同分页条件供重试
+ * @returns {Promise<void>} 本轮刷新结束
+ * */
+async function refreshBooks() {
+    await loadBooks(pagination.currentPage, pagination.itemPerPage)
+}
+
+/**
+ * 本函数用于响应页码变化, 使用受控属性避免加载期间提前修改查询条件
+ * @param {number} page 新页码
+ * @returns {Promise<void>} 本轮翻页结束
+ * */
+async function changePage(page) {
+    if (isLoading.value === true || isSubmitting.value === true || page === pagination.currentPage) {
+        return
+    }
+
+    await loadBooks(page, pagination.itemPerPage)
+}
+
+/**
+ * 本函数用于修改每页条数时回到第一页
+ * @param {number} size 新的每页条数
+ * @returns {Promise<void>} 本轮读取结束
+ * */
+async function changePageSize(size) {
+    if (isLoading.value === true || isSubmitting.value === true || size === pagination.itemPerPage) {
+        return
+    }
+
+    await loadBooks(1, size)
 }
 
 /**
@@ -490,7 +580,7 @@ async function loadPlanetOptions() {
         return
     }
 
-    if (isValidating.value === true) {
+    if (isSubmitting.value === true) {
         return
     }
 
@@ -533,7 +623,11 @@ function resetAddForm() {
  * @returns {Promise<void>} 抽屉打开及本轮选项读取处理结束
  * */
 async function openAddDrawer() {
-    if (isValidating.value === true) {
+    if (isLoading.value === true) {
+        return
+    }
+
+    if (isSubmitting.value === true) {
         return
     }
 
@@ -556,12 +650,12 @@ async function openAddDrawer() {
 }
 
 /**
- * 本函数用于校验期间阻止抽屉关闭
+ * 本函数用于在校验和创建请求期间阻止抽屉关闭
  * @param {() => void} done 抽屉提供的关闭回调
  * @returns {void}
  * */
 function beforeCloseDrawer(done) {
-    if (isValidating.value === false) {
+    if (isSubmitting.value === false) {
         done()
     }
 }
@@ -571,57 +665,101 @@ function beforeCloseDrawer(done) {
  * @returns {void}
  * */
 function closeAddDrawer() {
-    if (isValidating.value === false) {
+    if (isSubmitting.value === false) {
         drawerVisible.value = false
     }
 }
 
 /**
- * 本函数用于校验添加表单(本阶段不发送创建请求,也不向列表追加记录)
- * @returns {Promise<void>} 本轮校验结束
+ * 本函数用于校验并创建书籍, 创建请求结束后再执行列表或天体选项刷新
+ * @returns {Promise<void>} 本次提交及必要的读取处理结束
  * */
 async function submitBook() {
-    if (isValidating.value === true) {
+    if (isSubmitting.value === true || isLoading.value === true || drawerVisible.value === false || addFormRef.value === null) {
         return
     }
 
-    if (drawerVisible.value === false) {
-        return
-    }
-
-    if (addFormRef.value === null) {
-        return
-    }
-
-    if (isPlanetLoading.value === true) {
+    if (isPlanetLoading.value === true || planetLoadFailed.value === true) {
         ElMessage.warning('请先成功加载天体选项')
         return
     }
 
-    if (planetLoadFailed.value === true) {
-        ElMessage.warning('请先成功加载天体选项')
-        return
-    }
-
-    isValidating.value = true
+    isSubmitting.value = true
     try {
         addForm.title = addForm.title.trim()
-
-        /** @type {boolean} 所有字段是否通过校验 */
+        /** @type {boolean} 当前表单是否有效 */
         const isValid = await addFormRef.value.validate()
         if (isValid === false) {
+            isSubmitting.value = false
             return
         }
     } catch {
-        // 字段错误由 el-form-item 展示,保留本次输入以便修正
+        isSubmitting.value = false
         return
-    } finally {
-        isValidating.value = false
     }
 
-    // 后续在这里接入书籍创建 API.现在不关闭抽屉/不清空/不提示创建成功
-    ElMessage.info('表单校验通过.保存功能尚未开放,本次内容未保存')
+    if (typeof addForm.sort !== 'number') {
+        isSubmitting.value = false
+        return
+    }
+
+    /** @type {import('@/api/book').CreateBookInput} 已校验的本次提交快照 */
+    const input = {
+        planet_id: addForm.planet_id,
+        title: addForm.title,
+        sort: addForm.sort,
+        display_status: addForm.display_status,
+    }
+
+    /** @type {boolean} 后端是否明确确认创建成功.*/
+    let created = false
+
+    /** @type {boolean} 是否需要重新读取天体选项 */
+    let reloadPlanets = false
+
+    /** @type {boolean} 创建结果是否尚未确认 */
+    let resultUnknown = false
+    try {
+        await addBook(input)
+        created = true
+    } catch (error) {
+        if (isAuthError(error) === true) {
+            return
+        }
+
+        /** @type {number | undefined} 可识别的业务错误码 */
+        const code = getApiErrorCode(error)
+        if (code === undefined) {
+            resultUnknown = true
+            ElMessage.warning('尚未确认创建结果, 请核对刷新后的列表再决定是否重试')
+        } else {
+            ElMessage.error(getBookErrorMessage(error, '创建书籍失败'))
+        }
+        reloadPlanets = code === API_CODE.BOOK_PLANET_NOT_FOUND
+    } finally {
+        isSubmitting.value = false
+    }
+
+    if (created === true) {
+        drawerVisible.value = false
+        ElMessage.success('书籍创建成功')
+        // 创建已经成功. 列表刷新失败只显示列表错误, 不会改成创建失败
+        await loadBooks(1, pagination.itemPerPage)
+        return
+    }
+
+    if (reloadPlanets === true) {
+        // 先释放提交锁, 再刷新选项, 避免被 loadPlanetOptions 的防重入检查拦截
+        await loadPlanetOptions()
+    }
+
+    if (resultUnknown === true) {
+        // 只重新读取, 不自动重发创建请求. 新书不一定在当前页
+        await refreshBooks()
+    }
 }
+
+onMounted(refreshBooks)
 </script>
 
 <style scoped lang="scss">
@@ -646,6 +784,20 @@ async function submitBook() {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+}
+
+.toolbar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.toolbar-actions :deep(.el-button + .el-button) { margin-left: 0; }
+
+.pagination-wrap {
+    margin-top: 20px;
+    overflow-x: auto;
+    padding-bottom: 4px;
 }
 
 .book-table,

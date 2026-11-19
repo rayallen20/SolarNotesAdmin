@@ -1,0 +1,1463 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="SolarNotesAdmin 书籍创建与分页列表 API 联调指南, 包含与显隐无关的正整数排序规则, 完整 Vue/Axios 代码和代码复制按钮。"><title>书籍管理 API 联调 · Solar Notes</title><style>
+:root{color-scheme:light;--paper:#f3f6f2;--ink:#1d302a;--muted:#5e7068;--line:#dce5dc;--green:#21644c;--soft:#e7f1e8;--amber:#846013;--warm:#fbf2db;--blue:#275e7a;--mono:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:24px}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.82 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+a{color:var(--green);text-underline-offset:4px;overflow-wrap:anywhere}a:hover{color:#103d2b}:focus-visible{outline:3px solid #4485ae;outline-offset:3px}[hidden]{display:none!important}
+.skip{position:absolute;top:-80px;left:20px;background:white;padding:10px 16px;z-index:4}.skip:focus{top:12px}
+.page{width:min(1350px,100%);margin:auto;display:grid;grid-template-columns:228px minmax(0,1fr);gap:54px;padding:40px 38px 80px}.sidebar{position:sticky;top:28px;align-self:start;max-height:calc(100vh - 56px);overflow:auto}
+.brand{font-size:12px;font-weight:800;letter-spacing:.1em;color:var(--green)}.brand::before{content:"";display:inline-block;width:12px;height:12px;border:3px solid var(--green);border-radius:50%;margin-right:8px;vertical-align:-1px}.sidebar p{font-size:13px;color:var(--muted);line-height:1.7}.sidebar nav{display:grid;gap:3px;margin-top:22px}.sidebar nav a{display:flex;gap:12px;padding:7px 9px;border-radius:7px;text-decoration:none;color:var(--muted);font-size:14px}.sidebar nav a:hover{background:var(--soft);color:var(--green)}.sidebar nav span{color:var(--green);font:12px/2 var(--mono)}.side-note{border-top:1px solid var(--line);padding-top:16px;margin-top:22px}
+main{min-width:0}.eyebrow,.section-label{color:var(--green);font:700 12px/1.5 var(--mono);letter-spacing:.1em}.hero h1{font-size:clamp(33px,4vw,48px);line-height:1.25;letter-spacing:-.03em;margin:16px 0}.lede{font-size:18px;color:var(--muted);max-width:820px}.tags{display:flex;flex-wrap:wrap;gap:8px;margin:24px 0}.tag{border:1px solid var(--line);border-radius:30px;padding:4px 11px;font-size:12px;background:white;color:var(--muted)}
+.thesis{background:#194b39;color:#fff;border-radius:14px;padding:22px 25px}.thesis p{margin:0}.thesis strong{color:#d4f5dc}.page-tools{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:20px 0}.page-tools button,.code-toolbar button{font:inherit;font-size:13px;border:1px solid var(--green);border-radius:7px;background:white;color:var(--green);cursor:pointer;padding:6px 12px}.page-tools button:hover,.code-toolbar button:hover{background:var(--soft)}
+section{padding-top:42px;margin-top:10px}h2{font-size:27px;line-height:1.4;letter-spacing:-.02em;margin:8px 0 20px}h3{font-size:19px;line-height:1.55;margin:27px 0 10px}p{margin:12px 0}code{font:.87em/1.7 var(--mono);background:#e8f0e8;border-radius:4px;padding:2px 5px;overflow-wrap:anywhere}pre{margin:14px 0;padding:19px 22px;background:#1d3029;color:#e5efe6;border-radius:10px;overflow-x:auto;tab-size:2;font:13px/1.75 var(--mono)}pre code{font:inherit;background:transparent;color:inherit;padding:0;border-radius:0;overflow-wrap:normal}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0}.card{border:1px solid var(--line);background:#fffefa;border-radius:12px;padding:18px 19px}.card .n{color:var(--green);font:12px/1.5 var(--mono)}.card h3{margin:6px 0;font-size:16px}.card p{font-size:14px;color:var(--muted);margin:0}
+.note{background:var(--soft);border-left:3px solid var(--green);border-radius:0 8px 8px 0;padding:15px 18px;margin:20px 0;font-size:14px}.note.warning{background:var(--warm);border-color:var(--amber)}.note p{margin:0}.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:white;margin:18px 0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;vertical-align:top;padding:12px 15px;border-bottom:1px solid var(--line);min-width:105px}th{color:var(--green);background:#edf3ec;font-weight:650}tr:last-child td{border-bottom:0}ul,ol{padding-left:23px}li{margin:8px 0}.small{font-size:13px;color:var(--muted)}
+details.code-file{border:1px solid var(--line);background:#fffefa;border-radius:10px;overflow:hidden;margin:18px 0}details.code-file summary{padding:14px 17px;cursor:pointer;font-weight:650;overflow-wrap:anywhere;line-height:1.7}.file-mode{display:inline-block;font-size:11px;padding:2px 7px;border-radius:5px;background:var(--soft);color:var(--green);margin-right:9px;font-weight:500}.file-path{font:13px/1.7 var(--mono)}.code-toolbar{display:flex;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid var(--line)}.copy-feedback{font-size:12px;color:var(--muted)}.code-file pre{margin:0;border-radius:0;font-size:12.5px}footer{margin-top:45px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+@media(max-width:1050px){.page{gap:27px;padding-left:24px;padding-right:24px;grid-template-columns:185px minmax(0,1fr)}}@media(max-width:800px){.page{display:block;padding:24px 20px 55px}.sidebar{position:static;max-height:none;margin-bottom:32px}.sidebar nav{display:flex;gap:5px;overflow-x:auto;margin-top:15px;padding-bottom:8px}.sidebar nav a{white-space:nowrap;border:1px solid var(--line);padding:5px 9px}.sidebar p,.side-note{display:none}.grid{grid-template-columns:1fr}h2{font-size:24px}}
+@media(max-width:520px){pre{padding:16px;font-size:12px}th,td{padding:10px 12px}}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}@media print{body{background:white;color:black;font-size:11pt}.page{display:block;width:100%;padding:0}.sidebar,.page-tools,.code-toolbar,.skip{display:none!important}.thesis{background:#eee;color:black}.thesis strong{color:black}section{padding-top:20px}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f3f3f3;color:black;font-size:8pt}.code-file{overflow:visible!important}.table-wrap{overflow:visible}a{color:black}}
+
+.flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:10px;margin:24px 0}.flow-step{flex:1 1 175px;border:1px solid var(--line);border-radius:10px;background:#fffefa;padding:13px 16px;font-size:14px}.flow-step strong{display:block;color:var(--green);font-size:15px}.flow-step span{color:var(--muted)}.flow-arrow{display:flex;align-items:center;color:var(--green);font-size:18px}.lead-code{font:13px/1.7 var(--mono);color:var(--green)}@media(max-width:800px){.flow-arrow{display:none}.flow-step{flex-basis:100%}}
+
+.endpoint{display:inline-flex;align-items:center;gap:10px;margin:5px 0 13px;color:var(--green);font:14px/1.6 var(--mono)}.endpoint b{font-size:11px;letter-spacing:.05em;background:var(--soft);padding:3px 8px;border-radius:5px}.status-pass{color:var(--green);font-weight:650}.change-list strong{color:var(--green)}.table-wrap caption{text-align:left;padding:12px 15px;background:#fffefa;font-weight:650}.inline-path{font-family:var(--mono);font-size:.9em}main section{scroll-margin-top:20px}.flow-step code{font-size:12px}
+
+.pipeline{list-style:none;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:22px 0}.pipeline li{margin:0;border:1px solid var(--line);background:#fffefa;border-radius:10px;padding:16px}.pipeline .index{display:block;font:12px/1.5 var(--mono);color:var(--green);margin-bottom:5px}.pipeline strong{display:block;font-size:15px}.pipeline p{font-size:13px;color:var(--muted);margin:5px 0 0}.source-ref{font-size:12px;white-space:normal}.rule-line{border-top:1px solid var(--line);padding-top:16px;margin-top:22px}.endpoint span{overflow-wrap:anywhere}@media(max-width:800px){.pipeline{grid-template-columns:1fr}.pipeline li{padding:13px 15px}}
+
+.summary-row{display:flex;gap:1em;align-items:center;margin:.6em 0 1.1em}.summary-row code{font-size:1em}.code-file summary:focus-visible{outline-offset:-3px}.code-file pre{max-height:42rem}.table-wrap td code{overflow-wrap:anywhere}@media print{.code-file pre{max-height:none}}
+.contract-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.contract-grid .card{min-width:0}.code-file{scroll-margin-top:24px}.code-toolbar button:disabled{cursor:wait;opacity:.7}@media(max-width:800px){.contract-grid{grid-template-columns:1fr}}
+</style></head><body><a class="skip" href="#content">跳到正文</a><div class="page"><aside class="sidebar" aria-label="文档导航"><div class="brand">Solar Notes / 开发文档</div><nav aria-label="目录"><a href="#scope"><span>01</span>实施范围</a><a href="#contract"><span>02</span>真实接口协议</a><a href="#rules"><span>03</span>排序规则</a><a href="#codes"><span>04</span>业务响应码</a><a href="#shared"><span>05</span>公共配置与分页处理</a><a href="#api"><span>06</span>书籍 API 模块</a><a href="#page"><span>07</span>完整页面</a><a href="#flow"><span>08</span>分页与异常处理</a><a href="#verify"><span>09</span>联调与验收</a><a href="#sources"><span>10</span>验证与依据</a></nav><p class="side-note">前端实现参考<br>2026-11-19<br><a href="book-management-guide.html">书籍页面基础文档</a></p></aside><main id="content"><header class="hero"><p class="eyebrow">SOLARNOTESADMIN / API INTEGRATION</p><h1>书籍管理 API 联调</h1><p class="lede">接入真实创建与分页列表，排序统一从 1 开始，并复用已有天体选项、鉴权与错误处理。</p><div class="tags"><span class="tag">POST /v1/book/create</span><span class="tag">POST /v1/book/list</span><span class="tag">sort ≥ 1</span><span class="tag">与显隐无关</span></div><div class="page-tools"><button id="expand-all" type="button" hidden>展开全部代码</button><button id="collapse-all" type="button" hidden>折叠全部代码</button></div></header><section id="scope"><p class="section-label">01 / SCOPE</p><h2>从固定书籍示例切换到真实接口</h2><p>本指南基于 2026 年 11 月 19 日的前后端源码。它接替<a href="book-management-guide.html">书籍管理页面参考</a>中的固定列表与只校验表单阶段，完成分页查询、创建书籍和新的排序规则。</p><div class="thesis"><p><strong>排序与显示状态无关，显示和隐藏均从 1 开始。</strong> 只允许 1 至 4294967295 的整数，不允许 0、负数、小数或超过上限的排序值；同一天体下的排序值仍然必须唯一。</p></div><div class="table-wrap"><table><thead><tr><th scope="col">文件</th><th scope="col">操作与职责</th></tr></thead><tbody><tr><td><code>src/constants/apiCode.js</code></td><td>追加两个书籍业务响应码，保留已有常量。第 4 节提供完整文件。</td></tr><tr><td><code>src/constants/book.js</code></td><td>新增书籍长度、排序边界和显示状态选项。</td></tr><tr><td><code>src/constants/pagination.js</code></td><td>新增可供各管理页面复用的分页上限、默认每页条数和页大小选项。</td></tr><tr><td><code>src/utils/fileReader.js</code></td><td>保留字符串读取函数，新增通用安全整数读取函数。使用当前工程已有的 fileReader 文件名。</td></tr><tr><td><code>src/types/pagination.js</code></td><td>新增公共分页类型、参数校验、响应读取和列表条数一致性校验。</td></tr><tr><td><code>src/api/book.js</code></td><td>新增两个 POST 请求，映射创建请求体、读取书籍字段，并调用公共分页处理函数。</td></tr><tr><td><code>src/views/BookListPage.vue</code></td><td>替换为完整联调页面，移除固定数据，增加分页、正整数排序校验和真实提交。</td></tr></tbody></table></div><p>现有 <code>getBodyList()</code> 继续提供添加表单的天体选项；<code>getBodyLabel()</code> 继续从 <code>@/utils/body</code> 导入。公共请求、鉴权、错误工具和登录页面沿用现有实现。当前菜单与路由已经使用 <code>bookList</code>，地址仍为 <code>/admin/books</code>。</p><p>本指南中的文件修改均供你参考实施。本次交付为 HTML 文档，应用源码没有直接改写。示例保持 template → script → style、普通具名函数、JSDoc 和末尾导出；代码块及注释使用英文标点，中文说明文字仍可保留。</p></section><section id="contract"><p class="section-label">02 / CONTRACT</p><h2>以当前后端代码为准</h2><div class="table-wrap"><table><thead><tr><th scope="col">用途</th><th scope="col">HTTP 方法与完整路径</th><th scope="col">结果</th></tr></thead><tbody><tr><td>读取书籍列表</td><td><code>POST /v1/book/list</code></td><td>解包后为 <code>{books, pagination}</code>，包含可见和隐藏书籍。</td></tr><tr><td>创建书籍</td><td><code>POST /v1/book/create</code></td><td>成功解包后为 <code>{}</code>，不返回新书籍或 ID。</td></tr><tr><td>添加表单的天体选项</td><td><code>GET /v1/planet/list</code></td><td>复用现有 getBodyList()，得到已校验的真实天体数组。</td></tr></tbody></table></div><p>这三个接口均需 Bearer 令牌。前端使用项目现有 <code>request</code> 实例，它负责附加令牌、按业务码解包 data，并统一处理登录失效；不要重新创建未配置拦截器的 Axios 实例。</p><p>控制器和鉴权中间件处理的结果均为 HTTP 200，成功与否由 <code>code</code> 判断。网络中断或代理故障仍可能产生无响应、HTTP 5xx 等传输错误。页面拿到的已经是 <code>payload.data</code>，无需再次读取 <code>response.data.data</code>。</p><h3>2.1 创建请求包含 book.planet.id</h3><details class="code-file" open><summary><span class="file-mode">请求 JSON</span><span class="file-path">POST /v1/book/create</span></summary><div class="code-toolbar"><button type="button" data-copy="create-request" hidden>复制代码</button><span class="copy-feedback" role="status" aria-live="polite"></span></div><pre><code id="create-request">{
+    &quot;book&quot;: {
+        &quot;title&quot;: &quot;太阳观测入门&quot;,
+        &quot;sort&quot;: 1,
+        &quot;display_status&quot;: &quot;visible&quot;,
+        &quot;planet&quot;: {
+            &quot;id&quot;: &quot;2000000000000000002&quot;
+        }
+    }
+}</code></pre></details><p>表单继续保存 <code>addForm.planet_id</code>；发送时由 API 模块转换为 <code>book.planet.id</code>。ID 必须是带引号的字符串，不转成 Number。只引用天体 ID，不提交天体的 name、title 或 intro。示例 ID 仅用于说明，实际联调应使用下拉框返回的 ID。</p><details class="code-file" open><summary><span class="file-mode">响应 JSON</span><span class="file-path">创建成功响应</span></summary><div class="code-toolbar"><button type="button" data-copy="create-response" hidden>复制代码</button><span class="copy-feedback" role="status" aria-live="polite"></span></div><pre><code id="create-response">{
+    &quot;code&quot;: 200,
+    &quot;message&quot;: &quot;success&quot;,
+    &quot;data&quot;: {}
+}</code></pre></details><h3>2.2 列表接口同样使用 POST</h3><details class="code-file" open><summary><span class="file-mode">请求 JSON</span><span class="file-path">POST /v1/book/list</span></summary><div class="code-toolbar"><button type="button" data-copy="list-request" hidden>复制代码</button><span class="copy-feedback" role="status" aria-live="polite"></span></div><pre><code id="list-request">{
+    &quot;pagination&quot;: {
+        &quot;currentPage&quot;: 2,
+        &quot;itemPerPage&quot;: 2
+    }
+}</code></pre></details><p><code>pagination</code> 位于请求体顶层，字段是 <code>currentPage</code> 和 <code>itemPerPage</code>。页码从 1 开始，每页 1 至 100 条。后端没有天体、显示状态或关键词筛选参数，本次页面也不添加这些筛选控件。</p><details class="code-file" open><summary><span class="file-mode">响应 JSON</span><span class="file-path">总数为 3，本次读取第 2 页，每页 2 条</span></summary><div class="code-toolbar"><button type="button" data-copy="list-response" hidden>复制代码</button><span class="copy-feedback" role="status" aria-live="polite"></span></div><pre><code id="list-response">{
+    &quot;code&quot;: 200,
+    &quot;message&quot;: &quot;success&quot;,
+    &quot;data&quot;: {
+        &quot;books&quot;: [
+            {
+                &quot;id&quot;: &quot;1000000000000000003&quot;,
+                &quot;title&quot;: &quot;太阳观测入门&quot;,
+                &quot;sort&quot;: 1,
+                &quot;display_status&quot;: &quot;visible&quot;,
+                &quot;planet&quot;: {
+                    &quot;id&quot;: &quot;2000000000000000002&quot;,
+                    &quot;name&quot;: &quot;Sun&quot;,
+                    &quot;title&quot;: &quot;太阳的标题&quot;,
+                    &quot;intro&quot;: &quot;太阳的简介&quot;
+                }
+            }
+        ],
+        &quot;pagination&quot;: {
+            &quot;currentPage&quot;: 2,
+            &quot;itemPerPage&quot;: 2,
+            &quot;totalPage&quot;: 2,
+            &quot;totalItem&quot;: 3
+        }
+    }
+}</code></pre></details><p>书籍条目沿用你约定的嵌套 <code>planet</code> 结构，两个 ID 均为字符串，没有时间字段。分页字段保持 camelCase。空表返回 <code>books: []</code>、<code>totalItem: 0</code>、<code>totalPage: 0</code>；请求超过末页时也会成功返回空数组，但总数仍是真实值。</p><h3>2.3 沿用当前开发代理与鉴权</h3><details class="code-file" open><summary><span class="file-mode">请求链路</span><span class="file-path">开发环境的地址对应关系</span></summary><div class="code-toolbar"><button type="button" data-copy="dev-request" hidden>复制代码</button><span class="copy-feedback" role="status" aria-live="polite"></span></div><pre><code id="dev-request">Browser: POST http://localhost:5062/api/v1/book/list
+Vite proxy: POST http://127.0.0.1:4060/v1/book/list
+Authorization: Bearer &lt;access_token&gt;
+Content-Type: application/json</code></pre></details><p>当前 <code>.env.development</code> 使用 <code>VITE_API_BASE_URL=/api</code>，Vite 会去掉代理路径的 /api 前缀，现有配置无需为这两个接口新增规则。当前生产配置仍指向 <code>http://localhost:8080</code>，正式部署前应配置实际可访问的后端地址或同源代理。</p></section><section id="rules"><p class="section-label">03 / VALIDATION</p><h2>排序统一从 1 开始，与显隐无关</h2><div class="table-wrap"><table><thead><tr><th scope="col">输入</th><th scope="col">hidden</th><th scope="col">visible</th></tr></thead><tbody><tr><td>负整数</td><td>拒绝</td><td>拒绝</td></tr><tr><td>0</td><td>拒绝</td><td>拒绝</td></tr><tr><td>1 至 4294967295 的整数</td><td>允许</td><td>允许</td></tr><tr><td>空值、NaN、小数、数字字符串、超过上限</td><td>拒绝</td><td>拒绝</td></tr></tbody></table></div><p>输入框使用 <code>:min="BOOK_SORT_MIN"</code>，其中 <code>BOOK_SORT_MIN = 1</code>，新表单的默认值同样为 1。控件会将越界输入限制到 min/max 范围内，例如 0 或负数会被限制到 1；具名函数 <code>validateBookSort()</code> 再检查模型值是否为范围内的正整数。</p><p>排序校验不读取 display_status。删除显示状态选择器上的 change 事件和原来的联动校验函数；切换显示或隐藏不会改变排序值，也不会触发排序的额外校验。小数由校验器拒绝，不使用 precision 或 step-strictly 自动取整。</p><div class="note"><strong>排序从 1 开始，并保持唯一。</strong> 隐藏书和可见书共享同一天体下的排序位置，例如已有一本书使用 1，另一本书无论显示或隐藏都不能重复使用 1，后端返回 <code>BOOK_SORT_OCCUPIED</code> 时应保留表单，让管理员换值。</div><p>标题在校验和发送前 trim，最多 20 个 Unicode 码点。后端使用与 JavaScript trim 对齐的处理规则；前端不加原生 maxlength，以免表情等字符的长度计算与服务端不同。</p><p>当前后端创建请求的 sort 已改为 uint32，并通过 gte=1 校验，源码取值范围为 1 至 4294967295。列表响应也使用 uint32，读取函数按 0 至 4294967295 校验类型范围，以便仍能展示可能存在的历史 0；这不代表创建时允许 0。数据库列类型和约束也需要与正整数规则及 uint32 范围一致，本次未查询数据库或执行迁移。</p></section><section id="codes"><p class="section-label">04 / ERROR CODES</p><h2>补充书籍业务响应码</h2><p>用下面的完整文件对照更新。保留登录、天体与公共响应码，只增加 <code>BOOK_PLANET_NOT_FOUND</code> 和 <code>BOOK_SORT_OCCUPIED</code>。</p><details class="code-file" open><summary><span class="file-mode">完整文件</span><span class="file-path">src/constants/apiCode.js</span></summary><div class="code-toolbar"><button type="button" data-copy="api-codes" hidden>复制代码</button><span class="copy-feedback" role="status" aria-live="polite"></span></div><pre><code id="api-codes" data-file="src/constants/apiCode.js" data-kind="complete">/**
+ * 后端业务响应码(对应响应体中的 code 字段)
+ * @enum {number}
+ * */
+const API_CODE = {
+    /** 响应成功 */
+    SUCCESS: 200,
+    /** 服务端内部错误 */
+    INTERNAL_ERROR: 500,
+    /** 请求参数校验失败 */
+    VALIDATION_ERROR: 10101,
+    /** 数据库操作失败,包括鉴权查询数据库失败 */
+    DATABASE_ERROR: 10201,
+    /** 登录账号或密码错误 */
+    LOGIN_CREDENTIAL_ERROR: 20001,
+    /** 登录过程中账号状态变化,需重新登录 */
+    LOGIN_STATE_CHANGED: 20002,
+    /** token过期 */
+    TOKEN_EXPIRED: 20003,
+    /** token缺失/无效/已撤销 */
+    TOKEN_INVALID: 20004,
+    /** 登录请求触发访问频率限制 */
+    LOGIN_RATE_LIMIT: 20005,
+    /** 请求创建的天体已经存在 */
+    BODY_ALREADY_EXISTS: 20101,
+    /** 创建书籍时所选天体已不存在 */
+    BOOK_PLANET_NOT_FOUND: 20102,
+    /** 同一天体下的书籍排序值已被占用 */
+    BOOK_SORT_OCCUPIED: 20201,
+}
+
+export {API_CODE}
+</code></pre></details><div class="table-wrap"><table><thead><tr><th scope="col">常量</th><th scope="col">含义</th><th scope="col">页面处理</th></tr></thead><tbody><tr><td><code>BOOK_PLANET_NOT_FOUND = 20102</code></td><td>所选天体已不存在</td><td>释放提交锁后刷新天体选项，保留书名、排序和显示状态。</td></tr><tr><td><code>BOOK_SORT_OCCUPIED = 20201</code></td><td>同一天体下排序值已占用</td><td>保留表单并提示更换排序。</td></tr><tr><td><code>VALIDATION_ERROR = 10101</code></td><td>参数类型、分页、显示状态或排序值不合法</td><td>提示检查书籍字段或分页参数。</td></tr><tr><td><code>TOKEN_EXPIRED / TOKEN_INVALID</code></td><td>令牌过期或无效</td><td>公共请求层统一处理，页面不再重复弹出鉴权消息。</td></tr><tr><td><code>DATABASE_ERROR / INTERNAL_ERROR</code></td><td>数据库或服务内部错误</td><td>复用公共错误文案。</td></tr></tbody></table></div><p>书籍专属文案由页面的 <code>getBookErrorMessage()</code> 负责，<code>apiError.js</code> 继续保持通用，不加入书籍字段或排序提示。</p></section><section id="shared"><p class="section-label">05 / SHARED CODE</p><h2>定义公共配置与数据读取模块</h2><h3>5.1 新增书籍常量</h3><p>此文件只保存书籍业务配置：标题长度、排序范围、默认排序和显示状态选项。分页配置单独放到下一节的公共文件，供其他管理页面复用。</p><details class="code-file" open><summary><span class="file-mode">完整文件</span><span class="file-path">src/constants/book.js</span></summary><div class="code-toolbar"><button type="button" data-copy="book-constants" hidden>复制代码</button><span class="copy-feedback" role="status" aria-live="polite"></span></div><pre><code id="book-constants" data-file="src/constants/book.js" data-kind="complete">/** @typedef {&#x27;visible&#x27; | &#x27;hidden&#x27;} BookDisplayStatus 书籍显示状态. */
+
+/** @type {number} 书籍标题的 Unicode 码点数量上限. */
+const BOOK_TITLE_MAX_LENGTH = 20
+/** @type {number} 创建书籍时的排序下限, 与显示状态无关. */
+const BOOK_SORT_MIN = 1
+/** @type {number} 后端 uint32 排序值上限. */
+const BOOK_SORT_MAX = 4294967295
+/** @type {number} 新表单的初始排序值, 不代表该值尚未占用. */
+const BOOK_DEFAULT_SORT = 1
+/** @type {{value: BookDisplayStatus, label: string}[]} 表单中的显示状态选项. */
+const displayStatusOptions = [
+    {value: &#x27;visible&#x27;, label: &#x27;显示&#x27;},
+    {value: &#x27;hidden&#x27;, label: &#x27;隐藏&#x27;},
+]
+
+export {
+    BOOK_TITLE_MAX_LENGTH,
+    BOOK_SORT_MIN,
+    BOOK_SORT_MAX,
+    BOOK_DEFAULT_SORT,
+    displayStatusOptions,
+}
+</code></pre></details><h3>5.2 新增公共分页常量</h3><p>新增 <code>src/constants/pagination.js</code>，使用不带 BOOK_ 前缀的名称。<code>PAGE_SIZE_MAX</code> 用于公共模块的分页参数和响应校验，<code>DEFAULT_PAGE_SIZE</code> 与 <code>PAGE_SIZES</code> 用于页面初始化和分页器配置。默认每页 10 条，提供 10、20、50、100 四种选择。</p><details class="code-file" open><summary><span class="file-mode">完整文件</span><span class="file-path">src/constants/pagination.js</span></summary><div class="code-toolbar"><button type="button" data-copy="pagination-constants" hidden>复制代码</button><span class="copy-feedback" role="status" aria-live="polite"></span></div><pre><code id="pagination-constants" data-file="src/constants/pagination.js" data-kind="complete">/** @type {number} 公共分页配置的每页条数上限, 与当前后端分页限制一致. */
+const PAGE_SIZE_MAX = 100
+/** @type {number} 管理页面初始的每页条数. */
+const DEFAULT_PAGE_SIZE = 10
+/** @type {number[]} 分页器可选择的每页条数. */
+const PAGE_SIZES = [10, 20, 50, PAGE_SIZE_MAX]
+
+export {
+    PAGE_SIZE_MAX,
+    DEFAULT_PAGE_SIZE,
+    PAGE_SIZES,
+}
+</code></pre></details><p>分页上限与当前后端限制保持一致。如果后续某个接口采用不同上限，应为该接口单独配置，避免修改公共常量后影响其他页面。</p><h3>5.3 扩展现有 fileReader.js</h3><p>当前工程的文件名是 <code>fileReader.js</code>。保留原有两个字符串函数，并增加 <code>readSafeIntegerField()</code>，供书籍的排序和分页响应读取使用。它只做基础类型与范围检查，不包含书籍业务规则；不能用 Number(value) 将错误的字符串响应悄悄转换成数字。</p><details class="code-file" open><summary><span class="file-mode">完整文件</span><span class="file-path">src/utils/fileReader.js</span></summary><div class="code-toolbar"><button type="button" data-copy="field-reader" hidden>复制代码</button><span class="copy-feedback" role="status" aria-live="polite"></span></div><pre><code id="field-reader" data-file="src/utils/fileReader.js" data-kind="complete">/**
+ * 本函数用于读取一个字符串字段,保留输入对象中的原值
+ * @param {Record&lt;string, unknown&gt;} record 待检查的记录
+ * @param {string} field 字段名
+ * @returns {string} 已确认类型的字段值
+ * @throws {Error} 字段缺失或类型错误时抛出
+ * */
+function readStringField(record, field) {
+    /** @type {unknown} 待校验的字段值 */
+    const value = record[field]
+
+    if (typeof value !== &#x27;string&#x27;) {
+        throw new Error(&#x27;接口响应中的 &#x27; + field + &#x27; 字段类型异常&#x27;)
+    }
+
+    return value
+}
+
+/**
+ * 本函数用于读取必须非空的字符串字段
+ * @param {Record&lt;string, unknown&gt;} record 待检查的记录
+ * @param {string} field 字段名
+ * @returns {string} 非空字符串
+ * @throws {Error} 字段缺失/类型错误或为空时抛出
+ * */
+function readRequiredStringField(record, field) {
+    /** @type {string} 已确认类型的字段值 */
+    const value = readStringField(record, field)
+
+    if (value === &#x27;&#x27;) {
+        throw new Error(&#x27;接口响应中的 &#x27; + field + &#x27; 字段不能为空&#x27;)
+    }
+
+    return value
+}
+
+/**
+ * 读取指定范围内的安全整数, 不把字符串转换为数字.
+ * @param {Record&lt;string, unknown&gt;} record 待检查的记录.
+ * @param {string} field 字段名.
+ * @param {number} minimum 允许的最小值.
+ * @param {number} maximum 允许的最大值.
+ * @returns {number} 已校验的整数.
+ * @throws {Error} 字段缺失, 类型错误或超出范围时抛出.
+ */
+function readSafeIntegerField(record, field, minimum, maximum) {
+    /** @type {unknown} 未经校验的字段值. */
+    const value = record[field]
+    if (typeof value !== &#x27;number&#x27; || Number.isSafeInteger(value) === false) {
+        throw new Error(&#x27;接口响应中的 &#x27; + field + &#x27; 必须是安全整数&#x27;)
+    }
+    if (value &lt; minimum || value &gt; maximum) {
+        throw new Error(&#x27;接口响应中的 &#x27; + field + &#x27; 超出允许范围&#x27;)
+    }
+    return value
+}
+
+export {
+    readStringField,
+    readRequiredStringField,
+    readSafeIntegerField,
+}
+</code></pre></details><p>分页总数必须能够由 JavaScript 安全表示。超出安全整数范围时明确拒绝响应，而不是展示不精确的页码或总数。书籍与天体 ID 仍走字符串读取，不使用这个数字函数。</p><h3>5.4 提取分页类型和处理函数</h3><p>新增 <code>src/types/pagination.js</code>，将公共 <code>Pagination</code> 类型与相关处理函数放在同一个模块中。这里同时包含 JSDoc 类型定义和实际执行的 JavaScript 函数；函数通过普通 import 导入，类型通过 JSDoc 的 import 类型引用使用。</p><ul><li><code>validatePaginationInput()</code>：校验页码、每页条数及偏移计算的安全范围。</li><li><code>readPagination()</code>：读取分页对象，检查字段类型、请求参数回显和总页数。</li><li><code>validatePageItemCount()</code>：校验接口原始列表的条数与分页信息是否一致。</li></ul><p>模块复用分页常量、对象判断和安全整数读取工具，错误提示使用通用的“列表”表述。<code>totalItem</code> 表示总记录数，适用于书籍以及后续使用相同分页协议的管理页面。</p><details class="code-file" open><summary><span class="file-mode">完整文件</span><span class="file-path">src/types/pagination.js</span></summary><div class="code-toolbar"><button type="button" data-copy="pagination-module" hidden>复制代码</button><span class="copy-feedback" role="status" aria-live="polite"></span></div><pre><code id="pagination-module" data-file="src/types/pagination.js" data-kind="complete">import {PAGE_SIZE_MAX} from &#x27;@/constants/pagination&#x27;
+import {isRecord} from &#x27;@/utils/typeGuard&#x27;
+import {readSafeIntegerField} from &#x27;@/utils/fileReader&#x27;
+
+/**
+ * 列表响应中的公共分页信息.
+ * @typedef {Object} Pagination
+ * @property {number} currentPage 本次请求的页码.
+ * @property {number} itemPerPage 每页条数.
+ * @property {number} totalPage 总页数, 没有记录时为 0.
+ * @property {number} totalItem 总记录数.
+ */
+
+/**
+ * 检查列表请求的分页参数, 避免产生不精确的偏移值.
+ * @param {number} currentPage 当前页码.
+ * @param {number} itemPerPage 每页条数.
+ * @returns {void}
+ * @throws {Error} 页码, 页大小或偏移值不合法时抛出.
+ */
+function validatePaginationInput(currentPage, itemPerPage) {
+    if (Number.isSafeInteger(currentPage) === false || currentPage &lt; 1) {
+        throw new Error(&#x27;页码必须是从 1 开始的安全整数&#x27;)
+    }
+    if (Number.isSafeInteger(itemPerPage) === false || itemPerPage &lt; 1 || itemPerPage &gt; PAGE_SIZE_MAX) {
+        throw new Error(&#x27;每页条数必须是 1 到 &#x27; + PAGE_SIZE_MAX + &#x27; 之间的整数&#x27;)
+    }
+    if (currentPage - 1 &gt; Math.floor(Number.MAX_SAFE_INTEGER / itemPerPage)) {
+        throw new Error(&#x27;页码过大, 无法精确计算分页位置&#x27;)
+    }
+}
+
+/**
+ * 读取分页响应, 检查回显值和总页数是否一致.
+ * @param {unknown} value 未经校验的分页对象.
+ * @param {number} currentPage 请求使用的页码.
+ * @param {number} itemPerPage 请求使用的每页条数.
+ * @returns {Pagination} 已校验的分页对象.
+ * @throws {Error} 分页字段或总数关系不合法时抛出.
+ */
+function readPagination(value, currentPage, itemPerPage) {
+    validatePaginationInput(currentPage, itemPerPage)
+
+    if (isRecord(value) === false) {
+        throw new Error(&#x27;列表响应缺少 pagination 对象&#x27;)
+    }
+
+    /** @type {Pagination} 四个字段都必须是安全整数. */
+    const pagination = {
+        currentPage: readSafeIntegerField(value, &#x27;currentPage&#x27;, 1, Number.MAX_SAFE_INTEGER),
+        itemPerPage: readSafeIntegerField(value, &#x27;itemPerPage&#x27;, 1, PAGE_SIZE_MAX),
+        totalPage: readSafeIntegerField(value, &#x27;totalPage&#x27;, 0, Number.MAX_SAFE_INTEGER),
+        totalItem: readSafeIntegerField(value, &#x27;totalItem&#x27;, 0, Number.MAX_SAFE_INTEGER),
+    }
+    if (pagination.currentPage !== currentPage || pagination.itemPerPage !== itemPerPage) {
+        throw new Error(&#x27;列表响应的分页参数与请求不一致&#x27;)
+    }
+
+    /** @type {number} 根据总条数计算的页数, 空列表为 0. */
+    let expectedTotalPage = 0
+    if (pagination.totalItem &gt; 0) {
+        expectedTotalPage = Math.floor((pagination.totalItem - 1) / itemPerPage) + 1
+    }
+    if (pagination.totalPage !== expectedTotalPage) {
+        throw new Error(&#x27;列表的总页数与总条数不一致&#x27;)
+    }
+    return pagination
+}
+
+/**
+ * 校验完整分页列表的条数, 要求列表与总数来自同一数据快照.
+ * @param {number} itemCount 接口原始列表的条数, 未经页面筛选.
+ * @param {Pagination} pagination 已通过 readPagination 校验的分页信息.
+ * @returns {void}
+ * @throws {Error} 条数无效或与分页信息不一致时抛出.
+ */
+function validatePageItemCount(itemCount, pagination) {
+    if (Number.isSafeInteger(itemCount) === false || itemCount &lt; 0) {
+        throw new Error(&#x27;列表条数必须是非负安全整数&#x27;)
+    }
+
+    /** @type {number} 当前页的偏移值, 分页参数已通过安全范围检查. */
+    const offset = (pagination.currentPage - 1) * pagination.itemPerPage
+    /** @type {number} 当前数据快照应返回的本页条数. */
+    const expectedCount = Math.min(pagination.itemPerPage, Math.max(pagination.totalItem - offset, 0))
+    if (itemCount !== expectedCount) {
+        throw new Error(&#x27;列表条数与分页信息不一致&#x27;)
+    }
+}
+
+export {
+    validatePaginationInput,
+    readPagination,
+    validatePageItemCount,
+}
+</code></pre></details><p>条数一致性校验要求列表和总数来自同一数据快照。当前书籍接口满足该条件，因此可以使用；调用时传入接口原始数组的 length 和已经过 <code>readPagination()</code> 校验的结果。空表和越界页的预期条数都是 0。</p><p><code>src/constants/pagination.js</code> 负责公共配置，本模块负责分页类型与数据处理。页面中的翻页、加载状态、错误展示和越界后重新请求仍由组件管理。</p></section><section id="api"><p class="section-label">06 / REQUESTS</p><h2>新增书籍 API 模块</h2><p><code>getBookList(currentPage, itemPerPage)</code> 返回已校验的 <code>{books, pagination}</code>。书籍字段由本模块读取，分页参数、分页响应和条数一致性由第 5.4 节的公共模块校验，并保持服务端的顺序。<code>addBook(form)</code> 只接收已通过页面业务校验的输入，负责请求映射与成功响应检查。</p><details class="code-file" open><summary><span class="file-mode">完整文件</span><span class="file-path">src/api/book.js</span></summary><div class="code-toolbar"><button type="button" data-copy="book-api" hidden>复制代码</button><span class="copy-feedback" role="status" aria-live="polite"></span></div><pre><code id="book-api" data-file="src/api/book.js" data-kind="complete">import request from &#x27;@/utils/request&#x27;
+import {isRecord} from &#x27;@/utils/typeGuard&#x27;
+import {readRequiredStringField, readSafeIntegerField, readStringField} from &#x27;@/utils/fileReader&#x27;
+import {BOOK_SORT_MAX} from &#x27;@/constants/book&#x27;
+import {readPagination, validatePageItemCount, validatePaginationInput} from &#x27;@/types/pagination&#x27;
+
+/**
+ * 书籍列表中的一条记录, 保留后端的嵌套天体结构.
+ * @typedef {Object} BookRecord
+ * @property {string} id 书籍 ID, 不转换为 Number.
+ * @property {string} title 书籍标题.
+ * @property {number} sort 排序值, 列表读取按后端 uint32 类型校验.
+ * @property {import(&#x27;@/constants/book&#x27;).BookDisplayStatus} display_status 显示状态.
+ * @property {import(&#x27;@/api/body&#x27;).BodyRecord} planet 所属天体.
+ */
+
+/**
+ * 已完成字段校验的书籍列表结果.
+ * @typedef {Object} BookListResult
+ * @property {BookRecord[]} books 当前页的书籍, 保留服务端顺序.
+ * @property {import(&#x27;@/types/pagination&#x27;).Pagination} pagination 分页信息.
+ */
+
+/**
+ * 已通过页面校验的创建输入, API 模块负责转换请求体结构.
+ * @typedef {Object} CreateBookInput
+ * @property {string} planet_id 真实天体 ID, 保留字符串.
+ * @property {string} title 书籍标题.
+ * @property {number} sort 排序正整数, visible 和 hidden 均从 1 开始.
+ * @property {import(&#x27;@/constants/book&#x27;).BookDisplayStatus} display_status 显示状态.
+ */
+
+/**
+ * 读取书籍记录, 同时检查嵌套的天体字段.
+ * @param {unknown} value 未经校验的书籍记录.
+ * @returns {BookRecord} 已校验的书籍记录.
+ * @throws {Error} 书籍或天体字段缺失, 类型错误时抛出.
+ */
+function readBook(value) {
+    if (isRecord(value) === false || isRecord(value.planet) === false) {
+        throw new Error(&#x27;书籍记录或所属天体格式异常&#x27;)
+    }
+
+    /** @type {string} 保留原值的书籍 ID. */
+    const id = readRequiredStringField(value, &#x27;id&#x27;)
+    /** @type {string} 书籍标题, 列表读取不修改历史内容. */
+    const title = readStringField(value, &#x27;title&#x27;)
+    /** @type {number} 列表排序值, 兼容已有的 0, 新建表单必须从 1 开始. */
+    const sort = readSafeIntegerField(value, &#x27;sort&#x27;, 0, BOOK_SORT_MAX)
+    /** @type {string} 待检查的显示状态. */
+    const displayStatus = readRequiredStringField(value, &#x27;display_status&#x27;)
+    if (displayStatus !== &#x27;visible&#x27; &amp;&amp; displayStatus !== &#x27;hidden&#x27;) {
+        throw new Error(&#x27;书籍显示状态必须是 visible 或 hidden&#x27;)
+    }
+
+    /** @type {import(&#x27;@/api/body&#x27;).BodyRecord} 完整的所属天体, 未知名称原样保留. */
+    const planet = {
+        id: readRequiredStringField(value.planet, &#x27;id&#x27;),
+        name: readRequiredStringField(value.planet, &#x27;name&#x27;),
+        title: readStringField(value.planet, &#x27;title&#x27;),
+        intro: readStringField(value.planet, &#x27;intro&#x27;),
+    }
+
+    return {
+        id: id,
+        title: title,
+        sort: sort,
+        display_status: displayStatus,
+        planet: planet,
+    }
+}
+
+/**
+ * 使用 POST 请求一页书籍, 校验数据后保持服务端排序返回.
+ * @param {number} currentPage 从 1 开始的页码.
+ * @param {number} itemPerPage 每页条数, 使用公共分页模块校验范围.
+ * @returns {Promise&lt;BookListResult&gt;} 当前页记录和分页信息.
+ * @throws {Error} 入参或响应格式不合法时拒绝, 业务及网络错误直接向外传递.
+ */
+async function getBookList(currentPage, itemPerPage) {
+    validatePaginationInput(currentPage, itemPerPage)
+
+    /** @type {{pagination: {currentPage: number, itemPerPage: number}}} 后端要求的请求体. */
+    const body = {
+        pagination: {
+            currentPage: currentPage,
+            itemPerPage: itemPerPage,
+        },
+    }
+    /** @type {unknown} 公共请求模块已经解包后的 data. */
+    const data = await request.post(&#x27;/v1/book/list&#x27;, body)
+    if (isRecord(data) === false || Array.isArray(data.books) === false) {
+        throw new Error(&#x27;书籍列表响应缺少 books 数组&#x27;)
+    }
+
+    /** @type {import(&#x27;@/types/pagination&#x27;).Pagination} 已校验的分页信息. */
+    const pagination = readPagination(data.pagination, currentPage, itemPerPage)
+    validatePageItemCount(data.books.length, pagination)
+
+    /** @type {BookRecord[]} 当前页记录, 不重新排序. */
+    const books = []
+    /** @type {unknown} 未经校验的当前记录. */
+    for (const item of data.books) {
+        books.push(readBook(item))
+    }
+
+    return {
+        books: books,
+        pagination: pagination,
+    }
+}
+
+/**
+ * 将已校验的表单映射为后端创建请求, 成功响应不包含新书籍或 ID.
+ * @param {CreateBookInput} form 已通过页面业务规则校验的输入.
+ * @returns {Promise&lt;void&gt;} 服务端已确认创建成功.
+ * @throws {Error} 成功响应格式异常时拒绝, 业务及网络错误直接向外传递.
+ */
+async function addBook(form) {
+    /**
+     * @type {{book: {title: string, sort: number, display_status: import(&#x27;@/constants/book&#x27;).BookDisplayStatus, planet: {id: string}}}}
+     * 后端要求的嵌套请求体, 只引用天体 ID.
+     */
+    const body = {
+        book: {
+            title: form.title.trim(),
+            sort: form.sort,
+            display_status: form.display_status,
+            planet: {
+                id: form.planet_id,
+            },
+        },
+    }
+    /** @type {unknown} 创建成功时, 解包后的 data 是空对象. */
+    const data = await request.post(&#x27;/v1/book/create&#x27;, body)
+    if (isRecord(data) === false) {
+        throw new Error(&#x27;创建书籍响应格式异常, 请刷新列表确认结果&#x27;)
+    }
+}
+
+export {
+    getBookList,
+    addBook,
+}
+</code></pre></details><p>创建成功的 data 是空对象，没有可追加到列表的新记录。页面会在确认成功后重新读取列表。列表完整性校验依据后端在同一个只读事务中统计总数并读取当前页的实现；读取越界页时，返回空数组是正常情况。</p></section><section id="page"><p class="section-label">07 / PAGE</p><h2>替换 BookListPage.vue</h2><p>以下完整组件移除了四条固定记录和预览提示，增加真实分页与创建流程。保留五列表格和右侧抽屉；列表天体名称来自每条记录的 <code>planet.name</code>，添加表单的选项来自单独的天体列表接口。</p><details class="code-file" open><summary><span class="file-mode">完整文件</span><span class="file-path">src/views/BookListPage.vue</span></summary><div class="code-toolbar"><button type="button" data-copy="book-page" hidden>复制代码</button><span class="copy-feedback" role="status" aria-live="polite"></span></div><pre><code id="book-page" data-file="src/views/BookListPage.vue" data-kind="complete">&lt;template&gt;
+    &lt;section class=&quot;book-list-page&quot;&gt;
+        &lt;el-breadcrumb :separator-icon=&quot;ArrowRight&quot;&gt;
+            &lt;el-breadcrumb-item&gt;管理后台&lt;/el-breadcrumb-item&gt;
+            &lt;el-breadcrumb-item&gt;书籍管理&lt;/el-breadcrumb-item&gt;
+        &lt;/el-breadcrumb&gt;
+
+        &lt;h1&gt;书籍管理&lt;/h1&gt;
+        &lt;p class=&quot;page-description&quot;&gt;按所属天体管理书籍/排序/显示状态&lt;/p&gt;
+
+
+        &lt;el-card shadow=&quot;never&quot;&gt;
+            &lt;template #header&gt;
+                &lt;div class=&quot;list-toolbar&quot;&gt;
+                    &lt;strong&gt;书籍列表&lt;/strong&gt;
+                    &lt;div class=&quot;toolbar-actions&quot;&gt;
+                        &lt;el-button
+                            :icon=&quot;Refresh&quot;
+                            :loading=&quot;isLoading&quot;
+                            :disabled=&quot;isLoading || isSubmitting&quot;
+                            @click=&quot;refreshBooks&quot;
+                        &gt;刷新列表&lt;/el-button&gt;
+                        &lt;el-button
+                            type=&quot;primary&quot;
+                            :icon=&quot;Plus&quot;
+                            :disabled=&quot;isLoading || isSubmitting&quot;
+                            @click=&quot;openAddDrawer&quot;
+                        &gt;添加书籍&lt;/el-button&gt;
+                    &lt;/div&gt;
+                &lt;/div&gt;
+            &lt;/template&gt;
+
+            &lt;el-alert
+                v-if=&quot;loadFailed === true&quot;
+                :title=&quot;listError&quot;
+                type=&quot;error&quot;
+                show-icon
+                :closable=&quot;false&quot;
+            &gt;&lt;/el-alert&gt;
+            &lt;el-table
+                v-else
+                v-loading=&quot;isLoading&quot;
+                :data=&quot;list&quot;
+                row-key=&quot;id&quot;
+                stripe
+                class=&quot;book-table&quot;
+            &gt;
+                &lt;el-table-column
+                    prop=&quot;id&quot;
+                    label=&quot;书籍 ID&quot;
+                    min-width=&quot;190&quot;
+                &gt;
+                &lt;/el-table-column&gt;
+
+                &lt;el-table-column
+                    prop=&quot;title&quot;
+                    label=&quot;书籍标题&quot;
+                    min-width=&quot;180&quot;
+                &gt;
+                &lt;/el-table-column&gt;
+
+                &lt;el-table-column label=&quot;所属天体&quot; min-width=&quot;180&quot;&gt;
+                    &lt;template #default=&quot;scope&quot;&gt;
+                        {{ getBodyLabel(scope.row.planet.name) }}
+                    &lt;/template&gt;
+                &lt;/el-table-column&gt;
+
+                &lt;el-table-column
+                    prop=&quot;sort&quot;
+                    label=&quot;排序值&quot;
+                    width=&quot;110&quot;&gt;
+                &lt;/el-table-column&gt;
+
+                &lt;el-table-column label=&quot;显示状态&quot; width=&quot;110&quot;&gt;
+                    &lt;template #default=&quot;scope&quot;&gt;
+                        &lt;el-tag v-if=&quot;scope.row.display_status === &#x27;visible&#x27;&quot; type=&quot;success&quot;&gt;显示&lt;/el-tag&gt;
+
+                        &lt;el-tag v-else-if=&quot;scope.row.display_status === &#x27;hidden&#x27;&quot; type=&quot;info&quot;&gt;隐藏&lt;/el-tag&gt;
+
+                        &lt;el-tag v-else type=&quot;warning&quot;&gt;未知状态&lt;/el-tag&gt;
+                    &lt;/template&gt;
+                &lt;/el-table-column&gt;
+
+                &lt;template #empty&gt;
+                    &lt;el-empty v-if=&quot;isLoading === false&quot; :description=&quot;getEmptyDescription()&quot;&gt;&lt;/el-empty&gt;
+                    &lt;span v-else&gt;正在读取书籍&lt;/span&gt;
+                &lt;/template&gt;
+            &lt;/el-table&gt;
+            &lt;div v-if=&quot;loadFailed === false&quot; class=&quot;pagination-wrap&quot;&gt;
+                &lt;el-pagination
+                    :current-page=&quot;pagination.currentPage&quot;
+                    :page-size=&quot;pagination.itemPerPage&quot;
+                    :page-sizes=&quot;PAGE_SIZES&quot;
+                    :total=&quot;pagination.totalItem&quot;
+                    :pager-count=&quot;5&quot;
+                    :disabled=&quot;isLoading || isSubmitting&quot;
+                    layout=&quot;total, sizes, prev, pager, next&quot;
+                    @update:current-page=&quot;changePage&quot;
+                    @update:page-size=&quot;changePageSize&quot;
+                &gt;&lt;/el-pagination&gt;
+            &lt;/div&gt;
+        &lt;/el-card&gt;
+
+        &lt;el-drawer
+            v-model=&quot;drawerVisible&quot;
+            title=&quot;添加书籍&quot;
+            direction=&quot;rtl&quot;
+            size=&quot;min(520px, 100vw)&quot;
+            :close-on-click-modal=&quot;false&quot;
+            :close-on-press-escape=&quot;isSubmitting === false&quot;
+            :show-close=&quot;isSubmitting === false&quot;
+            :before-close=&quot;beforeCloseDrawer&quot;
+            @closed=&quot;resetAddForm&quot;
+        &gt;
+            &lt;el-alert
+                v-if=&quot;isPlanetLoading === false &amp;&amp; planetLoadFailed === true&quot;
+                class=&quot;page-notice&quot;
+                :title=&quot;planetError&quot;
+                type=&quot;error&quot;
+                show-icon
+                :closable=&quot;false&quot;
+            &gt;
+            &lt;/el-alert&gt;
+
+            &lt;el-alert
+                v-else-if=&quot;isPlanetLoading === false &amp;&amp; planetOptions.length === 0&quot;
+                class=&quot;page-notice&quot;
+                title=&quot;暂无可选天体,请先在天体管理中创建天体,再刷新选项&quot;
+                type=&quot;info&quot;
+                show-icon
+                :closable=&quot;false&quot;
+            &gt;
+            &lt;/el-alert&gt;
+
+            &lt;el-button
+                class=&quot;refresh-planets&quot;
+                :icon=&quot;Refresh&quot;
+                :loading=&quot;isPlanetLoading&quot;
+                :disabled=&quot;isPlanetLoading || isSubmitting&quot;
+                @click=&quot;loadPlanetOptions&quot;
+            &gt;
+                刷新天体选项
+            &lt;/el-button&gt;
+
+            &lt;el-form
+                ref=&quot;addFormRef&quot;
+                :model=&quot;addForm&quot;
+                :rules=&quot;addFormRules&quot;
+                :disabled=&quot;isSubmitting&quot;
+                label-position=&quot;top&quot;
+                @submit.prevent=&quot;submitBook&quot;
+            &gt;
+                &lt;el-form-item label=&quot;所属天体&quot; prop=&quot;planet_id&quot;&gt;
+                    &lt;el-select
+                        v-model=&quot;addForm.planet_id&quot;
+                        class=&quot;full-width&quot;
+                        placeholder=&quot;请选择已创建的天体&quot;
+                        :loading=&quot;isPlanetLoading&quot;
+                        :disabled=&quot;isPlanetLoading || planetLoadFailed || planetOptions.length === 0&quot;
+                    &gt;
+                        &lt;el-option
+                            v-for=&quot;planet in planetOptions&quot;
+                            :key=&quot;planet.id&quot;
+                            :label=&quot;getBodyLabel(planet.name)&quot;
+                            :value=&quot;planet.id&quot;
+                        &gt;
+                        &lt;/el-option&gt;
+                    &lt;/el-select&gt;
+                &lt;/el-form-item&gt;
+
+                &lt;el-form-item label=&quot;书籍标题&quot; prop=&quot;title&quot;&gt;
+                    &lt;el-input v-model=&quot;addForm.title&quot; placeholder=&quot;请输入书籍标题&quot;&gt;&lt;/el-input&gt;
+
+                    &lt;p class=&quot;field-help&quot;&gt;最多 {{ BOOK_TITLE_MAX_LENGTH }} 个字符,首尾空白会在校验时移除&lt;/p&gt;
+                &lt;/el-form-item&gt;
+
+                &lt;el-form-item label=&quot;排序值&quot; prop=&quot;sort&quot;&gt;
+                    &lt;el-input-number
+                        v-model=&quot;addForm.sort&quot;
+                        class=&quot;full-width&quot;
+                        :min=&quot;BOOK_SORT_MIN&quot;
+                        :max=&quot;BOOK_SORT_MAX&quot;
+                        :step=&quot;1&quot;
+                        controls-position=&quot;right&quot;
+                    &gt;
+                    &lt;/el-input-number&gt;
+
+                    &lt;p class=&quot;field-help&quot;&gt;排序必须是从 1 开始的正整数, 与显示状态无关. 同一天体下排序值不能重复&lt;/p&gt;
+                &lt;/el-form-item&gt;
+
+                &lt;el-form-item label=&quot;显示状态&quot; prop=&quot;display_status&quot;&gt;
+                    &lt;el-select
+                        v-model=&quot;addForm.display_status&quot;
+                        class=&quot;full-width&quot;
+                    &gt;
+                        &lt;el-option
+                            v-for=&quot;option in displayStatusOptions&quot;
+                            :key=&quot;option.value&quot;
+                            :label=&quot;option.label&quot;
+                            :value=&quot;option.value&quot;
+                        &gt;
+                        &lt;/el-option&gt;
+                    &lt;/el-select&gt;
+                &lt;/el-form-item&gt;
+            &lt;/el-form&gt;
+
+            &lt;template #footer&gt;
+                &lt;el-button
+                    :disabled=&quot;isSubmitting&quot;
+                    @click=&quot;closeAddDrawer&quot;
+                &gt;
+                    取消
+                &lt;/el-button&gt;
+
+                &lt;el-button
+                    type=&quot;primary&quot;
+                    :loading=&quot;isSubmitting&quot;
+                    :disabled=&quot;isSubmitting || isLoading || isPlanetLoading || planetLoadFailed || planetOptions.length === 0&quot;
+                    @click=&quot;submitBook&quot;
+                &gt;
+                    确认添加
+                &lt;/el-button&gt;
+            &lt;/template&gt;
+        &lt;/el-drawer&gt;
+    &lt;/section&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import {nextTick, onMounted, reactive, ref} from &quot;vue&quot;;
+import {getApiErrorCode, getApiErrorMessage, isAuthError} from &#x27;@/utils/apiError&#x27;
+import {API_CODE} from &#x27;@/constants/apiCode&#x27;
+import {addBook, getBookList} from &#x27;@/api/book&#x27;
+import {
+    BOOK_TITLE_MAX_LENGTH,
+    BOOK_SORT_MIN,
+    BOOK_SORT_MAX,
+    BOOK_DEFAULT_SORT,
+    displayStatusOptions,
+} from &#x27;@/constants/book&#x27;
+import {DEFAULT_PAGE_SIZE, PAGE_SIZES} from &#x27;@/constants/pagination&#x27;
+import {getBodyList} from &quot;@/api/body.js&quot;;
+import {ElMessage} from &quot;element-plus&quot;;
+import {ArrowRight, Plus, Refresh} from &quot;@element-plus/icons-vue&quot;;
+import {getBodyLabel} from &quot;@/utils/body.js&quot;;
+
+defineOptions({
+    name: &#x27;BookListPage&#x27;,
+})
+
+/**
+ * 添加书籍表单, 校验后转换为 CreateBookInput.
+ * @typedef {Object} AddBookForm
+ * @property {string} planet_id 所选真实天体的字符串 ID.
+ * @property {string} title 书籍标题.
+ * @property {number | null | undefined} sort 排序整数, 兼容输入框清空时的 null 或 undefined.
+ * @property {import(&#x27;@/constants/book&#x27;).BookDisplayStatus} display_status 显示状态.
+ */
+
+/** @type {import(&#x27;vue&#x27;).Ref&lt;import(&#x27;@/api/book&#x27;).BookRecord[]&gt;} 当前页书籍, 不再使用固定示例数据. */
+const list = ref([])
+/** @type {import(&#x27;@/types/pagination&#x27;).Pagination} 当前查询与后端返回的分页信息. */
+const pagination = reactive({
+    currentPage: 1,
+    itemPerPage: DEFAULT_PAGE_SIZE,
+    totalPage: 0,
+    totalItem: 0,
+})
+/** @type {import(&#x27;vue&#x27;).Ref&lt;boolean&gt;} 是否正在读取书籍列表. */
+const isLoading = ref(false)
+/** @type {import(&#x27;vue&#x27;).Ref&lt;boolean&gt;} 最近一次列表读取是否失败. */
+const loadFailed = ref(false)
+/** @type {import(&#x27;vue&#x27;).Ref&lt;string&gt;} 列表读取失败的说明. */
+const listError = ref(&#x27;&#x27;)
+
+/**
+ * 真实天体列表,选择值取 id
+ * @type {import(&#x27;vue&#x27;).Ref&lt;import(&#x27;@/api/body&#x27;).BodyRecord[]&gt;}
+ * */
+const planetOptions = ref([])
+
+/**
+ * 本标量用于表示是否正在加载天体选项
+ * @type {import(&#x27;vue&#x27;).Ref&lt;boolean&gt;}
+ * */
+const isPlanetLoading = ref(false)
+
+/**
+ * 本标量用于表示天体选项是否不可用(初次读取前也视为不可用)
+ * @type {import(&#x27;vue&#x27;).Ref&lt;boolean&gt;}
+ * */
+const planetLoadFailed = ref(true)
+
+/**
+ * 天体选项读取失败的说明
+ * @type {import(&#x27;vue&#x27;).Ref&lt;string&gt;}
+ * */
+const planetError = ref(&#x27;天体选项尚未加载&#x27;)
+
+/**
+ * 添加抽屉是否打开
+ * @type {import(&#x27;vue&#x27;).Ref&lt;boolean&gt;}
+ * */
+const drawerVisible = ref(false)
+
+/**
+ * 是否正在校验或请求创建书籍(用于防止重复操作)
+ * @type {import(&#x27;vue&#x27;).Ref&lt;boolean&gt;}
+ * */
+const isSubmitting = ref(false)
+
+/**
+ * 表单组件实例
+ * @type {import(&#x27;vue&#x27;).Ref&lt;import(&#x27;element-plus&#x27;).FormInstance | null&gt;}
+ * */
+const addFormRef = ref(null)
+
+/**
+ * 创建书籍表单(只维护尚未保存的输入内容)
+ * @type {AddBookForm}
+ * */
+const addForm = reactive({
+    planet_id: &#x27;&#x27;,
+    title: &#x27;&#x27;,
+    sort: BOOK_DEFAULT_SORT,
+    display_status: &#x27;visible&#x27;,
+})
+
+/**
+ * 创建书籍表单的字段校验规则
+ * @type {import(&#x27;element-plus&#x27;).FormRules&lt;AddBookForm&gt;}
+ * */
+const addFormRules = {
+    planet_id: [
+        {
+            required: true,
+            validator: validatePlanetId,
+            trigger: &#x27;change&#x27;
+        }
+    ],
+    title: [
+        {
+            required: true,
+            whitespace: true,
+            message: &#x27;请输入书籍标题&#x27;,
+            trigger: &#x27;blur&#x27;
+        },
+        {
+            max: BOOK_TITLE_MAX_LENGTH,
+            message: &#x27;书籍标题最多 20 个字符&#x27;,
+            trigger: &#x27;blur&#x27;
+        }
+    ],
+    sort: [
+        {required: true, validator: validateBookSort, trigger: [&#x27;blur&#x27;, &#x27;change&#x27;]},
+    ],
+    display_status: [
+        {
+            required: true,
+            type: &#x27;enum&#x27;,
+            enum: [&#x27;visible&#x27;, &#x27;hidden&#x27;],
+            message: &#x27;请选择显示或隐藏&#x27;,
+            trigger: &#x27;change&#x27;
+        },
+    ],
+}
+
+/**
+ * 解释书籍业务错误, 其余错误复用公共提示.
+ * @param {unknown} error 捕获的异常.
+ * @param {string} fallback 没有可用说明时的提示.
+ * @returns {string} 页面错误说明.
+ */
+function getBookErrorMessage(error, fallback) {
+    switch (getApiErrorCode(error)) {
+        case API_CODE.VALIDATION_ERROR:
+            return &#x27;请求参数不符合要求, 请检查书籍字段或分页参数&#x27;
+        case API_CODE.BOOK_PLANET_NOT_FOUND:
+            return &#x27;所选天体已不存在, 请重新选择天体&#x27;
+        case API_CODE.BOOK_SORT_OCCUPIED:
+            return &#x27;该天体下的排序值已被占用, 请更换排序值&#x27;
+    }
+    return getApiErrorMessage(error, fallback)
+}
+
+/**
+ * 校验从 1 开始的排序正整数, 与显示状态无关.
+ * @param {unknown} rule 当前规则, 本函数无需读取.
+ * @param {unknown} value 待校验的排序值.
+ * @param {(error?: string | Error) =&gt; void} callback 校验结果回调.
+ * @returns {void}
+ */
+function validateBookSort(rule, value, callback) {
+    if (typeof value !== &#x27;number&#x27; || Number.isInteger(value) === false) {
+        callback(new Error(&#x27;请输入有效的排序整数&#x27;))
+        return
+    }
+    if (value &lt; BOOK_SORT_MIN || value &gt; BOOK_SORT_MAX) {
+        callback(new Error(&#x27;排序值必须是 &#x27; + BOOK_SORT_MIN + &#x27; 到 &#x27; + BOOK_SORT_MAX + &#x27; 之间的正整数&#x27;))
+        return
+    }
+    callback()
+}
+
+/**
+ * 根据真实总数提供空态说明, 不把越界页误报为数据库没有书籍.
+ * @returns {string} 表格空态文字.
+ */
+function getEmptyDescription() {
+    if (pagination.totalItem === 0) {
+        return &#x27;暂无书籍, 请点击添加书籍&#x27;
+    }
+    return &#x27;当前页暂无书籍, 请刷新列表&#x27;
+}
+
+/**
+ * 读取指定页, 加载期间禁止并发翻页. 越界时最多补读一次有效末页.
+ * @param {number} currentPage 请求页码.
+ * @param {number} itemPerPage 请求每页条数.
+ * @returns {Promise&lt;void&gt;} 本轮读取处理结束, 失败信息记录在页面状态中.
+ */
+async function loadBooks(currentPage, itemPerPage) {
+    if (isLoading.value === true || isSubmitting.value === true) {
+        return
+    }
+    isLoading.value = true
+    loadFailed.value = false
+    listError.value = &#x27;&#x27;
+    list.value = []
+    pagination.currentPage = currentPage
+    pagination.itemPerPage = itemPerPage
+    try {
+        /** @type {import(&#x27;@/api/book&#x27;).BookListResult} 本轮列表结果. */
+        let result = await getBookList(currentPage, itemPerPage)
+        if (result.pagination.totalPage &gt; 0 &amp;&amp; currentPage &gt; result.pagination.totalPage) {
+            result = await getBookList(result.pagination.totalPage, itemPerPage)
+        }
+        if (
+            result.pagination.totalPage &gt; 0 &amp;&amp;
+            result.pagination.currentPage &gt; result.pagination.totalPage
+        ) {
+            pagination.currentPage = result.pagination.totalPage
+            loadFailed.value = true
+            listError.value = &#x27;列表在读取期间发生变化, 请刷新重试&#x27;
+            return
+        }
+        list.value = result.books
+        pagination.currentPage = result.pagination.currentPage
+        pagination.itemPerPage = result.pagination.itemPerPage
+        pagination.totalPage = result.pagination.totalPage
+        pagination.totalItem = result.pagination.totalItem
+        if (pagination.totalItem === 0) {
+            pagination.currentPage = 1
+        }
+    } catch (error) {
+        loadFailed.value = true
+        listError.value = getBookErrorMessage(error, &#x27;书籍列表加载失败&#x27;) + &#x27;, 请刷新重试&#x27;
+    } finally {
+        isLoading.value = false
+    }
+}
+
+/**
+ * 刷新当前页, 失败后保留相同分页条件供重试.
+ * @returns {Promise&lt;void&gt;} 本轮刷新结束.
+ */
+async function refreshBooks() {
+    await loadBooks(pagination.currentPage, pagination.itemPerPage)
+}
+
+/**
+ * 响应页码变化, 使用受控属性避免加载期间提前修改查询条件.
+ * @param {number} page 新页码.
+ * @returns {Promise&lt;void&gt;} 本轮翻页结束.
+ */
+async function changePage(page) {
+    if (isLoading.value === true || isSubmitting.value === true || page === pagination.currentPage) {
+        return
+    }
+    await loadBooks(page, pagination.itemPerPage)
+}
+
+/**
+ * 修改每页条数时回到第一页.
+ * @param {number} size 新的每页条数.
+ * @returns {Promise&lt;void&gt;} 本轮读取结束.
+ */
+async function changePageSize(size) {
+    if (isLoading.value === true || isSubmitting.value === true || size === pagination.itemPerPage) {
+        return
+    }
+    await loadBooks(1, size)
+}
+
+/**
+ * 本函数用于检查选定的天体 ID 是否存在于当前成功读取的天体列表中
+ * @param {string} planetId 待检查的天体 ID
+ * @returns {boolean} 是否允许选择此天体
+ * */
+function isPlanetSelectable(planetId) {
+    if (isPlanetLoading.value === true) {
+        return false
+    }
+
+    if (planetLoadFailed.value === true) {
+        return false
+    }
+
+    if (planetId === &#x27;&#x27;) {
+        return false
+    }
+
+    /** @type {import(&#x27;@/api/body&#x27;).BodyRecord} 当前天体 */
+    for (const planet of planetOptions.value) {
+        if (planet.id === planetId) {
+            return true
+        }
+    }
+
+    return false
+}
+
+/**
+ * 本函数用于校验所属天体字段: 不能用天体名称代替关联 ID
+ * @param {unknown} rule 当前校验规则,本函数无需读取
+ * @param {unknown} value 待校验的字段值
+ * @param {(error?: string | Error) =&gt; void} callback 校验结果回调
+ * @returns {void}
+ * */
+function validatePlanetId(rule, value, callback) {
+    if (typeof value !== &#x27;string&#x27;) {
+        callback(new Error(&#x27;请选择当前列表中的已创建天体&#x27;))
+        return
+    }
+
+    if (isPlanetSelectable(value) === false) {
+        callback(new Error(&#x27;请选择当前列表中的已创建天体&#x27;))
+        return
+    }
+
+    callback()
+}
+
+/**
+ * 本函数用于请求天体列表接口(失败后仍可点击刷新重试)
+ * @returns {Promise&lt;void&gt;} 本轮读取结束,失败状态保存在页面中
+ * */
+async function loadPlanetOptions() {
+    if (isPlanetLoading.value === true) {
+        return
+    }
+
+    if (isSubmitting.value === true) {
+        return
+    }
+
+    isPlanetLoading.value = true
+    planetError.value = &#x27;&#x27;
+    try {
+        planetOptions.value = await getBodyList()
+        planetLoadFailed.value = false
+    } catch (error) {
+        planetOptions.value = []
+        planetLoadFailed.value = true
+        planetError.value = getApiErrorMessage(error, &#x27;天体选项加载失败&#x27;) + &#x27;,请刷新重试&#x27;
+    } finally {
+        isPlanetLoading.value = false
+    }
+
+    // 刷新后所选天体已不可用时,则只清空关联字段,保留其他输入
+    if (addForm.planet_id !== &#x27;&#x27; &amp;&amp; isPlanetSelectable(addForm.planet_id) === false) {
+        addForm.planet_id = &#x27;&#x27;
+    }
+}
+
+/**
+ * 本函数用于重置表单及旧校验提示(关闭抽屉或再次打开时调用)
+ * @returns {void}
+ * */
+function resetAddForm() {
+    addForm.planet_id = &#x27;&#x27;
+    addForm.title = &#x27;&#x27;
+    addForm.sort = BOOK_DEFAULT_SORT
+    addForm.display_status = &#x27;visible&#x27;
+
+    if (addFormRef.value !== null) {
+        addFormRef.value.clearValidate()
+    }
+}
+
+/**
+ * 本函数用于打开抽屉并请求天体列表接口,等待表单挂载后清除旧提示
+ * @returns {Promise&lt;void&gt;} 抽屉打开及本轮选项读取处理结束
+ * */
+async function openAddDrawer() {
+    if (isLoading.value === true) {
+        return
+    }
+    if (isSubmitting.value === true) {
+        return
+    }
+
+    if (drawerVisible.value === true) {
+        return
+    }
+
+    resetAddForm()
+
+    drawerVisible.value = true
+    /** @type {Promise&lt;void&gt;} 立即启动的选项读取,防止短暂使用旧数据 */
+    const loading = loadPlanetOptions()
+    await nextTick()
+
+    if (addFormRef.value !== null) {
+        addFormRef.value.clearValidate()
+    }
+
+    await loading
+}
+
+/**
+ * 本函数用于在校验和创建请求期间阻止抽屉关闭
+ * @param {() =&gt; void} done 抽屉提供的关闭回调
+ * @returns {void}
+ * */
+function beforeCloseDrawer(done) {
+    if (isSubmitting.value === false) {
+        done()
+    }
+}
+
+/**
+ * 本函数用于响应取消按钮,实际重置由 closed 事件完成
+ * @returns {void}
+ * */
+function closeAddDrawer() {
+    if (isSubmitting.value === false) {
+        drawerVisible.value = false
+    }
+}
+
+/**
+ * 校验并创建书籍, 创建请求结束后再执行列表或天体选项刷新.
+ * @returns {Promise&lt;void&gt;} 本次提交及必要的读取处理结束.
+ */
+async function submitBook() {
+    if (isSubmitting.value === true || isLoading.value === true || drawerVisible.value === false || addFormRef.value === null) {
+        return
+    }
+    if (isPlanetLoading.value === true || planetLoadFailed.value === true) {
+        ElMessage.warning(&#x27;请先成功加载天体选项&#x27;)
+        return
+    }
+
+    isSubmitting.value = true
+    try {
+        addForm.title = addForm.title.trim()
+        /** @type {boolean} 当前表单是否有效. */
+        const isValid = await addFormRef.value.validate()
+        if (isValid === false) {
+            isSubmitting.value = false
+            return
+        }
+    } catch {
+        isSubmitting.value = false
+        return
+    }
+    if (typeof addForm.sort !== &#x27;number&#x27;) {
+        isSubmitting.value = false
+        return
+    }
+
+    /** @type {import(&#x27;@/api/book&#x27;).CreateBookInput} 已校验的本次提交快照. */
+    const input = {
+        planet_id: addForm.planet_id,
+        title: addForm.title,
+        sort: addForm.sort,
+        display_status: addForm.display_status,
+    }
+    /** @type {boolean} 后端是否明确确认创建成功. */
+    let created = false
+    /** @type {boolean} 是否需要重新读取天体选项. */
+    let reloadPlanets = false
+    /** @type {boolean} 创建结果是否尚未确认. */
+    let resultUnknown = false
+    try {
+        await addBook(input)
+        created = true
+    } catch (error) {
+        if (isAuthError(error) === true) {
+            return
+        }
+        /** @type {number | undefined} 可识别的业务错误码. */
+        const code = getApiErrorCode(error)
+        if (code === undefined) {
+            resultUnknown = true
+            ElMessage.warning(&#x27;尚未确认创建结果, 请核对刷新后的列表再决定是否重试&#x27;)
+        } else {
+            ElMessage.error(getBookErrorMessage(error, &#x27;创建书籍失败&#x27;))
+        }
+        reloadPlanets = code === API_CODE.BOOK_PLANET_NOT_FOUND
+    } finally {
+        isSubmitting.value = false
+    }
+
+    if (created === true) {
+        drawerVisible.value = false
+        ElMessage.success(&#x27;书籍创建成功&#x27;)
+        // 创建已经成功. 列表刷新失败只显示列表错误, 不会改成创建失败.
+        await loadBooks(1, pagination.itemPerPage)
+        return
+    }
+    if (reloadPlanets === true) {
+        // 先释放提交锁, 再刷新选项, 避免被 loadPlanetOptions 的防重入检查拦截.
+        await loadPlanetOptions()
+    }
+    if (resultUnknown === true) {
+        // 只重新读取, 不自动重发创建请求. 新书不一定在当前页.
+        await refreshBooks()
+    }
+}
+
+onMounted(refreshBooks)
+&lt;/script&gt;
+
+&lt;style scoped lang=&quot;scss&quot;&gt;
+.book-list-page h1 {
+    margin: 20px 0 8px;
+    color: #35405b;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.page-description {
+    margin: 0 0 20px;
+    color: #657089;
+    line-height: 1.6;
+}
+
+.page-notice { margin-bottom: 20px; }
+
+.list-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.toolbar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.toolbar-actions :deep(.el-button + .el-button) { margin-left: 0; }
+
+.pagination-wrap {
+    margin-top: 20px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.book-table,
+.full-width { width: 100%; }
+
+.book-table :deep(.cell) {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.field-help {
+    margin: 6px 0 0;
+    color: #657089;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.refresh-planets { margin-bottom: 20px; }
+
+.book-list-page :deep(.el-card) {
+    border-color: #e8ecf3;
+    border-radius: 8px;
+}
+
+@media (max-width: 640px) {
+    .list-toolbar { align-items: flex-start; }
+}
+&lt;/style&gt;
+</code></pre></details><p>提交校验和创建请求使用两个同级 try/catch。<code>isSubmitting</code> 覆盖校验与 POST 请求，期间禁用重复提交和关闭抽屉；提交后的读取在 finally 解锁之后执行，避免刷新函数被自身的防重入检查拦截。</p><p><code>loadBooks()</code> 在补读末页后仍发现越界时，直接设置失败状态与错误提示，然后 return。try 内的 return 仍会执行 finally，因此加载状态会正常复位；catch 继续处理接口请求或响应校验失败。该分支不再通过 throw 跳转到本地 catch，也避免重复追加“请刷新重试”。读取失败由函数内部记录到页面状态中，JSDoc 不声明向调用方抛出这些错误。</p></section><section id="flow"><p class="section-label">08 / FLOW</p><h2>分页和异常时的页面行为</h2><ol class="pipeline"><li><span class="index">LIST</span><strong>读取当前页</strong><p>页面挂载时读取第一页，翻页或调整每页条数时再请求。加载过程中锁住分页与刷新入口。</p></li><li><span class="index">CREATE</span><strong>校验后提交</strong><p>书名修整、正整数排序和显示状态校验通过后，发送带真实天体 ID 的创建请求。</p></li><li><span class="index">CONFIRM</span><strong>确认结果再刷新</strong><p>成功后关闭抽屉并读取第一页；不确定时只读取核对，不自动重复创建。</p></li></ol><div class="table-wrap"><table><thead><tr><th scope="col">场景</th><th scope="col">行为</th></tr></thead><tbody><tr><td>快速翻页或同时修改每页条数</td><td>使用受控分页属性和加载锁，只允许一轮列表读取；忽略读取期间的新翻页事件，防止旧响应覆盖新页面。</td></tr><tr><td>空表</td><td>后端 totalPage 为 0；页面保留第 1 页并显示真实空态。</td></tr><tr><td>页码超过最新末页</td><td>读取有效末页一次；若再次变化导致仍越界，则显示可重试错误，避免无限请求。</td></tr><tr><td>列表读取失败</td><td>显示错误与刷新入口，不用空表格冒充查无记录。</td></tr><tr><td>创建成功但列表刷新失败</td><td>创建成功提示保留，失败说明显示在列表区域，不重复 POST。</td></tr><tr><td>天体引用失效</td><td>先解锁，再刷新真实天体选项；失效选择清空，其他表单字段保留。</td></tr><tr><td>排序冲突</td><td>保留全部输入，让用户改排序；不自动加 1，也不根据当前页推断空闲排序。</td></tr><tr><td>创建超时、断网或响应格式异常</td><td>提示结果未确认，刷新当前页供核对；不关闭抽屉，不自动重发创建请求。</td></tr><tr><td>鉴权失效</td><td>沿用统一处理与跳转，页面只结束自身状态，不重复弹窗。</td></tr></tbody></table></div><p>后端按数值 <code>planet_id ASC, sort ASC, id ASC</code> 排序，再进行分页。这不是太阳到海王星的固定顺序，也不是创建时间倒序。新书可能出现在其他页；刷新第一页或当前页后没看到它，不能单凭这一点认定创建失败。核对相关页和记录后再决定是否重试。</p><p>同一天体的书籍可能跨页。当前页面只掌握一页记录，不能可靠计算“下一个未占用排序值”；最终由后端与唯一索引确认。</p></section><section id="verify"><p class="section-label">09 / VERIFY</p><h2>按顺序联调与验收</h2><p>先依次完成第 4 至 7 节的七个文件，再检查构建。页面路由和菜单继续沿用已有 <code>bookList</code>。</p><details class="code-file" open><summary><span class="file-mode">终端命令</span><span class="file-path">前端工程根目录</span></summary><div class="code-toolbar"><button type="button" data-copy="commands" hidden>复制代码</button><span class="copy-feedback" role="status" aria-live="polite"></span></div><pre><code id="commands">npm run build
+npm run dev</code></pre></details><p>启动后端并通过现有登录流程进入 <code>http://localhost:5062/admin/books</code>。在 Network 中确认列表请求为 <code>POST /api/v1/book/list</code>，JSON 体中有正确的 pagination，且带 Authorization。以下创建用例会写入书籍，请在测试数据上选择实际存在的天体和未占用排序。</p><div class="table-wrap"><table><thead><tr><th scope="col">检查项</th><th scope="col">输入或操作</th><th scope="col">预期结果</th></tr></thead><tbody><tr><td>分页列表</td><td>第一页、下一页、改为每页 20 条、刷新</td><td>全部使用 POST；改页大小回到第一页；总数与服务端一致，保持嵌套 planet。</td></tr><tr><td>正整数排序</td><td>两种状态分别测试 0、负数、1、1.5</td><td>控件将低于 1 的输入限制到 1；校验函数拒绝仍为 0、负数或小数的模型值。两种状态下的 1 均通过排序校验。</td></tr><tr><td>状态切换</td><td>填写排序 1，反复切换 hidden 和 visible</td><td>排序值保持为 1，校验规则不随状态变化；两种状态均可提交合法正整数。</td></tr><tr><td>边界</td><td>输入 4294967295、4294967296、空值；另以校验函数测试 NaN 和越界值</td><td>控件将超上限输入限制到上限；校验函数拒绝仍然越界、空值或无效的模型值。</td></tr><tr><td>标题</td><td>20 个表情加首尾空格、21 个表情、纯空白</td><td>先 trim；20 个码点有效，过长或空白拒绝。</td></tr><tr><td>创建映射</td><td>选择真实天体并确认添加</td><td>请求体为 book.planet.id 字符串；sort 为 JSON 数字；成功 data:{}。</td></tr><tr><td>连续点击</td><td>验证或 POST 尚未结束时再次确认</td><td>只发送一次创建请求，抽屉不可关闭。</td></tr><tr><td>排序冲突</td><td>同一天体同排序，例如显示书和隐藏书都使用 1</td><td>显示排序占用，保留输入；业务判断使用 API_CODE 常量。</td></tr><tr><td>天体已删除</td><td>请求返回 20102</td><td>选项再次读取，保留标题、排序和状态，失效 ID 清空。</td></tr><tr><td>失败重试</td><td>阻断列表请求或天体选项请求，再恢复</td><td>分别显示错误，刷新按钮仍可用，恢复后可继续操作。</td></tr><tr><td>分页越界</td><td>其他管理员导致总页数减少后请求旧末页</td><td>最多回退读取一次有效末页；空表保持第 1 页。</td></tr><tr><td>成功后刷新失败</td><td>创建已返回成功，再阻断列表读取</td><td>提示创建成功，列表显示读取失败，不能误报创建失败。</td></tr><tr><td>结果不确定</td><td>创建请求超时或断网</td><td>保留输入并提醒核对，只有读取请求，不自动重复 POST。</td></tr><tr><td>鉴权</td><td>令牌过期或无效</td><td>沿用公共登录失效处理，不出现重复鉴权弹窗。</td></tr></tbody></table></div><p>仅靠构建不能代替真实联调。本指南的自动检查使用模拟响应，实际数据库写入、后端运行环境与账户权限应按上述步骤确认。</p></section><section id="sources"><p class="section-label">10 / SOURCES</p><h2>源码依据与验证范围</h2><div class="note" id="verification-result"><p>已将文档中的七个完整文件放入临时工程验证：Vite 生产构建通过，严格 JSDoc 类型检查无诊断，更新排序规则后的 37 项页面模拟测试及 API 协议模拟检查通过。HTML 已检查桌面与窄屏布局、目录锚点、代码展开折叠、复制反馈及失败降级。构建仍有依赖包体积提示；本次没有调用真实创建接口或写入数据库，真实联调请按第 9 节执行。</p></div><p>后端协议直接依据以下当前文件读取，排序规则已按本次核对的 uint32 与 gte=1 更新，未执行数据库迁移：</p><ul><li><code>main.go</code>、<code>controller/v1/book/book.go</code>：方法、完整路由、响应和业务错误分类。</li><li><code>param/req/v1/book/create.go</code>、<code>validation/validation.go</code>、<code>jstext/trim.go</code>：标题、排序、状态和 ID 的校验。</li><li><code>param/req/v1/book/list.go</code>、<code>param/resp/v1/book/list.go</code>、<code>paginate/paginate.go</code>：分页协议及边界。</li><li><code>model/book.go</code>、<code>resp_body/resp_body.go</code>、鉴权中间件：查询顺序、排序冲突和业务码。</li></ul><p>样式与代码工具栏参考：<a href="../../SolarNotesAdminAPI/doc/book-create-api-implementation.html">后端创建书籍文档</a>、<a href="../../SolarNotesAdminAPI/doc/book-list-api-implementation.html">后端书籍列表文档</a>。组件用法参考 <a href="https://element-plus.org/en-US/component/pagination.html">Element Plus Pagination</a> 的受控分页事件、<a href="https://element-plus.org/en-US/component/form.html">Form</a> 的字段校验和 <a href="https://element-plus.org/en-US/component/input-number.html">Input Number</a> 的输入范围。</p><p>每个代码块均有复制按钮；优先使用浏览器剪贴板 API，失败时尝试文本选择复制。若浏览器仍限制复制，会显示手动复制提示，不会假报成功。</p></section><footer>SolarNotesAdmin · 书籍创建与分页列表联调 · 2026-11-19</footer></main></div><script>
+'use strict'
+
+/** @type {WeakMap<HTMLButtonElement, number>} 每个复制按钮对应的反馈清除定时器. */
+const copyFeedbackTimers = new WeakMap()
+
+/**
+ * 统一设置全部代码块的展开状态.
+ * @param {boolean} isOpen 是否展开代码块.
+ * @returns {void}
+ */
+function setCodeExpansion(isOpen) {
+    /** @type {NodeListOf<Element>} 当前文档中的代码块. */
+    const files = document.querySelectorAll('details.code-file')
+
+    /** @type {Element} 当前代码块元素. */
+    for (const file of files) {
+        if (file instanceof HTMLDetailsElement) {
+            file.open = isOpen
+        }
+    }
+}
+
+/**
+ * 展开全部代码块.
+ * @returns {void}
+ */
+function expandAllCode() {
+    setCodeExpansion(true)
+}
+
+/**
+ * 折叠全部代码块.
+ * @returns {void}
+ */
+function collapseAllCode() {
+    setCodeExpansion(false)
+}
+
+/**
+ * 恢复复制前的焦点, 尽量保持页面滚动位置.
+ * @param {Element | null} element 复制前获得焦点的元素.
+ * @returns {void}
+ */
+function restoreCopyFocus(element) {
+    if (element instanceof HTMLElement && element.isConnected === true) {
+        try {
+            element.focus({preventScroll: true})
+        } catch {
+            element.focus()
+        }
+    }
+}
+
+/**
+ * 使用临时文本框执行兼容复制, 完成后移除文本框并恢复焦点.
+ * @param {string} value 要写入剪贴板的完整代码.
+ * @returns {boolean} 浏览器是否确认复制成功.
+ */
+function copyTextWithFallback(value) {
+    /** @type {Element | null} 创建临时文本框前的焦点元素. */
+    const previousFocus = document.activeElement
+    /** @type {HTMLTextAreaElement} 用于选中完整代码的临时文本框. */
+    const field = document.createElement('textarea')
+    /** @type {boolean} 兼容复制的执行结果. */
+    let copied = false
+
+    field.value = value
+    field.readOnly = true
+    field.style.position = 'fixed'
+    field.style.top = '0'
+    field.style.left = '-9999px'
+    field.style.opacity = '0'
+
+    try {
+        document.body.append(field)
+        field.select()
+        field.setSelectionRange(0, field.value.length)
+        copied = document.execCommand('copy') === true
+    } catch {
+        copied = false
+    } finally {
+        field.remove()
+        restoreCopyFocus(previousFocus)
+    }
+
+    return copied
+}
+
+/**
+ * 优先使用 Clipboard API, 不可用或被拒绝时尝试兼容复制.
+ * @param {string} value 要复制的完整代码.
+ * @returns {Promise<boolean>} 是否确认复制成功.
+ */
+async function copyCodeText(value) {
+    try {
+        if (
+            window.isSecureContext === true &&
+            navigator.clipboard !== undefined &&
+            typeof navigator.clipboard.writeText === 'function'
+        ) {
+            await navigator.clipboard.writeText(value)
+            return true
+        }
+    } catch {
+        // 本地文件或浏览器权限可能拒绝 Clipboard API, 继续尝试备用方式.
+    }
+
+    return copyTextWithFallback(value)
+}
+
+/**
+ * 清除已展示的复制反馈并移除定时器记录.
+ * @param {HTMLButtonElement} button 对应的复制按钮.
+ * @param {HTMLElement} feedback 按钮旁的反馈区域.
+ * @returns {void}
+ */
+function clearCopyFeedback(button, feedback) {
+    feedback.textContent = ''
+    copyFeedbackTimers.delete(button)
+}
+
+/**
+ * 复制当前按钮关联的代码, 避免重复执行并展示明确的结果.
+ * @param {MouseEvent} event 复制按钮的点击事件.
+ * @returns {Promise<void>} 本次复制处理结束.
+ */
+async function handleCopyCode(event) {
+    /** @type {EventTarget | null} 触发本次复制的事件元素. */
+    const button = event.currentTarget
+    if (button instanceof HTMLButtonElement === false || button.disabled === true) {
+        return
+    }
+
+    /** @type {string | undefined} 需要复制的代码元素 ID. */
+    const codeId = button.dataset.copy
+    if (typeof codeId !== 'string' || codeId === '') {
+        return
+    }
+
+    /** @type {HTMLElement | null} 需要复制的代码元素. */
+    const code = document.getElementById(codeId)
+    /** @type {Element | null} 位于按钮之后的反馈元素. */
+    const feedback = button.nextElementSibling
+    if (code instanceof HTMLElement === false || feedback instanceof HTMLElement === false) {
+        return
+    }
+
+    /** @type {number | undefined} 上一次结果提示的清除定时器. */
+    const previousTimer = copyFeedbackTimers.get(button)
+    if (typeof previousTimer === 'number') {
+        window.clearTimeout(previousTimer)
+        copyFeedbackTimers.delete(button)
+    }
+
+    /** @type {Element | null} 禁用按钮之前的焦点元素. */
+    const previousFocus = document.activeElement
+    /** @type {string | null} 保留原始换行和缩进的代码文本. */
+    const content = code.textContent
+    /** @type {string} 本次要复制的文本. */
+    let value = ''
+    if (content !== null) {
+        value = content
+    }
+
+    /** @type {boolean} 本次复制是否成功. */
+    let copied = false
+    button.disabled = true
+    feedback.textContent = '正在复制...'
+
+    try {
+        copied = await copyCodeText(value)
+    } catch {
+        copied = false
+    } finally {
+        button.disabled = false
+        restoreCopyFocus(previousFocus)
+    }
+
+    if (copied === true) {
+        feedback.textContent = '已复制'
+    } else {
+        feedback.textContent = '复制失败, 请手动选择代码'
+    }
+
+    /** @type {number} 本次结果提示的清除定时器. */
+    const timer = window.setTimeout(clearCopyFeedback, 2500, button, feedback)
+    copyFeedbackTimers.set(button, timer)
+}
+
+/**
+ * 初始化全部展开按钮和复制按钮, 应在正文元素创建后调用.
+ * @returns {void}
+ */
+function initializeCodeTools() {
+    /** @type {HTMLElement | null} 展开全部代码的按钮. */
+    const expand = document.getElementById('expand-all')
+    /** @type {HTMLElement | null} 折叠全部代码的按钮. */
+    const collapse = document.getElementById('collapse-all')
+    if (expand instanceof HTMLButtonElement) {
+        expand.hidden = false
+        expand.addEventListener('click', expandAllCode)
+    }
+    if (collapse instanceof HTMLButtonElement) {
+        collapse.hidden = false
+        collapse.addEventListener('click', collapseAllCode)
+    }
+
+    /** @type {NodeListOf<Element>} 声明了目标代码 ID 的复制按钮. */
+    const buttons = document.querySelectorAll('button[data-copy]')
+    /** @type {Element} 当前待初始化的复制按钮元素. */
+    for (const button of buttons) {
+        if (button instanceof HTMLButtonElement === false) {
+            continue
+        }
+        /** @type {string | undefined} 按钮关联的代码元素 ID. */
+        const codeId = button.dataset.copy
+        if (typeof codeId !== 'string' || codeId === '') {
+            continue
+        }
+        /** @type {HTMLElement | null} 对应的代码元素. */
+        const code = document.getElementById(codeId)
+        /** @type {Element | null} 对应的复制反馈区域. */
+        const feedback = button.nextElementSibling
+        if (code instanceof HTMLElement === false || feedback instanceof HTMLElement === false) {
+            continue
+        }
+        button.hidden = false
+        button.addEventListener('click', handleCopyCode)
+    }
+}
+
+initializeCodeTools()
+
+</script></body></html>
