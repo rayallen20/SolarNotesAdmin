@@ -1,0 +1,1399 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="SolarNotes 目录管理交互原型。使用书籍目录快照，体验同级节点排序与显示状态管理。">
+  <title>目录管理 · SolarNotes 管理后台</title>
+  <style>
+:root {
+  color-scheme: light;
+  font-family: "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #263146;
+  background: #f7f8fb;
+  font-size: 14px;
+  line-height: 1.55;
+  --ink: #263146;
+  --muted: #67748a;
+  --line: #e4e8f0;
+  --accent: #545ec7;
+  --accent-deep: #434cae;
+  --accent-soft: #efefff;
+  --green: #247c66;
+  --amber: #946029;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+button, select { color: inherit; font: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: default; }
+button, select { -webkit-tap-highlight-color: transparent; }
+:where(button, select, [tabindex]):focus-visible { outline: 3px solid #908cf3; outline-offset: 2px; }
+[hidden] { display: none !important; }
+h1, h2, h3, p { margin: 0; }
+.icon { display: inline-block; width: 18px; height: 18px; flex: 0 0 auto; vertical-align: middle; }
+.shell { display: grid; grid-template-columns: 240px minmax(0, 1fr); min-height: 100vh; }
+.sidebar { position: sticky; top: 0; height: 100vh; height: 100dvh; overflow: auto; color: #c4cbd8; background: #2d3a4b; }
+.brand { display: flex; align-items: center; gap: 11px; min-height: 60px; padding: 0 22px; color: white; font-size: 17px; font-weight: 650; white-space: nowrap; }
+.brand-icon { display: grid; place-items: center; color: #b7b7ff; }
+.brand-icon .icon, .brand > .icon { width: 24px; height: 24px; color: #b7b7ff; }
+.sidebar nav { display: grid; gap: 4px; padding: 16px 12px; }
+.nav-item { display: flex; align-items: center; gap: 14px; min-height: 45px; padding: 0 15px; border-radius: 7px; color: inherit; text-decoration: none; font-size: 14px; }
+.nav-item .icon { width: 19px; height: 19px; }
+.nav-item.active { background: #6c75db; color: #fff; font-weight: 650; }
+.workspace { min-width: 0; }
+.topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; min-height: 60px; padding: 0 30px; background: #fff; border-bottom: 1px solid var(--line); }
+.crumbs { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; }
+.crumbs strong, .crumbs b { color: #384458; font-weight: 600; }
+.crumbs .icon { width: 14px; height: 14px; }
+.preview-label { display: inline-flex; align-items: center; gap: 7px; color: #637089; font-size: 12px; }
+.preview-label .icon { width: 15px; height: 15px; }
+.main { max-width: 1590px; margin: 0 auto; padding: 28px clamp(18px, 2.4vw, 40px) 34px; }
+.page-heading, .panel-head, .list-heading, .drawer-head, .drawer-foot, .section-title, .group-meta, .root-controls { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.page-heading { margin-bottom: 20px; }
+h1 { font-size: clamp(25px, 2.4vw, 33px); line-height: 1.28; letter-spacing: -.045em; }
+.page-heading p, .list-heading p, .muted, .helper { color: var(--muted); font-size: 13px; }
+.page-heading p { margin-top: 6px; }
+.bookbar, .card { border: 1px solid var(--line); border-radius: 12px; background: #fff; box-shadow: 0 3px 12px rgb(37 49 75 / 3%); }
+.bookbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 18px 36px; padding: 16px 20px; margin-bottom: 18px; }
+.book-filters { display: flex; align-items: flex-start; flex-wrap: wrap; gap: 16px 24px; min-width: 0; max-width: 100%; }
+.book-picker, .book-status-field { display: grid; gap: 6px; min-width: 0; max-width: 100%; }
+.book-picker label, .book-status-field > span, .progress-label { color: #4d5970; font-size: 13px; font-weight: 600; }
+.book-status-value { justify-self: start; margin-block: 6px; padding: 2px 10px; border-radius: 5px; background: #f0f2f5; color: #586278; font-size: 13px; }
+.book-status-value[data-status="visible"] { background: #e6f4ee; color: #226753; }
+.selection-hint { display: flex; justify-content: center; align-items: center; gap: 8px; padding: 38px 16px; text-align: center; color: var(--muted); }
+select { max-width: 100%; padding: 7px 28px 7px 11px; border: 1px solid #ccd2dd; border-radius: 6px; background-color: white; color: var(--ink); }
+select:hover { border-color: #969ccc; }
+.book-picker select {
+  min-width: min(100%, 185px);
+  appearance: none;
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='m1 1.5 5 5 5-5' fill='none' stroke='%234d5970' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: 12px 8px;
+  background-position: right 12px center;
+}
+.book-picker select:disabled { color: #697586; background-color: #f4f5f8; border-color: #dce0e7; }
+@media (forced-colors: active) {
+  .book-picker select { appearance: auto; background-image: none; }
+}
+.progress-block { width: min(100%, 245px); }
+.progress-label { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.progress-label strong { color: var(--accent); font-variant-numeric: tabular-nums; }
+.track { height: 5px; margin-top: 7px; overflow: hidden; border-radius: 8px; background: #eceef6; }
+.track i { display: block; height: 100%; background: #787fe7; border-radius: inherit; }
+.panels { display: grid; align-items: start; grid-template-columns: minmax(232px, .78fr) minmax(0, 1.8fr); gap: 16px; }
+.card { min-width: 0; overflow: hidden; }
+.panel-head { min-height: 74px; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+.panel-head h2, .list-heading h2, .drawer-head h2 { line-height: 1.45; font-size: 18px; font-weight: 680; letter-spacing: -.025em; }
+.panel-head h2 + p, .list-heading h2 + p, .drawer-head h2 + p { margin-top: 4px; }
+.kicker { margin-bottom: 3px; color: var(--muted); font-size: 12px; }
+.button, button.primary, .reset, .quiet, .icon-button, .disclosure, .node-link, .tree-name, .row-action { border: 0; background: none; }
+.button, button.primary, .reset, button.quiet { display: inline-flex; justify-content: center; align-items: center; gap: 7px; min-height: 34px; padding: 6px 12px; border: 1px solid #cfd5e0; border-radius: 7px; background: #fff; color: #46516a; font-weight: 550; white-space: nowrap; }
+.button:hover:not(:disabled), .reset:hover, button.quiet:hover:not(:disabled) { border-color: #969ccc; background: #f6f6ff; color: var(--accent-deep); }
+button.primary { border-color: var(--accent); background: var(--accent); color: #fff; box-shadow: 0 2px 5px rgb(70 79 170 / 12%); }
+button.primary:hover:not(:disabled) { border-color: var(--accent-deep); background: var(--accent-deep); color: #fff; }
+button.primary:disabled, .button:disabled { opacity: .48; }
+.button .icon, .reset .icon, button.primary .icon { width: 16px; height: 16px; }
+.icon-button, .disclosure { display: inline-grid; flex-shrink: 0; place-items: center; padding: 0; border-radius: 5px; color: #68748c; }
+.icon-button { width: 31px; height: 31px; }
+.icon-button:hover:not(:disabled), .disclosure:hover { background: #eceefa; color: var(--accent-deep); }
+.icon-button:disabled { color: #c5cbd6; }
+.icon-button .icon { width: 16px; height: 16px; }
+.tree-body { max-height: min(70vh, 755px); overflow: auto; padding: 9px 7px; scrollbar-width: thin; }
+.tree-row { display: flex; align-items: center; gap: 3px; min-height: 38px; padding-right: 7px; border-radius: 6px; color: #536079; }
+.tree-row:hover { background: #f5f6fa; }
+.tree-row.selected, .tree-row.current-file { background: var(--accent-soft); color: var(--accent-deep); }
+.disclosure, .spacer { width: 19px; height: 25px; flex: 0 0 19px; }
+.disclosure .icon { width: 13px; height: 13px; }
+.tree-name { display: flex; flex: 1; align-items: center; gap: 7px; min-width: 0; min-height: 34px; padding: 4px 0; color: inherit; text-align: left; }
+.tree-name .icon { width: 16px; height: 16px; }
+.tree-name > span:not(.type-icon, .tree-dot) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tree-row.selected .tree-name { font-weight: 650; }
+.tree-dot { display: inline-block; width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; background: #c89958; }
+.tree-dot.done { background: #54a995; }
+.tree-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 9px; padding: 12px 17px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+.tree-legend > span { display: inline-flex; align-items: center; gap: 5px; }
+.path { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 7px; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.list-panel > .path { margin: 15px 20px 0; }
+.path .icon { width: 13px; height: 13px; }
+.path button { padding: 0; color: var(--accent-deep); background: none; border: 0; }
+.path button:hover { text-decoration: underline; }
+.list-heading { align-items: flex-start; padding: 18px 20px; }
+.list-heading > div { min-width: 0; overflow-wrap: anywhere; }
+.group-meta, .root-controls { flex-wrap: wrap; color: #5d6880; font-size: 12px; }
+.list-panel > .group-meta, .list-panel > .root-controls { margin: 0 20px 14px; }
+.root-controls { justify-content: flex-start; gap: 8px; }
+.table-wrap { width: 100%; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+th { padding: 10px 8px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: #f7f8fb; color: #627088; font-size: 12px; font-weight: 600; white-space: nowrap; }
+td { padding: 13px 8px; border-bottom: 1px solid #eef0f5; vertical-align: middle; }
+th:first-child, td:first-child { padding-left: 20px; }
+th:last-child, td:last-child { padding-right: 18px; }
+td:not(:first-child) { white-space: nowrap; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover { background: #fcfcff; }
+.node-link { display: inline-flex; align-items: flex-start; gap: 7px; max-width: 100%; padding: 0; color: #303f59; font-weight: 580; text-align: left; white-space: normal; overflow-wrap: anywhere; }
+button.node-link:hover { color: var(--accent-deep); text-decoration: underline; }
+.node-kind { color: var(--muted); font-size: 12px; }
+.type-icon { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; color: #77839a; }
+.type-icon.folder, .icon.folder { color: #ae762c; }
+.type-icon.book, .icon.book { color: var(--accent); }
+.type-icon.file, .icon.file { color: #698097; }
+.rank { display: inline-flex; min-width: 26px; justify-content: center; align-items: center; padding: 1px 7px; border-radius: 5px; color: var(--accent-deep); background: var(--accent-soft); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.rank.pending { color: var(--amber); background: #fbf2e4; font-weight: 500; }
+.switch { position: relative; display: inline-block; width: 29px; height: 17px; padding: 0; border: 0; border-radius: 12px; background: #9aa5b5; vertical-align: middle; }
+.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 11px; height: 11px; border-radius: 50%; background: #fff; }
+.switch[aria-checked="true"] { background: var(--green); }
+.switch[aria-checked="true"]::after { transform: translateX(12px); }
+.switch:disabled { background: #c6ccd6; }
+.visibility-label { margin-left: 4px; color: #5a667c; font-size: 12px; vertical-align: middle; }
+.row-action { padding: 3px 1px; color: var(--accent-deep); font-size: 13px; font-weight: 600; }
+.row-action:hover { text-decoration: underline; }
+.empty { padding: 24px 16px; color: var(--muted); text-align: center; }
+.panel-note { display: flex; align-items: baseline; gap: 8px; padding: 14px 20px; border-top: 1px solid var(--line); background: #fafbfe; color: var(--muted); font-size: 12px; }
+.panel-note .icon { width: 14px; height: 14px; align-self: flex-start; margin-top: 2px; }
+#order-dialog { position: fixed; inset: 0 0 0 auto; width: min(510px, 100%); max-width: 100%; height: 100vh; height: 100dvh; max-height: 100dvh; margin: 0; padding: 0; overflow: hidden; border: 0; border-left: 1px solid var(--line); color: var(--ink); background: #fff; box-shadow: -12px 0 40px rgb(28 39 66 / 15%); }
+#order-dialog[open] { display: flex; flex-direction: column; }
+#order-dialog::backdrop { background: rgb(32 42 63 / 40%); }
+.drawer-head { align-items: flex-start; padding: 22px 24px 18px; border-bottom: 1px solid var(--line); }
+.drawer-head > div { min-width: 0; overflow-wrap: anywhere; }
+.drawer-body { flex: 1 1 0; min-height: 0; overflow: auto; padding: 19px 24px; }
+.drawer-foot { justify-content: flex-end; flex-wrap: wrap; padding: 16px 24px; border-top: 1px solid var(--line); background: #fff; }
+.drawer-foot .helper { margin-right: auto; }
+.draft-section + .draft-section, .helper + .draft-section { margin-top: 22px; }
+.section-title { justify-content: flex-start; margin-bottom: 8px; font-size: 15px; font-weight: 650; }
+.section-title h3 { font: inherit; }
+.count { display: inline-flex; align-items: center; justify-content: center; min-width: 23px; min-height: 20px; padding: 0 5px; border-radius: 5px; background: #f0f1f7; color: #616c85; font-size: 12px; font-weight: 600; }
+.draft-list { list-style: none; padding: 0; margin: 0; }
+.draft-row, .pending-row { display: flex; align-items: center; gap: 9px; min-height: 46px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 7px; background: #fff; }
+.draft-row + .draft-row, .pending-row + .pending-row { margin-top: 5px; }
+.ordinal { display: inline-grid; flex: 0 0 24px; width: 24px; height: 24px; place-items: center; border-radius: 6px; background: var(--accent-soft); color: var(--accent-deep); font-size: 12px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.draft-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.row-tools { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 1px; }
+.pending-row .row-action { margin-left: auto; white-space: nowrap; }
+.empty-draft { padding: 17px 14px; border: 1px dashed #cbd1e2; border-radius: 7px; background: #f8f9fc; color: var(--muted); text-align: center; font-size: 13px; }
+.helper { overflow-wrap: anywhere; }
+.toast { position: fixed; z-index: 5; left: 50%; bottom: 24px; transform: translateX(-50%); width: max-content; max-width: calc(100% - 32px); padding: 10px 17px; border-radius: 8px; background: #303c51; color: #fff; box-shadow: 0 5px 23px rgb(28 39 66 / 17%); }
+@media (max-width: 1279px) {
+  .shell { grid-template-columns: 196px minmax(0, 1fr); }
+  .brand { padding: 0 15px; font-size: 16px; }
+  .panels { grid-template-columns: minmax(205px, .74fr) minmax(0, 1.7fr); gap: 12px; }
+  .main { padding-inline: 18px; }
+  .list-heading { flex-wrap: wrap; }
+}
+@media (max-width: 1080px) {
+  .shell { grid-template-columns: 66px minmax(0, 1fr); }
+  .sidebar nav { padding-inline: 6px; }
+  .brand, .nav-item { justify-content: center; gap: 0; padding-inline: 0; }
+  .brand > span:not(.brand-icon), .nav-item > span:not(.icon) { display: none; }
+  .panels { grid-template-columns: minmax(216px, .74fr) minmax(0, 1.7fr); }
+}
+@media (max-width: 800px) {
+  .panels { grid-template-columns: minmax(0, 1fr); }
+  .tree-body { max-height: 270px; }
+  .topbar { padding-inline: 18px; }
+  .progress-block { width: min(100%, 180px); }
+}
+@media (max-width: 560px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .sidebar { display: none; }
+  .main { padding: 18px 12px; }
+  .topbar { min-height: 46px; padding-inline: 14px; }
+  .page-heading { align-items: flex-start; margin-bottom: 14px; }
+  .page-heading p { font-size: 12px; }
+  .bookbar { display: grid; padding: 13px; gap: 12px; }
+  .book-filters { display: grid; }
+  .book-picker select { min-width: 0; }
+  .progress-block { width: 100%; }
+  .panel-head, .list-heading { padding: 13px; }
+  .list-heading { align-items: center; }
+  .list-panel > .path, .list-panel > .group-meta, .list-panel > .root-controls { margin-inline: 13px; }
+  th, td { padding-inline: 5px; }
+  th:first-child, td:first-child { padding-left: 10px; }
+  th:last-child, td:last-child { padding-right: 10px; }
+  .panel-note { padding: 12px; }
+  .tree-body { max-height: 225px; }
+  .drawer-head, .drawer-body, .drawer-foot { padding: 15px; }
+  .row-tools .icon-button { width: 27px; }
+  .draft-row, .pending-row { gap: 6px; }
+}
+.node-cell { display: flex; align-items: flex-start; gap: 10px; }
+.node-cell > div { min-width: 0; overflow-wrap: anywhere; }
+.node-cell > .type-icon { width: 30px; height: 30px; border-radius: 7px; background: #fbf3e7; }
+.node-cell > .type-icon.file { background: #edf2f6; }
+.node-cell .node-kind { margin-top: 2px; }
+.focused-row td, .focused-row:hover td { background: #f0f1ff; }
+.visibility-control { display: inline-flex; align-items: center; white-space: nowrap; }
+.drawer-body > .path { margin-bottom: 7px; font-size: 14px; color: var(--ink); font-weight: 600; }
+#drawer-feedback { flex: 1 1 150px; color: var(--muted); font-size: 12px; }
+.pending-row .row-action .icon { width: 14px; height: 14px; }
+@media (max-width: 560px) {
+  .node-cell > .type-icon { display: none; }
+  .node-cell { display: block; }
+}
+  </style>
+</head>
+<body>
+  <!-- Embedded icons from @element-plus/icons-vue.
+The MIT License (MIT)
+
+Copyright (c) 2020-PRESENT Element Plus (https://github.com/element-plus)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+  -->
+  <svg aria-hidden="true" width="0" height="0" style="position:absolute;overflow:hidden" xmlns="http://www.w3.org/2000/svg">
+<symbol id="icon-sun" viewBox="0 0 1024 1024"><path fill="currentColor" d="M512 704a192 192 0 1 0 0-384 192 192 0 0 0 0 384m0 64a256 256 0 1 1 0-512 256 256 0 0 1 0 512m0-704a32 32 0 0 1 32 32v64a32 32 0 0 1-64 0V96a32 32 0 0 1 32-32m0 768a32 32 0 0 1 32 32v64a32 32 0 1 1-64 0v-64a32 32 0 0 1 32-32M195.2 195.2a32 32 0 0 1 45.248 0l45.248 45.248a32 32 0 1 1-45.248 45.248L195.2 240.448a32 32 0 0 1 0-45.248m543.104 543.104a32 32 0 0 1 45.248 0l45.248 45.248a32 32 0 0 1-45.248 45.248l-45.248-45.248a32 32 0 0 1 0-45.248M64 512a32 32 0 0 1 32-32h64a32 32 0 0 1 0 64H96a32 32 0 0 1-32-32m768 0a32 32 0 0 1 32-32h64a32 32 0 1 1 0 64h-64a32 32 0 0 1-32-32M195.2 828.8a32 32 0 0 1 0-45.248l45.248-45.248a32 32 0 0 1 45.248 45.248L240.448 828.8a32 32 0 0 1-45.248 0m543.104-543.104a32 32 0 0 1 0-45.248l45.248-45.248a32 32 0 0 1 45.248 45.248l-45.248 45.248a32 32 0 0 1-45.248 0"></path></symbol>
+<symbol id="icon-planet" viewBox="0 0 1024 1024"><path fill="currentColor" d="M240.448 240.448a384 384 0 1 0 559.424 525.696 448 448 0 0 1-542.016-542.08 391 391 0 0 0-17.408 16.384m181.056 362.048a384 384 0 0 0 525.632 16.384A448 448 0 1 1 405.056 76.8a384 384 0 0 0 16.448 525.696"></path></symbol>
+<symbol id="icon-book" viewBox="0 0 1024 1024"><path fill="currentColor" d="m512 863.36 384-54.848v-638.72L525.568 222.72a96 96 0 0 1-27.136 0L128 169.792v638.72zM137.024 106.432l370.432 52.928a32 32 0 0 0 9.088 0l370.432-52.928A64 64 0 0 1 960 169.792v638.72a64 64 0 0 1-54.976 63.36l-388.48 55.488a32 32 0 0 1-9.088 0l-388.48-55.488A64 64 0 0 1 64 808.512v-638.72a64 64 0 0 1 73.024-63.36"></path><path fill="currentColor" d="M480 192h64v704h-64z"></path></symbol>
+<symbol id="icon-catalogue" viewBox="0 0 1024 1024"><path fill="currentColor" d="M192 736h640V128H256a64 64 0 0 0-64 64zm64-672h608a32 32 0 0 1 32 32v672a32 32 0 0 1-32 32H160l-32 57.536V192A128 128 0 0 1 256 64"></path><path fill="currentColor" d="M240 800a48 48 0 1 0 0 96h592v-96zm0-64h656v160a64 64 0 0 1-64 64H240a112 112 0 0 1 0-224m144-608v250.88l96-76.8 96 76.8V128zm-64-64h320v381.44a32 32 0 0 1-51.968 24.96L480 384l-108.032 86.4A32 32 0 0 1 320 445.44z"></path></symbol>
+<symbol id="icon-note" viewBox="0 0 1024 1024"><path fill="currentColor" d="M832 384H576V128H192v768h640zm-26.496-64L640 154.496V320zM160 64h480l256 256v608a32 32 0 0 1-32 32H160a32 32 0 0 1-32-32V96a32 32 0 0 1 32-32m160 448h384v64H320zm0-192h160v64H320zm0 384h384v64H320z"></path></symbol>
+<symbol id="icon-reset" viewBox="0 0 1024 1024"><path fill="currentColor" d="M289.088 296.704h92.992a32 32 0 0 1 0 64H232.96a32 32 0 0 1-32-32V179.712a32 32 0 0 1 64 0v50.56a384 384 0 0 1 643.84 282.88 384 384 0 0 1-383.936 384 384 384 0 0 1-384-384h64a320 320 0 1 0 640 0 320 320 0 0 0-555.712-216.448z"></path></symbol>
+<symbol id="icon-sort" viewBox="0 0 1024 1024"><path fill="currentColor" d="M384 96a32 32 0 0 1 64 0v786.752a32 32 0 0 1-54.592 22.656L95.936 608a32 32 0 0 1 0-45.312h.128a32 32 0 0 1 45.184 0L384 805.632zm192 45.248a32 32 0 0 1 54.592-22.592L928.064 416a32 32 0 0 1 0 45.312h-.128a32 32 0 0 1-45.184 0L640 218.496V928a32 32 0 1 1-64 0z"></path></symbol>
+<symbol id="icon-right" viewBox="0 0 1024 1024"><path fill="currentColor" d="M340.864 149.312a30.59 30.59 0 0 0 0 42.752L652.736 512 340.864 831.872a30.59 30.59 0 0 0 0 42.752 29.12 29.12 0 0 0 41.728 0L714.24 534.336a32 32 0 0 0 0-44.672L382.592 149.376a29.12 29.12 0 0 0-41.728 0z"></path></symbol>
+<symbol id="icon-up" viewBox="0 0 1024 1024"><path fill="currentColor" d="m488.832 344.32-339.84 356.672a32 32 0 0 0 0 44.16l.384.384a29.44 29.44 0 0 0 42.688 0l320-335.872 319.872 335.872a29.44 29.44 0 0 0 42.688 0l.384-.384a32 32 0 0 0 0-44.16L535.168 344.32a32 32 0 0 0-46.336 0"></path></symbol>
+<symbol id="icon-down" viewBox="0 0 1024 1024"><path fill="currentColor" d="M831.872 340.864 512 652.672 192.128 340.864a30.59 30.59 0 0 0-42.752 0 29.12 29.12 0 0 0 0 41.6L489.664 714.24a32 32 0 0 0 44.672 0l340.288-331.712a29.12 29.12 0 0 0 0-41.728 30.59 30.59 0 0 0-42.752 0z"></path></symbol>
+<symbol id="icon-folder" viewBox="0 0 1024 1024"><path fill="currentColor" d="M128 192v640h768V320H485.76L357.504 192zm-32-64h287.872l128.384 128H928a32 32 0 0 1 32 32v576a32 32 0 0 1-32 32H96a32 32 0 0 1-32-32V160a32 32 0 0 1 32-32"></path></symbol>
+<symbol id="icon-file" viewBox="0 0 1024 1024"><path fill="currentColor" d="M832 384H576V128H192v768h640zm-26.496-64L640 154.496V320zM160 64h480l256 256v608a32 32 0 0 1-32 32H160a32 32 0 0 1-32-32V96a32 32 0 0 1 32-32m160 448h384v64H320zm0-192h160v64H320zm0 384h384v64H320z"></path></symbol>
+<symbol id="icon-plus" viewBox="0 0 1024 1024"><path fill="currentColor" d="M480 480V128a32 32 0 0 1 64 0v352h352a32 32 0 1 1 0 64H544v352a32 32 0 1 1-64 0V544H128a32 32 0 0 1 0-64z"></path></symbol>
+<symbol id="icon-close" viewBox="0 0 1024 1024"><path fill="currentColor" d="M764.288 214.592 512 466.88 259.712 214.592a31.936 31.936 0 0 0-45.12 45.12L466.752 512 214.528 764.224a31.936 31.936 0 1 0 45.12 45.184L512 557.184l252.288 252.288a31.936 31.936 0 0 0 45.12-45.12L557.12 512.064l252.288-252.352a31.936 31.936 0 1 0-45.12-45.184z"></path></symbol>
+</svg>
+  <div class="shell">
+    <aside class="sidebar" aria-label="后台栏目">
+      <div class="brand"><span class="brand-icon" data-icon="sun"></span><span>SolarNotes 管理后台</span></div>
+      <nav aria-label="后台导航预览">
+        <span class="nav-item inactive" title="天体管理"><i data-icon="planet"></i><span>天体管理</span></span>
+        <span class="nav-item inactive" title="书籍管理"><i data-icon="book"></i><span>书籍管理</span></span>
+        <span class="nav-item active" aria-current="page" title="目录管理"><i data-icon="catalogue"></i><span>目录管理</span></span>
+        <span class="nav-item inactive" title="笔记管理"><i data-icon="note"></i><span>笔记管理</span></span>
+      </nav>
+    </aside>
+    <div class="workspace">
+      <header class="topbar">
+        <span class="crumbs">管理后台　/　<strong>目录管理</strong></span>
+        <span class="preview-label">交互原型 · 仅在本页生效</span>
+      </header>
+      <main class="main">
+        <div class="page-heading">
+          <div><h1>目录管理</h1><p>按天体选择书籍，再到目录树中编排同级节点。</p></div>
+          <button type="button" id="reset-demo" class="button quiet reset"><i data-icon="reset"></i>还原示例</button>
+        </div>
+        <section class="bookbar" aria-label="选择天体和书籍">
+          <div class="book-filters">
+            <div class="book-picker"><label for="planet-select">所属天体</label><select id="planet-select"></select></div>
+            <div class="book-picker"><label for="book-select">书籍</label><select id="book-select" disabled></select></div>
+            <div class="book-status-field" id="book-status" hidden>
+              <span>书籍显示状态</span><strong class="book-status-value" id="book-status-value"></strong>
+            </div>
+          </div>
+          <div class="progress-block" id="book-progress" hidden>
+            <div class="progress-label"><span>全书排序进度</span><strong id="progress-text"></strong></div>
+            <div class="track" role="progressbar" aria-label="已排序的非根节点" aria-valuemin="0" id="progress-track"><i id="progress-bar"></i></div>
+          </div>
+        </section>
+        <div class="card selection-hint" id="selection-hint" role="status"></div>
+        <div class="panels" id="catalogue-panels" hidden>
+          <section class="card tree-panel" aria-labelledby="tree-title">
+            <div class="panel-head">
+              <div><h2 id="tree-title">目录树</h2><div class="muted" id="tree-summary"></div></div>
+              <button type="button" id="expand-tree" class="row-action"></button>
+            </div>
+            <div class="tree-body" id="tree-content" aria-label="浏览书籍目录"></div>
+            <div class="tree-legend"><span><i class="tree-dot done"></i>已排序</span><span><i class="tree-dot"></i>待排序</span></div>
+          </section>
+          <section class="card list-panel" aria-labelledby="list-title" id="list-content">
+            <div class="path" id="current-path" aria-label="当前目录路径"></div>
+            <div class="list-heading">
+              <div><h2 id="list-title" tabindex="-1"></h2><p id="list-summary"></p></div>
+              <button type="button" class="button primary" id="edit-order"><i data-icon="sort"></i>编排本级</button>
+            </div>
+            <div class="root-controls" id="root-controls" hidden></div>
+            <div class="table-wrap">
+              <table aria-label="当前目录的直接子节点">
+                <thead><tr><th scope="col">节点名称</th><th scope="col">同级序号</th><th scope="col">显示状态</th><th scope="col">排序操作</th></tr></thead>
+                <tbody id="children-list"></tbody>
+              </table>
+            </div>
+            <div class="empty" id="list-empty" hidden></div>
+            <div class="panel-note" id="list-note"></div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </div>
+  <dialog id="order-dialog" aria-labelledby="order-title">
+    <header class="drawer-head">
+      <h2 id="order-title">编排同级节点</h2>
+      <button type="button" class="icon-button" id="drawer-close" aria-label="关闭编排"><i data-icon="close"></i></button>
+    </header>
+    <div class="drawer-body">
+      <p id="drawer-parent" class="path"></p>
+      <p class="helper">按阅读顺序加入节点，用上下箭头调序。移回待排区的节点会在保存后清除序号并隐藏。若移回的是可见目录，它的全部下级也会隐藏，原有序号保留。</p>
+      <section class="draft-section">
+        <h3 class="section-title">阅读顺序 <span class="count" id="draft-count"></span></h3>
+        <div class="draft-list" id="ranked-list"></div>
+      </section>
+      <section class="draft-section">
+        <h3 class="section-title">待排节点 <span class="count" id="pending-count"></span></h3>
+        <div class="draft-list" id="pending-list"></div>
+      </section>
+    </div>
+    <footer class="drawer-foot">
+      <span id="drawer-feedback" aria-live="polite"></span>
+      <button type="button" class="button" id="drawer-cancel">取消</button>
+      <button type="button" class="button primary" id="drawer-save">保存排序</button>
+    </footer>
+  </dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <script type="application/json" id="catalogue-snapshot">
+{
+  "planets": [
+    {
+      "id": "2123435429930733568",
+      "label": "太阳"
+    }
+  ],
+  "books": [
+    {
+      "id": "2123435620763176960",
+      "title": "MySQL是怎样运行的",
+      "planet_id": "2123435429930733568",
+      "display_status": "visible"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "2123684178040987648",
+      "book": "2123435620763176960",
+      "kind": "folder",
+      "name": "MySQL是怎样运行的",
+      "sort": 0,
+      "parent": "0",
+      "visible": true
+    },
+    {
+      "id": "2123684178049376256",
+      "book": "2123435620763176960",
+      "kind": "folder",
+      "name": "第1章 装作自己是个小白--初识MySQL",
+      "sort": null,
+      "parent": "2123684178040987648",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376257",
+      "book": "2123435620763176960",
+      "kind": "folder",
+      "name": "3. 启动MySQL服务器程序",
+      "sort": null,
+      "parent": "2123684178049376256",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376258",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "1. 在类Unix系统中启动服务器程序.md",
+      "sort": null,
+      "parent": "2123684178049376257",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376260",
+      "book": "2123435620763176960",
+      "kind": "folder",
+      "name": "6. 服务器处理客户端请求",
+      "sort": null,
+      "parent": "2123684178049376256",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376261",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "0. 大致过程.md",
+      "sort": null,
+      "parent": "2123684178049376260",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376263",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "1. 连接管理.md",
+      "sort": null,
+      "parent": "2123684178049376260",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376265",
+      "book": "2123435620763176960",
+      "kind": "folder",
+      "name": "2. 解析与优化",
+      "sort": null,
+      "parent": "2123684178049376260",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376266",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "1. 查询缓存.md",
+      "sort": null,
+      "parent": "2123684178049376265",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376268",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "2. 语法解析.md",
+      "sort": null,
+      "parent": "2123684178049376265",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376270",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "3. 查询优化.md",
+      "sort": null,
+      "parent": "2123684178049376265",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376272",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "3. 存储引擎.md",
+      "sort": null,
+      "parent": "2123684178049376260",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376274",
+      "book": "2123435620763176960",
+      "kind": "folder",
+      "name": "img",
+      "sort": null,
+      "parent": "2123684178049376260",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376275",
+      "book": "2123435620763176960",
+      "kind": "folder",
+      "name": "查询请求执行过程.jpg",
+      "sort": null,
+      "parent": "2123684178049376274",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376276",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "8. 关于存储引擎的一些操作.md",
+      "sort": null,
+      "parent": "2123684178049376256",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376278",
+      "book": "2123435620763176960",
+      "kind": "folder",
+      "name": "第2章 MySQL的调控按钮--启动选项和系统变量",
+      "sort": null,
+      "parent": "2123684178040987648",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376279",
+      "book": "2123435620763176960",
+      "kind": "folder",
+      "name": "1. 启动选项和配置文件",
+      "sort": null,
+      "parent": "2123684178049376278",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376280",
+      "book": "2123435620763176960",
+      "kind": "folder",
+      "name": "2. 在配置文件中使用选项",
+      "sort": null,
+      "parent": "2123684178049376279",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376281",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "1. 配置文件的路径.md",
+      "sort": null,
+      "parent": "2123684178049376280",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376283",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "2. 配置文件的内容.md",
+      "sort": null,
+      "parent": "2123684178049376280",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376285",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "3. 特定MySQL版本的专用选项组.md",
+      "sort": null,
+      "parent": "2123684178049376280",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376287",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "5. 同一个配置文件中多个组的优先级.md",
+      "sort": null,
+      "parent": "2123684178049376280",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376289",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "3. 在 命令行和配置文件中启动选项的区别.md",
+      "sort": null,
+      "parent": "2123684178049376279",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376291",
+      "book": "2123435620763176960",
+      "kind": "folder",
+      "name": "2. 系统变量",
+      "sort": null,
+      "parent": "2123684178049376278",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376292",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "2. 查看系统变量.md",
+      "sort": null,
+      "parent": "2123684178049376291",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376294",
+      "book": "2123435620763176960",
+      "kind": "folder",
+      "name": "3. 设置系统变量",
+      "sort": null,
+      "parent": "2123684178049376291",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376295",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "2. 服务器程序运行过程中设置.md",
+      "sort": null,
+      "parent": "2123684178049376294",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376297",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "3. 启动选项和系统变量的区别.md",
+      "sort": null,
+      "parent": "2123684178049376294",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376299",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "3. 状态变量.md",
+      "sort": null,
+      "parent": "2123684178049376278",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376301",
+      "book": "2123435620763176960",
+      "kind": "folder",
+      "name": "第3章 字符集和比较规则",
+      "sort": null,
+      "parent": "2123684178040987648",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376302",
+      "book": "2123435620763176960",
+      "kind": "folder",
+      "name": "1. 字符集和比较规则简介",
+      "sort": null,
+      "parent": "2123684178049376301",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376303",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "1. 字符集简介.md",
+      "sort": null,
+      "parent": "2123684178049376302",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376305",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "2. 比较规则简介.md",
+      "sort": null,
+      "parent": "2123684178049376302",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376307",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "3. 一些重要的字符集.md",
+      "sort": null,
+      "parent": "2123684178049376302",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376309",
+      "book": "2123435620763176960",
+      "kind": "folder",
+      "name": "2. MySQL中支持的字符集和比较规则",
+      "sort": null,
+      "parent": "2123684178049376301",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376310",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "1. MySQL中的utf8和utf8-mb4.md",
+      "sort": null,
+      "parent": "2123684178049376309",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376312",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "2. 字符集的查看.md",
+      "sort": null,
+      "parent": "2123684178049376309",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376314",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "3. 比较规则的查看.md",
+      "sort": null,
+      "parent": "2123684178049376309",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376316",
+      "book": "2123435620763176960",
+      "kind": "folder",
+      "name": "4. 字符集和比较规则的应用",
+      "sort": null,
+      "parent": "2123684178049376301",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376317",
+      "book": "2123435620763176960",
+      "kind": "folder",
+      "name": "1. 各级别的字符集和比较规则",
+      "sort": null,
+      "parent": "2123684178049376316",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376318",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "0. 都有什么级别.md",
+      "sort": null,
+      "parent": "2123684178049376317",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376320",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "1. 服务器级别.md",
+      "sort": null,
+      "parent": "2123684178049376317",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376322",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "2. 数据库级别.md",
+      "sort": null,
+      "parent": "2123684178049376317",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376324",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "3. 表级别.md",
+      "sort": null,
+      "parent": "2123684178049376317",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376326",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "4. 列级别.md",
+      "sort": null,
+      "parent": "2123684178049376317",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376328",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "5. 仅修改字符集或仅修改比较规则.md",
+      "sort": null,
+      "parent": "2123684178049376317",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376330",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "6. 各级别字符集和比较规则小结.md",
+      "sort": null,
+      "parent": "2123684178049376317",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376332",
+      "book": "2123435620763176960",
+      "kind": "folder",
+      "name": "2. 客户端和服务器通信过程中使用的字符集",
+      "sort": null,
+      "parent": "2123684178049376316",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376333",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "1. 编码和解码使用的字符集不一致.md",
+      "sort": null,
+      "parent": "2123684178049376332",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376335",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "2. 字符集转换的概念.md",
+      "sort": null,
+      "parent": "2123684178049376332",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376337",
+      "book": "2123435620763176960",
+      "kind": "folder",
+      "name": "3. MySQL中的字符集转换过程",
+      "sort": null,
+      "parent": "2123684178049376332",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376338",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "1. 客户端发送请求.md",
+      "sort": null,
+      "parent": "2123684178049376337",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376340",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "2. 服务器接收请求.md",
+      "sort": null,
+      "parent": "2123684178049376337",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376342",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "3. 服务器处理请求.md",
+      "sort": null,
+      "parent": "2123684178049376337",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376344",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "4. 服务器生成响应.md",
+      "sort": null,
+      "parent": "2123684178049376337",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376346",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "5. 客户端接收到响应.md",
+      "sort": null,
+      "parent": "2123684178049376337",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376348",
+      "book": "2123435620763176960",
+      "kind": "folder",
+      "name": "img",
+      "sort": null,
+      "parent": "2123684178049376337",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376349",
+      "book": "2123435620763176960",
+      "kind": "folder",
+      "name": "客户端与服务器建立连接后服务器维护的变量.jpg",
+      "sort": null,
+      "parent": "2123684178049376348",
+      "visible": false
+    },
+    {
+      "id": "2123684178049376350",
+      "book": "2123435620763176960",
+      "kind": "file",
+      "name": "3. 比较规则的应用.md",
+      "sort": null,
+      "parent": "2123684178049376316",
+      "visible": false
+    }
+  ]
+}
+  </script>
+  <script>
+'use strict'
+
+/** Immutable source data. Snowflake IDs remain strings throughout the prototype. */
+const snapshot = JSON.parse(document.getElementById('catalogue-snapshot').textContent)
+const byName = new Intl.Collator('zh-CN', { numeric: true })
+let nodes = new Map()
+let currentBookId = ''
+let currentFolderId = ''
+let currentFileId = ''
+let expanded = new Set()
+let toastTimer
+
+function byId(id) {
+    return document.getElementById(id)
+}
+
+function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, function (character) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]
+    })
+}
+
+function icon(name) {
+    return '<svg class="icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><use href="#icon-' + name + '"></use></svg>'
+}
+
+function announce(message) {
+    clearTimeout(toastTimer)
+    const toast = byId('toast')
+    toast.textContent = message
+    toast.hidden = false
+    toastTimer = setTimeout(function () { toast.hidden = true }, 3400)
+}
+
+function nodeById(id) {
+    return nodes.get(id)
+}
+
+function bookNodes(bookId = currentBookId) {
+    return Array.from(nodes.values()).filter(function (node) { return node.book === bookId })
+}
+
+function compareNodeNames(left, right) {
+    return byName.compare(left.name, right.name) || byName.compare(left.id, right.id)
+}
+
+function getChildren(parentNode) {
+    return bookNodes(parentNode.book).filter(function (node) {
+        return node.parent === parentNode.id
+    }).sort(function (left, right) {
+        if (left.sort !== right.sort) {
+            if (left.sort === null) return 1
+            if (right.sort === null) return -1
+            return left.sort - right.sort
+        }
+        return compareNodeNames(left, right)
+    })
+}
+
+function setNodeVisibility(node, visible) {
+    if (node.visible === visible) return
+    node.visible = visible
+    if (visible || node.kind !== 'folder') return
+
+    const folders = [node]
+    while (folders.length > 0) {
+        const folder = folders.pop()
+        for (const child of getChildren(folder)) {
+            child.visible = false
+            if (child.kind === 'folder') folders.push(child)
+        }
+    }
+}
+
+function pathTo(node) {
+    const path = []
+    while (node) {
+        path.unshift(node)
+        node = nodeById(node.parent)
+    }
+    return path
+}
+
+function openBook(id) {
+    const planetId = byId('planet-select').value
+    const book = snapshot.books.find(function (item) { return item.id === id && item.planet_id === planetId })
+    currentBookId = book ? book.id : ''
+    byId('book-status').hidden = !book
+    byId('book-progress').hidden = !book
+    byId('catalogue-panels').hidden = !book
+    byId('selection-hint').hidden = book !== undefined
+    const status = byId('book-status-value')
+    status.dataset.status = book ? book.display_status : ''
+    status.textContent = ''
+    if (book) status.textContent = book.display_status === 'visible' ? '显示' : '隐藏'
+    const root = bookNodes().find(function (node) { return node.parent === '0' })
+    currentFolderId = root ? root.id : ''
+    currentFileId = ''
+    expanded = new Set()
+    if (root) {
+        expanded.add(root.id)
+    }
+    renderPage()
+}
+
+function selectNode(node) {
+    if (node.kind === 'file') {
+        currentFileId = node.id
+        currentFolderId = node.parent
+    } else {
+        currentFileId = ''
+        currentFolderId = node.id
+    }
+    pathTo(nodeById(currentFolderId)).forEach(function (ancestor) { expanded.add(ancestor.id) })
+    renderPage()
+}
+
+function renderTree(allNodes, root) {
+    const foldersWithChildren = allNodes.filter(function (node) {
+        return node.kind === 'folder' && getChildren(node).length > 0
+    })
+    const allOpen = foldersWithChildren.length > 0 && foldersWithChildren.every(function (node) { return expanded.has(node.id) })
+    const expandButton = byId('expand-tree')
+    expandButton.textContent = allOpen ? '收起全部' : '展开全部'
+    expandButton.dataset.mode = allOpen ? 'collapse' : 'expand'
+    expandButton.disabled = foldersWithChildren.length === 0
+    byId('tree-summary').textContent = '全书 ' + allNodes.length + ' 个节点'
+    const selectedId = currentFileId || currentFolderId
+    const rows = []
+    function visit(node, depth) {
+        const children = getChildren(node)
+        const hasChildren = children.length > 0
+        const isExpanded = expanded.has(node.id)
+        const selected = selectedId === node.id
+        const title = escapeHtml(node.name)
+        const disclosure = hasChildren
+            ? '<button type="button" class="disclosure" data-tree-action="expand" data-id="' + node.id + '" aria-expanded="' + isExpanded + '" aria-label="' + (isExpanded ? '收起' : '展开') + title + '">' + icon(isExpanded ? 'down' : 'right') + '</button>'
+            : '<span class="spacer"></span>'
+        const glyph = node.parent === '0' ? 'book' : node.kind
+        const state = node.sort === null ? '待排序' : '已排序'
+        rows.push('<div class="tree-row' + (selected ? ' selected' : '') + '" style="padding-left:' + (8 + depth * 12) + 'px">' + disclosure +
+            '<button type="button" class="tree-name" data-tree-action="open" data-id="' + node.id + '"' + (selected ? ' aria-current="true"' : '') + ' title="' + title + '"><i class="type-icon ' + glyph + '">' + icon(glyph) + '</i><span>' + title + '</span></button>' +
+            '<i class="tree-dot' + (node.sort === null ? '' : ' done') + '" role="img" aria-label="' + state + '" title="' + state + '"></i></div>')
+        if (isExpanded) children.forEach(function (child) { visit(child, depth + 1) })
+    }
+    if (root) visit(root, 0)
+    byId('tree-content').innerHTML = rows.join('')
+}
+
+function visibilityControl(node) {
+    const disabled = node.sort === null
+    const status = node.visible ? '显示' : '隐藏'
+    let title = '切换此节点的显示状态'
+    if (disabled) title = '请先为此节点排序'
+    else if (node.kind === 'folder') title = node.visible ? '隐藏此目录及全部下级' : '仅显示此目录'
+    return '<span class="visibility-control"><button type="button" class="switch" role="switch" aria-checked="' + node.visible + '" data-list-action="visibility" data-id="' + node.id + '" aria-label="' + escapeHtml(node.name) + '的显示状态" title="' + title + '"' + (disabled ? ' disabled' : '') + '></button><span class="visibility-label">' + status + '</span></span>'
+}
+
+function childRow(node) {
+    const title = escapeHtml(node.name)
+    const isFolder = node.kind === 'folder'
+    const name = isFolder
+        ? '<button type="button" class="node-link" data-list-action="open" data-id="' + node.id + '">' + title + '</button>'
+        : '<span class="node-text">' + title + '</span>'
+    const subline = isFolder ? '文件夹 · ' + getChildren(node).length + ' 个子节点' : '文件'
+    const pending = node.sort === null
+    return '<tr' + (node.id === currentFileId ? ' class="focused-row"' : '') + '><td><div class="node-cell"><i class="type-icon ' + node.kind + '">' +
+        icon(node.kind) + '</i><div>' + name + '<div class="node-kind">' + subline + '</div></div></div></td>' +
+        '<td><span class="rank' + (pending ? ' pending' : '') + '">' + (pending ? '待排序' : node.sort) + '</span></td>' +
+        '<td>' + visibilityControl(node) + '</td><td><button type="button" class="row-action" data-list-action="order" data-id="' + node.id + '" aria-label="' +
+        (pending ? '编入顺序' : '调整顺序') + '：' + title + '">' + (pending ? '编入顺序' : '调整顺序') + '</button></td></tr>'
+}
+
+function renderList(folder) {
+    const children = folder ? getChildren(folder) : []
+    const path = pathTo(folder)
+    byId('current-path').innerHTML = path.map(function (node, index) {
+        const label = index === 0 ? '书籍根目录' : escapeHtml(node.name)
+        if (index === path.length - 1) return '<span>' + label + '</span>'
+        return '<button type="button" class="row-action" data-list-action="open" data-id="' + node.id + '">' + label + '</button>'
+    }).join('<span aria-hidden="true"> / </span>')
+    byId('list-title').textContent = folder ? folder.name : '目录尚未导入'
+    const count = children.filter(function (node) { return node.sort !== null }).length
+    byId('list-summary').textContent = '本级 ' + children.length + ' 项 · 已排序 ' + count + ' 项 · 待排序 ' + (children.length - count) + ' 项'
+    const controls = byId('root-controls')
+    controls.hidden = !folder
+    if (folder) {
+        const caption = folder.parent === '0' ? '根节点 · 固定序号 0' : '当前目录 · ' + (folder.sort === null ? '待排序' : '序号 ' + folder.sort)
+        controls.innerHTML = '<span>' + caption + '</span>' + visibilityControl(folder)
+    }
+    byId('edit-order').disabled = children.length === 0
+    byId('children-list').innerHTML = children.map(childRow).join('')
+    byId('list-empty').hidden = children.length > 0
+    byId('list-empty').textContent = folder ? '此目录下暂无子节点。' : '这本书尚无目录节点。'
+    const hiddenParent = path.slice().reverse().find(function (node) { return !node.visible })
+    let note = '待排节点按名称排列。关闭目录的显示开关时，全部下级随之隐藏，序号保留。重新显示目录时，仅显示该目录。'
+    if (hiddenParent) note += ' 目录「' + hiddenParent.name + '」当前隐藏。'
+    byId('list-note').textContent = note
+}
+
+function renderPage() {
+    const allNodes = bookNodes()
+    const root = allNodes.find(function (node) { return node.parent === '0' })
+    const nonRoots = allNodes.filter(function (node) { return node.parent !== '0' })
+    const ranked = nonRoots.filter(function (node) { return node.sort !== null }).length
+    byId('progress-text').textContent = ranked + ' / ' + nonRoots.length
+    byId('progress-track').setAttribute('aria-valuemax', String(nonRoots.length || 1))
+    byId('progress-track').setAttribute('aria-valuenow', String(ranked))
+    byId('progress-track').setAttribute('aria-valuetext', '除根节点外，已排序 ' + ranked + ' 项，共 ' + nonRoots.length + ' 项')
+    byId('progress-bar').style.width = (nonRoots.length ? ranked * 100 / nonRoots.length : 0) + '%'
+    renderTree(allNodes, root)
+    renderList(nodeById(currentFolderId))
+}
+
+function selectPlanet(planetId) {
+    const books = snapshot.books.filter(function (book) { return book.planet_id === planetId })
+    const selector = byId('book-select')
+    const hint = byId('selection-hint')
+    let prompt = '请选择书籍'
+    hint.textContent = '选择一本书，查看它的目录树。'
+    if (planetId === '') {
+        prompt = '请先选择天体'
+        hint.textContent = '先选择天体，再选择要管理目录的书籍。'
+    } else if (books.length === 0) {
+        prompt = '该天体暂无书籍'
+        hint.textContent = '该天体下暂无书籍，请选择其他天体。'
+    }
+    selector.replaceChildren(new Option(prompt, ''))
+    books.forEach(function (book) { selector.add(new Option(book.title, book.id)) })
+    selector.disabled = books.length === 0
+    openBook('')
+}
+
+function restoreSnapshot() {
+    nodes = new Map(snapshot.nodes.map(function (row) { return [row.id, { ...row }] }))
+    const planets = byId('planet-select')
+    planets.replaceChildren(new Option('请选择天体', ''))
+    snapshot.planets.forEach(function (planet) { planets.add(new Option(planet.label, planet.id)) })
+    selectPlanet(planets.value)
+}
+
+function initialisePage() {
+    document.querySelectorAll('[data-icon]').forEach(function (slot) { slot.innerHTML = icon(slot.dataset.icon) })
+    byId('planet-select').addEventListener('change', function (event) { selectPlanet(event.target.value) })
+    byId('book-select').addEventListener('change', function (event) { openBook(event.target.value) })
+    byId('expand-tree').addEventListener('click', function () {
+        expanded.clear()
+        if (this.dataset.mode === 'expand') {
+            bookNodes().filter(function (node) { return node.kind === 'folder' }).forEach(function (node) { expanded.add(node.id) })
+        }
+        renderPage()
+    })
+    byId('tree-content').addEventListener('click', function (event) {
+        const target = event.target.closest('button[data-tree-action]')
+        if (!target) return
+        const node = nodeById(target.dataset.id)
+        if (target.dataset.treeAction === 'expand') {
+            if (expanded.has(node.id)) expanded.delete(node.id)
+            else expanded.add(node.id)
+            renderPage()
+        } else {
+            selectNode(node)
+        }
+        const replacement = this.querySelector('[data-tree-action="' + target.dataset.treeAction + '"][data-id="' + node.id + '"]')
+        if (replacement) replacement.focus({ preventScroll: true })
+        if (node.kind === 'file' && target.dataset.treeAction === 'open') {
+            const row = document.querySelector('.focused-row')
+            if (row) row.scrollIntoView({ block: 'nearest' })
+        }
+    })
+    byId('edit-order').addEventListener('click', function () { openOrderDrawer(nodeById(currentFolderId)) })
+    byId('list-content').addEventListener('click', function (event) {
+        const target = event.target.closest('button[data-list-action]')
+        if (!target) return
+        const node = nodeById(target.dataset.id)
+        if (target.dataset.listAction === 'open') {
+            selectNode(node)
+            byId('list-title').focus({ preventScroll: true })
+        } else if (target.dataset.listAction === 'order') {
+            openOrderDrawer(nodeById(node.parent), node.id)
+        } else if (target.dataset.listAction === 'visibility' && node.sort !== null) {
+            setNodeVisibility(node, !node.visible)
+            renderPage()
+            this.querySelector('[data-list-action="visibility"][data-id="' + node.id + '"]').focus({ preventScroll: true })
+            announce('「' + node.name + '」已' + (node.visible ? '显示' : '隐藏'))
+        }
+    })
+    byId('reset-demo').addEventListener('click', function () {
+        restoreSnapshot()
+        announce('已还原数据库快照')
+    })
+    restoreSnapshot()
+}
+
+/** Draft IDs only. Node data changes when the user saves. */
+let orderDraft = null
+
+/**
+ * Open an editing session for one sibling group.
+ * @param {Object} parentNode Parent folder in the current book.
+ * @param {string|null} [candidateId] A child selected from the main table.
+ */
+function openOrderDrawer(parentNode, candidateId = null) {
+    const dialog = byId('order-dialog')
+    if (dialog.open) return
+
+    const children = getChildren(parentNode)
+    const original = children.filter(node => node.sort !== null).map(node => node.id)
+    orderDraft = {
+        parentId: parentNode.id,
+        children,
+        expected: orderGroups(children, original),
+        ranked: [...original],
+        opener: document.activeElement,
+    }
+    const candidate = children.find(node => node.id === candidateId)
+    if (candidate && candidate.sort === null) orderDraft.ranked.push(candidate.id)
+
+    byId('drawer-parent').textContent = parentNode.name
+    renderOrderDraft()
+    dialog.showModal()
+    if (candidate) {
+        focusOrderRow(candidate.id)
+    } else {
+        const firstAction = byId('pending-list').querySelector('button')
+        if (firstAction) firstAction.focus()
+    }
+}
+
+/** Make controls with distinguishable accessible names for each chapter. */
+function orderDraftButton(action, node, label, iconName, disabled = false, showLabel = false) {
+    const description = escapeHtml(label + ' · ' + node.name)
+    const text = showLabel ? ' ' + label : ''
+    const className = showLabel ? 'row-action' : 'icon-button'
+    return `<button type="button" class="${className}" data-order-action="${action}" data-node="${escapeHtml(node.id)}" aria-label="${description}" title="${description}"${disabled ? ' disabled' : ''}>${icon(iconName)}${text}</button>`
+}
+
+function renderOrderDraft() {
+    const { children, expected, ranked } = orderDraft
+    const original = expected.sorted_children.map(node => node.id)
+    const pending = children.filter(node => !ranked.includes(node.id)).sort(compareNodeNames)
+    const addedCount = ranked.filter(id => !original.includes(id)).length
+    const removedCount = original.filter(id => !ranked.includes(id)).length
+    byId('draft-count').textContent = String(ranked.length)
+    byId('pending-count').textContent = String(pending.length)
+    byId('ranked-list').innerHTML = ranked.map(function (id, index) {
+        const node = nodeById(id)
+        const actions = [
+            orderDraftButton('up', node, '上移', 'up', index === 0),
+            orderDraftButton('down', node, '下移', 'down', index === ranked.length - 1),
+            orderDraftButton('remove', node, original.includes(id) ? '移回待排' : '撤回加入', 'close', false, true),
+        ]
+        return `<div class="draft-row" data-order-row="${escapeHtml(id)}" tabindex="-1"><span class="ordinal">${index + 1}</span><span class="draft-name">${escapeHtml(node.name)}</span><span class="row-tools">${actions.join('')}</span></div>`
+    }).join('') || '<div class="empty-draft">依次点击下方的「加入」，建立阅读顺序。</div>'
+    byId('pending-list').innerHTML = pending.map(function (node) {
+        return `<div class="draft-row pending-row" data-order-row="${escapeHtml(node.id)}" tabindex="-1"><span class="type-icon ${node.kind}">${icon(node.kind)}</span><span class="draft-name">${escapeHtml(node.name)}</span><span class="row-tools">${orderDraftButton('add', node, '加入', 'plus', false, true)}</span></div>`
+    }).join('') || '<div class="empty-draft">本级所有条目均已加入顺序。</div>'
+
+    const changed = ranked.length !== original.length || ranked.some((id, index) => id !== original[index])
+    byId('drawer-save').disabled = !changed
+    const changes = []
+    if (addedCount > 0) changes.push(`${addedCount} 项加入阅读顺序并显示`)
+    if (removedCount > 0) changes.push(`${removedCount} 项移回待排并隐藏`)
+    let feedback = '可分次保存本级顺序。'
+    if (changes.length > 0) feedback = '保存后，' + changes.join('，') + '。'
+    else if (changed) feedback = '保存后将更新顺序，保留各条目当前的显隐设置。'
+    byId('drawer-feedback').textContent = feedback
+}
+
+/** Keep focus with the item after re-rendering controls. */
+function focusOrderRow(id, preferredAction) {
+    const row = Array.from(byId('order-dialog').querySelectorAll('[data-order-row]'))
+        .find(element => element.dataset.orderRow === id)
+    if (!row) return
+    const controls = Array.from(row.querySelectorAll('button:enabled'))
+    const preferred = controls.find(element => element.dataset.orderAction === preferredAction)
+    const focusTarget = preferred || row
+    focusTarget.focus()
+}
+
+function handleOrderDraftAction(event) {
+    const button = event.target.closest('button[data-order-action]')
+    if (!button || button.disabled || !orderDraft) return
+    const { orderAction, node: id } = button.dataset
+    const { ranked, children } = orderDraft
+    const index = ranked.indexOf(id)
+    const node = children.find(item => item.id === id)
+    if (!node) return
+
+    let nextAction = orderAction
+    if (orderAction === 'add' && index === -1) {
+        ranked.push(id)
+        nextAction = 'remove'
+    } else if (orderAction === 'remove' && index !== -1) {
+        ranked.splice(index, 1)
+        nextAction = 'add'
+    } else if (orderAction === 'up' && index > 0) {
+        ranked.splice(index, 1)
+        ranked.splice(index - 1, 0, id)
+    } else if (orderAction === 'down' && index >= 0 && index < ranked.length - 1) {
+        ranked.splice(index, 1)
+        ranked.splice(index + 1, 0, id)
+    } else {
+        return
+    }
+    renderOrderDraft()
+    focusOrderRow(id, nextAction)
+}
+
+function closeOrderDrawer() {
+    byId('order-dialog').close()
+}
+
+/** Convert the drawer's ordered IDs and remaining siblings to the API representation. */
+function orderGroups(children, ranked) {
+    return {
+        sorted_children: ranked.map(id => ({id})),
+        unsorted_children: children.filter(node => !ranked.includes(node.id)).map(node => ({id: node.id})),
+    }
+}
+
+/** Apply the drawer request to the local example records. */
+function applyLocalOrder({catalogue}) {
+    const {parent_id, expected, target} = catalogue
+    const parent = nodeById(parent_id)
+    if (!parent) return false
+    const children = getChildren(parent)
+    const ranked = children.filter(node => node.sort !== null)
+    const pendingIds = new Set(children.filter(node => node.sort === null).map(node => node.id))
+    const sameRanked = ranked.length === expected.sorted_children.length &&
+        ranked.every((node, index) => node.id === expected.sorted_children[index].id)
+    const samePending = pendingIds.size === expected.unsorted_children.length &&
+        expected.unsorted_children.every(node => pendingIds.has(node.id))
+    if (!sameRanked || !samePending) return false
+
+    target.sorted_children.forEach(function (item, index) {
+        const node = nodeById(item.id)
+        if (node.sort === null) setNodeVisibility(node, true)
+        node.sort = index + 1
+    })
+    target.unsorted_children.forEach(function (item) {
+        const node = nodeById(item.id)
+        node.sort = null
+        setNodeVisibility(node, false)
+    })
+    return true
+}
+
+function saveOrderDraft() {
+    if (!orderDraft || byId('drawer-save').disabled) return
+    const { parentId, children, ranked, expected, opener } = orderDraft
+    const saved = applyLocalOrder({
+        catalogue: {
+            parent_id: parentId,
+            expected,
+            target: orderGroups(children, ranked),
+        },
+    })
+    closeOrderDrawer()
+    renderPage()
+    if (opener && opener.isConnected) {
+        opener.focus()
+    } else {
+        const heading = document.querySelector('.list-heading h2')
+        if (heading) {
+            heading.tabIndex = -1
+            heading.focus({preventScroll: true})
+        }
+    }
+    announce(saved ? '已保存本级编排' : '本级目录已变化，请重新打开抽屉核对顺序。')
+}
+
+byId('order-dialog').addEventListener('click', handleOrderDraftAction)
+byId('order-dialog').addEventListener('close', function () {
+    if (!byId('order-dialog').open) orderDraft = null
+})
+byId('drawer-close').addEventListener('click', closeOrderDrawer)
+byId('drawer-cancel').addEventListener('click', closeOrderDrawer)
+byId('drawer-save').addEventListener('click', saveOrderDraft)
+
+initialisePage()
+  </script>
+</body>
+</html>

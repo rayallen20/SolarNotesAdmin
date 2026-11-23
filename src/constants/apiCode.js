@@ -27,6 +27,16 @@ const API_CODE = {
     BOOK_PLANET_NOT_FOUND: 20102,
     /** 同一天体下的书籍排序值已被占用 */
     BOOK_SORT_OCCUPIED: 20201,
+    /** 所选书籍已不存在. */
+    BOOK_NOT_FOUND: 20202,
+    /** 目录节点已不存在. */
+    CATALOGUE_NOT_FOUND: 20301,
+    /** 同级排序快照已失效. */
+    CATALOGUE_ORDER_CHANGED: 20302,
+    /** 显示该节点前需要先排序. */
+    CATALOGUE_SORT_REQUIRED: 20303,
+    /** 文章正文暂时无法预览. */
+    ARTICLE_PREVIEW_UNAVAILABLE: 20401,
 }
 
 export {API_CODE}

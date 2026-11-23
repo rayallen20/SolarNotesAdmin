@@ -46,12 +46,12 @@
                     </el-menu-item>
 
                     <el-menu-item
-                        :index="getMenuPath('noteList')"
-                        title="笔记管理"
-                        aria-label="笔记管理"
+                        :index="getMenuPath('catalogueList')"
+                        title="目录管理"
+                        aria-label="目录管理"
                     >
-                        <el-icon><Document></Document></el-icon>
-                        <span>笔记管理</span>
+                        <el-icon><Notebook /></el-icon>
+                        <span>目录管理</span>
                     </el-menu-item>
                 </el-menu>
             </nav>
@@ -104,7 +104,7 @@
 </template>
 
 <script setup>
-import {Document, Reading, Sunny, SwitchButton, User} from "@element-plus/icons-vue";
+import {Notebook, Reading, Sunny, SwitchButton, User} from "@element-plus/icons-vue";
 import {useRoute, useRouter} from "vue-router";
 import useUserStore from "@/stores/user";
 import {computed} from "vue";

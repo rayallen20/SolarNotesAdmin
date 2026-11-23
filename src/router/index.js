@@ -45,6 +45,15 @@ const routes = [
                 },
             },
             {
+                path: 'catalogues',
+                name: 'catalogueList',
+                component: () => import('@/views/CataloguePage.vue'),
+                meta: {
+                    title: '目录管理',
+                    description: '编排书籍目录并预览文章',
+                },
+            },
+            {
                 path: 'notes',
                 name: 'noteList',
                 component: () => import('@/views/PlaceholderPage.vue'),

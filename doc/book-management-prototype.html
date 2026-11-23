@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>书籍管理 · SolarNotes 管理后台</title>
+  <meta name="description" content="按天体查看、添加书籍及调整书序的交互原型。">
+  <style>
+:root {
+  color-scheme: light;
+  font: 14px/1.55 "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --ink: #263146;
+  --muted: #67748a;
+  --line: #e4e8f0;
+  --accent: #545ec7;
+  --soft: #efefff;
+  color: var(--ink);
+  background: #f7f8fb;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+h1, h2, p { margin: 0; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:disabled, select:disabled { cursor: not-allowed; }
+:where(button, a, input, select, [tabindex]):focus-visible { outline: 3px solid #908cf3; outline-offset: 2px; }
+[hidden] { display: none !important; }
+.icon { width: 17px; height: 17px; display: inline-block; flex: none; vertical-align: middle; }
+.shell { display: grid; grid-template-columns: 240px minmax(0, 1fr); min-height: 100vh; }
+.sidebar { position: sticky; top: 0; height: 100vh; height: 100dvh; overflow: auto; color: #c4cbd8; background: #2d3a4b; }
+.brand { display: flex; gap: 11px; align-items: center; min-height: 60px; padding: 0 22px; color: white; font-size: 17px; font-weight: 650; white-space: nowrap; text-decoration: none; }
+.brand-icon { display: grid; place-items: center; color: #b7b7ff; }
+.brand-icon .icon, .brand > .icon { width: 24px; height: 24px; color: #b7b7ff; }
+.sidebar nav { display: grid; gap: 4px; padding: 16px 12px; }
+.nav-item { display: flex; gap: 14px; align-items: center; min-height: 45px; padding: 0 15px; border-radius: 7px; color: inherit; text-decoration: none; }
+.nav-item .icon { width: 19px; height: 19px; }
+.nav-item.active { background: #6c75db; color: white; font-weight: 650; }
+a.nav-item:hover { background: #39495e; color: white; }
+.workspace { min-width: 0; }
+.topbar, .page-heading, .list-head, .drawer-head, .drawer-foot { display: flex; justify-content: space-between; align-items: center; gap: 14px; }
+.topbar { min-height: 60px; padding: 0 30px; background: white; border-bottom: 1px solid var(--line); }
+.crumbs, .preview-label { color: var(--muted); font-size: 13px; }
+.crumbs strong { color: #384458; }
+.preview-label { font-size: 12px; }
+.main { max-width: 1590px; margin: auto; padding: 28px clamp(18px, 2.4vw, 40px) 34px; }
+.page-heading { margin-bottom: 20px; }
+h1 { font-size: clamp(25px, 2.4vw, 33px); line-height: 1.28; letter-spacing: -.045em; }
+h2 { font-size: 18px; line-height: 1.45; font-weight: 680; letter-spacing: -.025em; }
+.page-heading p, .list-head p, .empty-selection p, .empty-list p, .help, .stats { color: var(--muted); font-size: 13px; }
+.page-heading p, .list-head p { margin-top: 5px; }
+.btn, .icon-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 35px; padding: 6px 13px; border: 1px solid #d5dbe6; border-radius: 6px; background: #fff; color: #49566c; font-weight: 550; white-space: nowrap; }
+.btn:hover:enabled, .icon-btn:hover:enabled { color: var(--accent); border-color: #b8bbed; background: #f7f7ff; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover:not(:disabled) { background: #434cae; border-color: #434cae; color: #fff; }
+.btn:disabled, .icon-btn:disabled, .icon-btn.disabled-move { background-color: #f5f6fa; border-color: #e4e8f0; color: #939cad; }
+.card, .selector-card { min-width: 0; border: 1px solid var(--line); border-radius: 12px; background: #fff; box-shadow: 0 3px 12px rgb(37 49 75 / 3%); }
+.selector-card { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px 30px; margin-bottom: 18px; padding: 17px 20px; }
+.select-field, .field { display: grid; min-width: 0; gap: 7px; }
+.select-field { width: min(100%, 218px); }
+.select-field label, .field label { color: #4d5970; font-size: 13px; font-weight: 600; }
+select, input, .readonly { width: 100%; min-width: 0; min-height: 38px; border: 1px solid #ccd2dd; border-radius: 6px; background-color: white; padding: 7px 11px; }
+select { appearance: none; padding-right: 36px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='m1 1.5 5 5 5-5' fill='none' stroke='%234d5970' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-size: 12px 8px; background-position: right 12px center; }
+select:disabled, .readonly, input[readonly] { color: #5e687b; background-color: #f5f6fa; }
+input[aria-invalid="true"] { border-color: #bd4040; }
+@media (forced-colors: active) { select { appearance: auto; background-image: none; } }
+.empty-selection, .empty-list { text-align: center; }
+.empty-selection { display: grid; justify-items: center; gap: 7px; padding: clamp(46px, 9vh, 94px) 16px; }
+.empty-selection .icon { width: 42px; height: 42px; margin-bottom: 4px; padding: 8px; border-radius: 11px; color: var(--accent); background: var(--soft); }
+.empty-selection h2 { font-size: 17px; }
+.empty-list { padding: 42px 16px; }
+#list-card { overflow: hidden; }
+.list-head { flex-wrap: wrap; padding: 18px 20px; }
+.actions, .move-tools { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.draft-note { padding: 10px 20px; border-block: 1px solid #e3e2ff; background: #f5f4ff; color: #4e54a0; font-size: 13px; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; text-align: left; }
+th, td { padding: 13px 17px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+th { background: #f8f9fc; color: #606e83; font-size: 12px; font-weight: 620; white-space: nowrap; }
+td:first-child, th:first-child { padding-left: 20px; }
+tr:last-child td { border-bottom: 0; }
+tbody tr:hover { background: #fafaff; }
+.sort-value { display: inline-flex; justify-content: center; align-items: center; min-width: 27px; padding: 2px 7px; border-radius: 5px; background: #f0f1fb; color: #505aa1; font-size: 13px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.title-cell { display: flex; align-items: center; gap: 10px; }
+.title-cell strong { font-weight: 610; overflow-wrap: anywhere; }
+.type-icon { display: grid; flex: none; place-items: center; width: 30px; height: 30px; border-radius: 7px; color: var(--accent); background: var(--soft); }
+.book-id { color: var(--muted); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; font-variant-numeric: tabular-nums; }
+.visibility-switch { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: #576277; white-space: nowrap; font-size: 12px; }
+.switch-track { display: inline-flex; align-items: center; width: 30px; height: 18px; padding: 2px; border: 1px solid transparent; border-radius: 10px; background: #798596; }
+.switch-track::after { content: ""; width: 12px; height: 12px; border-radius: 50%; background: white; }
+.visibility-switch[aria-checked="true"] { color: #226753; }
+.visibility-switch[aria-checked="true"] .switch-track { justify-content: flex-end; background: #247c66; }
+@media (forced-colors: active) {
+  .switch-track { border-color: ButtonText; }
+  .switch-track::after { background: ButtonText; }
+}
+.move-tools { flex-wrap: nowrap; gap: 5px; }
+.move-tools .icon { pointer-events: none; }
+.icon-btn { width: 31px; min-height: 31px; padding: 5px; }
+.disabled-move { cursor: not-allowed; user-select: none; background-position: center; background-repeat: no-repeat; background-size: 14px 10px; }
+.disabled-move.has-blocked-cursor { cursor: none; }
+#blocked-cursor {
+  position: fixed;
+  z-index: 5;
+  width: 18px;
+  height: 18px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  border: 2px solid #b42338;
+  border-radius: 50%;
+  background: linear-gradient(45deg, transparent 43%, #b42338 43% 57%, transparent 57%), white;
+  box-shadow: 0 0 0 1px white;
+}
+.disabled-move[data-move="up"] { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 10'%3E%3Cpath d='m1 8 6-6 6 6' fill='none' stroke='%23939cad' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.disabled-move[data-move="down"] { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 10'%3E%3Cpath d='m1 2 6 6 6-6' fill='none' stroke='%23939cad' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+#add-dialog { position: fixed; inset: 0 0 0 auto; width: min(480px, 100%); max-width: 100%; height: 100vh; height: 100dvh; max-height: 100%; margin: 0; padding: 0; border: 0; color: var(--ink); background: #fff; box-shadow: -8px 0 35px rgb(28 36 65 / 12%); }
+#add-dialog::backdrop { background: rgb(26 35 51 / 38%); }
+#add-dialog form { display: flex; flex-direction: column; height: 100%; }
+.drawer-head, .drawer-foot { padding: 18px 21px; }
+.drawer-head { border-bottom: 1px solid var(--line); }
+.drawer-body { flex: 1; min-height: 0; overflow: auto; padding: 23px 21px; }
+.field + .field { margin-top: 19px; }
+.help { font-size: 12px; }
+.error { margin-top: 7px; color: #a53c3c; font-size: 13px; }
+.drawer-foot { justify-content: flex-end; border-top: 1px solid var(--line); }
+.toast { position: fixed; z-index: 4; left: 50%; bottom: 24px; transform: translateX(-50%); width: max-content; max-width: calc(100% - 32px); padding: 10px 17px; border-radius: 8px; background: #303c51; color: #fff; box-shadow: 0 5px 23px rgb(28 39 66 / 17%); }
+@media (max-width: 1050px) {
+  .shell { grid-template-columns: 70px minmax(0, 1fr); }
+  .brand, .nav-item { justify-content: center; padding-inline: 0; gap: 0; }
+  .brand > span:not(.brand-icon), .nav-item > span { display: none; }
+  .sidebar nav { padding-inline: 8px; }
+}
+@media (max-width: 680px) {
+  .shell { display: block; }
+  .sidebar { display: none; }
+  .topbar { min-height: 50px; padding: 0 15px; }
+  .main { padding: 18px 12px 26px; }
+  .page-heading { align-items: flex-start; }
+  .selector-card, .list-head, .draft-note { padding-inline: 13px; }
+  .selector-card { gap: 12px; }
+  .list-head { gap: 10px; }
+  .actions { gap: 6px; }
+  .actions .btn { padding-inline: 9px; min-height: 34px; font-size: 13px; }
+  th, td { padding: 10px 8px; }
+  th:first-child, td:first-child { padding-left: 12px; }
+  .title-cell { gap: 5px; }
+  .title-cell .type-icon { display: none; }
+  .book-id { font-size: 11px; overflow-wrap: anywhere; }
+  .move-tools { gap: 3px; }
+  .drawer-head, .drawer-body, .drawer-foot { padding-inline: 16px; }
+}
+.mobile-id { display: none; }
+@media (max-width: 680px) {
+  .id-col { display: none; }
+  .mobile-id { display: block; margin-top: 3px; color: var(--muted); font: 11px/1.5 ui-monospace, Menlo, monospace; overflow-wrap: anywhere; }
+}
+  </style>
+</head>
+<body>
+  <!-- Embedded icons from @element-plus/icons-vue.
+The MIT License (MIT)
+
+Copyright (c) 2020-PRESENT Element Plus (https://github.com/element-plus)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+  -->
+  <svg aria-hidden="true" width="0" height="0" style="position:absolute;overflow:hidden" xmlns="http://www.w3.org/2000/svg">
+<symbol id="icon-sun" viewBox="0 0 1024 1024"><path fill="currentColor" d="M512 704a192 192 0 1 0 0-384 192 192 0 0 0 0 384m0 64a256 256 0 1 1 0-512 256 256 0 0 1 0 512m0-704a32 32 0 0 1 32 32v64a32 32 0 0 1-64 0V96a32 32 0 0 1 32-32m0 768a32 32 0 0 1 32 32v64a32 32 0 1 1-64 0v-64a32 32 0 0 1 32-32M195.2 195.2a32 32 0 0 1 45.248 0l45.248 45.248a32 32 0 1 1-45.248 45.248L195.2 240.448a32 32 0 0 1 0-45.248m543.104 543.104a32 32 0 0 1 45.248 0l45.248 45.248a32 32 0 0 1-45.248 45.248l-45.248-45.248a32 32 0 0 1 0-45.248M64 512a32 32 0 0 1 32-32h64a32 32 0 0 1 0 64H96a32 32 0 0 1-32-32m768 0a32 32 0 0 1 32-32h64a32 32 0 1 1 0 64h-64a32 32 0 0 1-32-32M195.2 828.8a32 32 0 0 1 0-45.248l45.248-45.248a32 32 0 0 1 45.248 45.248L240.448 828.8a32 32 0 0 1-45.248 0m543.104-543.104a32 32 0 0 1 0-45.248l45.248-45.248a32 32 0 0 1 45.248 45.248l-45.248 45.248a32 32 0 0 1-45.248 0"></path></symbol>
+<symbol id="icon-planet" viewBox="0 0 1024 1024"><path fill="currentColor" d="M240.448 240.448a384 384 0 1 0 559.424 525.696 448 448 0 0 1-542.016-542.08 391 391 0 0 0-17.408 16.384m181.056 362.048a384 384 0 0 0 525.632 16.384A448 448 0 1 1 405.056 76.8a384 384 0 0 0 16.448 525.696"></path></symbol>
+<symbol id="icon-book" viewBox="0 0 1024 1024"><path fill="currentColor" d="m512 863.36 384-54.848v-638.72L525.568 222.72a96 96 0 0 1-27.136 0L128 169.792v638.72zM137.024 106.432l370.432 52.928a32 32 0 0 0 9.088 0l370.432-52.928A64 64 0 0 1 960 169.792v638.72a64 64 0 0 1-54.976 63.36l-388.48 55.488a32 32 0 0 1-9.088 0l-388.48-55.488A64 64 0 0 1 64 808.512v-638.72a64 64 0 0 1 73.024-63.36"></path><path fill="currentColor" d="M480 192h64v704h-64z"></path></symbol>
+<symbol id="icon-catalogue" viewBox="0 0 1024 1024"><path fill="currentColor" d="M192 736h640V128H256a64 64 0 0 0-64 64zm64-672h608a32 32 0 0 1 32 32v672a32 32 0 0 1-32 32H160l-32 57.536V192A128 128 0 0 1 256 64"></path><path fill="currentColor" d="M240 800a48 48 0 1 0 0 96h592v-96zm0-64h656v160a64 64 0 0 1-64 64H240a112 112 0 0 1 0-224m144-608v250.88l96-76.8 96 76.8V128zm-64-64h320v381.44a32 32 0 0 1-51.968 24.96L480 384l-108.032 86.4A32 32 0 0 1 320 445.44z"></path></symbol>
+<symbol id="icon-note" viewBox="0 0 1024 1024"><path fill="currentColor" d="M832 384H576V128H192v768h640zm-26.496-64L640 154.496V320zM160 64h480l256 256v608a32 32 0 0 1-32 32H160a32 32 0 0 1-32-32V96a32 32 0 0 1 32-32m160 448h384v64H320zm0-192h160v64H320zm0 384h384v64H320z"></path></symbol>
+<symbol id="icon-reset" viewBox="0 0 1024 1024"><path fill="currentColor" d="M289.088 296.704h92.992a32 32 0 0 1 0 64H232.96a32 32 0 0 1-32-32V179.712a32 32 0 0 1 64 0v50.56a384 384 0 0 1 643.84 282.88 384 384 0 0 1-383.936 384 384 384 0 0 1-384-384h64a320 320 0 1 0 640 0 320 320 0 0 0-555.712-216.448z"></path></symbol>
+<symbol id="icon-sort" viewBox="0 0 1024 1024"><path fill="currentColor" d="M384 96a32 32 0 0 1 64 0v786.752a32 32 0 0 1-54.592 22.656L95.936 608a32 32 0 0 1 0-45.312h.128a32 32 0 0 1 45.184 0L384 805.632zm192 45.248a32 32 0 0 1 54.592-22.592L928.064 416a32 32 0 0 1 0 45.312h-.128a32 32 0 0 1-45.184 0L640 218.496V928a32 32 0 1 1-64 0z"></path></symbol>
+<symbol id="icon-up" viewBox="0 0 1024 1024"><path fill="currentColor" d="m488.832 344.32-339.84 356.672a32 32 0 0 0 0 44.16l.384.384a29.44 29.44 0 0 0 42.688 0l320-335.872 319.872 335.872a29.44 29.44 0 0 0 42.688 0l.384-.384a32 32 0 0 0 0-44.16L535.168 344.32a32 32 0 0 0-46.336 0"></path></symbol>
+<symbol id="icon-down" viewBox="0 0 1024 1024"><path fill="currentColor" d="M831.872 340.864 512 652.672 192.128 340.864a30.59 30.59 0 0 0-42.752 0 29.12 29.12 0 0 0 0 41.6L489.664 714.24a32 32 0 0 0 44.672 0l340.288-331.712a29.12 29.12 0 0 0 0-41.728 30.59 30.59 0 0 0-42.752 0z"></path></symbol>
+<symbol id="icon-plus" viewBox="0 0 1024 1024"><path fill="currentColor" d="M480 480V128a32 32 0 0 1 64 0v352h352a32 32 0 1 1 0 64H544v352a32 32 0 1 1-64 0V544H128a32 32 0 0 1 0-64z"></path></symbol>
+<symbol id="icon-close" viewBox="0 0 1024 1024"><path fill="currentColor" d="M764.288 214.592 512 466.88 259.712 214.592a31.936 31.936 0 0 0-45.12 45.12L466.752 512 214.528 764.224a31.936 31.936 0 1 0 45.12 45.184L512 557.184l252.288 252.288a31.936 31.936 0 0 0 45.12-45.12L557.12 512.064l252.288-252.352a31.936 31.936 0 1 0-45.12-45.184z"></path></symbol>
+</svg>
+  <div class="shell">
+    <aside class="sidebar" aria-label="后台栏目">
+      <div class="brand"><span class="brand-icon" data-icon="sun"></span><span>SolarNotes 管理后台</span></div>
+      <nav aria-label="后台导航预览">
+        <span class="nav-item inactive" title="天体管理"><i data-icon="planet"></i><span>天体管理</span></span>
+        <span class="nav-item active" aria-current="page" title="书籍管理"><i data-icon="book"></i><span>书籍管理</span></span>
+        <a class="nav-item" href="catalogue-management-prototype.html" aria-label="目录管理原型" title="目录管理"><i data-icon="catalogue"></i><span>目录管理</span></a>
+        <span class="nav-item inactive" title="笔记管理"><i data-icon="note"></i><span>笔记管理</span></span>
+      </nav>
+    </aside>
+    <div class="workspace">
+      <header class="topbar"><span class="crumbs">管理后台　/　<strong>书籍管理</strong></span><span class="preview-label">示例数据 · 仅在本页生效</span></header>
+      <main class="main">
+        <div class="page-heading">
+          <div><h1>书籍管理</h1><p>按天体添加书籍、设置显隐和调整阅读顺序。</p></div>
+          <button type="button" class="btn" id="reset"><i data-icon="reset"></i>还原示例</button>
+        </div>
+        <section class="selector-card" aria-label="选择所属天体">
+          <div class="select-field"><label for="planet">所属天体</label><select id="planet"><option value="">请选择天体</option></select></div>
+          <span class="stats" id="stats" hidden></span>
+        </section>
+        <section id="empty-selection" class="card empty-selection">
+          <i data-icon="book"></i><h2>请选择天体</h2><p>选择后可查看该天体下的书籍并调整书序。</p>
+        </section>
+        <section id="list-card" class="card" aria-labelledby="list-title" hidden>
+          <div class="list-head">
+            <div><h2 id="list-title"></h2><p id="list-info"></p></div>
+            <div class="actions">
+              <button type="button" class="btn" id="refresh"><i data-icon="reset"></i>刷新列表</button>
+              <button type="button" class="btn" id="edit"><i data-icon="sort"></i>调整书序</button>
+              <button type="button" class="btn primary" id="add"><i data-icon="plus"></i>添加书籍</button>
+              <button type="button" class="btn" id="cancel" hidden>取消调序</button>
+              <button type="button" class="btn primary" id="save" hidden>保存书序</button>
+            </div>
+          </div>
+          <p class="draft-note" id="draft-note" hidden>上下移动书籍后点击「保存书序」，各位置保留原排序值。显隐开关即时生效。</p>
+          <div class="table-wrap" id="table-region">
+            <table>
+              <thead><tr><th scope="col">排序值</th><th scope="col">书籍标题</th><th scope="col" class="id-col">书籍 ID</th><th scope="col">显示状态</th><th scope="col" id="move-head" hidden>移动</th></tr></thead>
+              <tbody id="books"></tbody>
+            </table>
+          </div>
+          <div class="empty-list" id="empty-list" hidden><p>该天体暂无书籍，可以添加第一本书。</p></div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <dialog id="add-dialog" aria-labelledby="add-heading">
+    <form id="book-form" novalidate>
+      <div class="drawer-head"><h2 id="add-heading">添加书籍</h2><button type="button" class="icon-btn" id="close-add" aria-label="关闭"><i data-icon="close"></i></button></div>
+      <div class="drawer-body">
+        <div class="field"><label for="add-planet">所属天体</label><output id="add-planet" class="readonly"></output></div>
+        <div class="field"><label for="title">书籍标题</label><input id="title" type="text" autocomplete="off" placeholder="请输入书籍标题" required aria-describedby="title-help"><p class="help" id="title-help">最多 20 个字符，首尾空白会自动去除。</p></div>
+        <div class="field"><label for="sort">排序值</label><input id="sort" type="number" min="1" max="4294967295" step="1" required aria-describedby="sort-help"><p class="help" id="sort-help">同一天体下排序值唯一，显示和隐藏的书籍均从 1 起排。</p></div>
+        <div class="field"><label for="display">显示状态</label><select id="display"><option value="visible">显示</option><option value="hidden">隐藏</option></select></div>
+        <p class="error" id="error" role="alert" hidden></p>
+      </div>
+      <div class="drawer-foot"><button class="btn" type="button" id="cancel-add">取消</button><button class="btn primary" type="submit">确认添加</button></div>
+    </form>
+  </dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <span id="blocked-cursor" aria-hidden="true" hidden></span>
+  <script>
+'use strict'
+
+const planets = [
+    {id: '2123435429930733568', label: '太阳'},
+    {id: '3000000000000000002', label: '地球'},
+    {id: '3000000000000000003', label: '火星'}
+]
+// Example records. Each option matches one item of POST /v1/book/options.
+const examples = [
+    [
+        {id: '2123435620763176960', title: 'MySQL是怎样运行的', sort: 1, display_status: 'visible'},
+        {id: '4100000000000000002', title: '数据库系统概念', sort: 2, display_status: 'visible'},
+        {id: '4100000000000000003', title: 'SQL 学习笔记', sort: 4, display_status: 'hidden'},
+        {id: '4100000000000000004', title: '数据库索引设计', sort: 8, display_status: 'visible'}
+    ],
+    [
+        {id: '4100000000000000005', title: '地球科学导论', sort: 1, display_status: 'visible'},
+        {id: '4100000000000000006', title: '地质观察笔记', sort: 3, display_status: 'hidden'}
+    ],
+    []
+]
+const maxSort = 4294967295
+let booksByPlanet = new Map()
+let saved = []
+let draftIds = null
+let addedCount = 0
+let toastTimer
+let blockedControl = null
+
+function el(id) {
+    return document.getElementById(id)
+}
+
+function icon(name) {
+    return '<svg class="icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><use href="#icon-' + name + '"></use></svg>'
+}
+
+function tell(message) {
+    clearTimeout(toastTimer)
+    const toast = el('toast')
+    toast.textContent = message
+    toast.hidden = false
+    toastTimer = setTimeout(function () { toast.hidden = true }, 3000)
+}
+
+function selectedPlanet() {
+    return planets.find(function (planet) { return planet.id === el('planet').value })
+}
+
+/** In-memory equivalent of the agreed request and response contract. */
+function getBookOptions(request) {
+    const books = booksByPlanet.get(request.planet.id).slice()
+    books.sort(function (first, second) { return first.sort - second.sort })
+    return {code: 200, message: 'success', data: {books: books}}
+}
+
+function loadSelection() {
+    const planet = selectedPlanet()
+    draftIds = null
+    saved = planet ? getBookOptions({planet: {id: planet.id}}).data.books : []
+    render()
+}
+
+function element(tag, className, text) {
+    const node = document.createElement(tag)
+    if (className) node.className = className
+    if (text !== undefined) node.textContent = text
+    return node
+}
+
+function moveButton(book, direction, disabled) {
+    const label = (direction === 'up' ? '上移' : '下移') + '《' + book.title + '》'
+    if (disabled) {
+        const indicator = element('span', 'icon-btn disabled-move')
+        indicator.dataset.move = direction
+        indicator.setAttribute('role', 'button')
+        indicator.setAttribute('aria-disabled', 'true')
+        indicator.setAttribute('aria-label', label)
+        return indicator
+    }
+    const button = element('button', 'icon-btn')
+    button.type = 'button'
+    button.dataset.move = direction
+    button.dataset.id = book.id
+    button.title = label
+    button.setAttribute('aria-label', label)
+    button.innerHTML = icon(direction)
+    return button
+}
+
+/** Create a switch for the saved book, independent of its position in the order draft. */
+function visibilitySwitch(book) {
+    const button = element('button', 'visibility-switch')
+    button.type = 'button'
+    button.setAttribute('role', 'switch')
+    button.setAttribute('aria-label', '《' + book.title + '》的显示状态')
+    const track = element('span', 'switch-track')
+    track.setAttribute('aria-hidden', 'true')
+    const label = element('span')
+    button.append(track, label)
+
+    function updateLabel() {
+        const visible = book.display_status === 'visible'
+        button.setAttribute('aria-checked', String(visible))
+        label.textContent = visible ? '显示' : '隐藏'
+    }
+    updateLabel()
+    button.addEventListener('click', function () {
+        book.display_status = book.display_status === 'visible' ? 'hidden' : 'visible'
+        updateLabel()
+        updateBookCounts()
+        tell('《' + book.title + '》已' + label.textContent)
+    })
+    return button
+}
+
+function updateBookCounts() {
+    const visible = saved.filter(function (book) { return book.display_status === 'visible' }).length
+    el('stats').textContent = '显示 ' + visible + ' 本　·　隐藏 ' + (saved.length - visible) + ' 本'
+}
+
+function bookRow(book, index, editing) {
+    const row = element('tr')
+    row.dataset.id = book.id
+    const sortCell = row.insertCell()
+    sortCell.append(element('span', 'sort-value', saved[index].sort))
+    const titleCell = row.insertCell()
+    const titleWrap = element('div', 'title-cell')
+    const glyph = element('i', 'type-icon')
+    glyph.innerHTML = icon('book')
+    titleWrap.append(glyph, element('strong', '', book.title))
+    titleCell.append(titleWrap)
+    // Small screens show the same identifier below the book title.
+    titleCell.append(element('span', 'mobile-id', 'ID ' + book.id))
+    const idCell = row.insertCell()
+    idCell.className = 'book-id id-col'
+    idCell.textContent = book.id
+    row.insertCell().append(visibilitySwitch(book))
+    if (editing) {
+        const controls = element('div', 'move-tools')
+        controls.append(moveButton(book, 'up', index === 0), moveButton(book, 'down', index === saved.length - 1))
+        row.insertCell().append(controls)
+    }
+    return row
+}
+
+function clearBlockedCursor() {
+    if (blockedControl === null) return
+    blockedControl.classList.remove('has-blocked-cursor')
+    blockedControl = null
+    el('blocked-cursor').hidden = true
+}
+
+function trackBlockedCursor(event) {
+    const control = event.target.closest('.disabled-move')
+    if (control === null || event.pointerType !== 'mouse' || window.matchMedia('(forced-colors: active)').matches) {
+        clearBlockedCursor()
+        return
+    }
+    const marker = el('blocked-cursor')
+    marker.style.left = event.clientX + 'px'
+    marker.style.top = event.clientY + 'px'
+    if (control !== blockedControl) {
+        clearBlockedCursor()
+        blockedControl = control
+        marker.hidden = false
+        control.classList.add('has-blocked-cursor')
+    }
+}
+
+function checkBlockedCursorPosition() {
+    if (blockedControl === null) return
+    const marker = el('blocked-cursor')
+    if (document.elementFromPoint(parseFloat(marker.style.left), parseFloat(marker.style.top)) !== blockedControl) {
+        clearBlockedCursor()
+    }
+}
+
+function render() {
+    clearBlockedCursor()
+    const planet = selectedPlanet()
+    const editing = draftIds !== null
+    el('planet').disabled = editing
+    el('reset').disabled = editing
+    el('empty-selection').hidden = planet !== undefined
+    el('list-card').hidden = !planet
+    el('stats').hidden = !planet
+    if (!planet) {
+        el('books').replaceChildren()
+        el('stats').textContent = ''
+        return
+    }
+    updateBookCounts()
+    el('list-title').textContent = planet.label + '的书籍'
+    el('list-info').textContent = '共 ' + saved.length + ' 本' + (saved.length ? '，按排序值从小到大排列。' : '')
+    el('refresh').hidden = editing
+    el('add').hidden = editing
+    el('edit').hidden = editing
+    el('edit').disabled = saved.length < 2
+    el('edit').title = saved.length < 2 ? '至少需要两本书才能调整书序' : ''
+    el('cancel').hidden = !editing
+    el('save').hidden = !editing
+    el('save').disabled = !editing || draftIds.every(function (id, index) { return id === saved[index].id })
+    el('draft-note').hidden = !editing
+    el('move-head').hidden = !editing
+    el('table-region').hidden = saved.length === 0
+    el('empty-list').hidden = saved.length !== 0
+    const lookup = new Map(saved.map(function (book) { return [book.id, book] }))
+    const order = editing ? draftIds.map(function (id) { return lookup.get(id) }) : saved
+    el('books').replaceChildren(...order.map(function (book, index) { return bookRow(book, index, editing) }))
+}
+
+function moveBook(event) {
+    const target = event.target.closest('button[data-move]')
+    if (!target || target.disabled || draftIds === null) return
+    const id = target.dataset.id
+    const position = draftIds.indexOf(id)
+    const next = position + (target.dataset.move === 'up' ? -1 : 1)
+    if (position < 0 || next < 0 || next >= draftIds.length) return
+    draftIds.splice(position, 1)
+    draftIds.splice(next, 0, id)
+    render()
+    const row = el('books').querySelector('tr[data-id="' + id + '"]')
+    const same = row.querySelector('button[data-move="' + target.dataset.move + '"]')
+    const focusTarget = same || row.querySelector('button[data-move]')
+    focusTarget.focus({preventScroll: true})
+}
+
+function saveOrder() {
+    if (draftIds === null || el('save').disabled) return
+    const slots = saved.map(function (book) { return book.sort })
+    const lookup = new Map(saved.map(function (book) { return [book.id, book] }))
+    const reordered = draftIds.map(function (id, index) { return {...lookup.get(id), sort: slots[index]} })
+    booksByPlanet.set(selectedPlanet().id, reordered)
+    loadSelection()
+    el('edit').focus()
+    tell('已保存当前天体的书序')
+}
+
+function nextSort() {
+    if (saved.length === 0) return 1
+    const last = saved[saved.length - 1].sort
+    if (last < maxSort) return last + 1
+    let available = 1
+    for (const book of saved) {
+        if (book.sort !== available) break
+        available += 1
+    }
+    return available <= maxSort ? available : ''
+}
+
+function clearError() {
+    el('error').hidden = true
+    el('error').textContent = ''
+    for (const field of [el('title'), el('sort')]) field.removeAttribute('aria-invalid')
+}
+
+function showError(field, message) {
+    el('error').hidden = false
+    el('error').textContent = message
+    field.setAttribute('aria-invalid', 'true')
+    field.focus()
+}
+
+function openAdd() {
+    el('book-form').reset()
+    clearError()
+    el('add-planet').textContent = selectedPlanet().label
+    el('sort').value = nextSort()
+    el('add-dialog').showModal()
+    el('title').focus()
+}
+
+function submitBook(event) {
+    event.preventDefault()
+    clearError()
+    const title = el('title').value.trim()
+    const sort = el('sort').valueAsNumber
+    if (title === '' || Array.from(title).length > 20) {
+        showError(el('title'), '请输入 1 至 20 个字符的书籍标题。')
+        return
+    }
+    if (!Number.isInteger(sort) || sort < 1 || sort > maxSort) {
+        showError(el('sort'), '排序值须为 1 至 4294967295 的整数。')
+        return
+    }
+    if (saved.some(function (book) { return book.sort === sort })) {
+        showError(el('sort'), '该天体下已有书籍使用此排序值，请换一个。')
+        return
+    }
+    const record = {id: String(5000000000000000000n + BigInt(++addedCount)), title, sort, display_status: el('display').value}
+    booksByPlanet.get(selectedPlanet().id).push(record)
+    el('add-dialog').close()
+    loadSelection()
+    tell('已添加《' + title + '》')
+}
+
+function resetExample() {
+    booksByPlanet = new Map(planets.map(function (planet, index) {
+        return [planet.id, examples[index].map(function (book) { return {...book} })]
+    }))
+    addedCount = 0
+    el('planet').value = ''
+    loadSelection()
+}
+
+document.querySelectorAll('[data-icon]').forEach(function (slot) { slot.innerHTML = icon(slot.dataset.icon) })
+planets.forEach(function (planet) { el('planet').add(new Option(planet.label, planet.id)) })
+el('planet').addEventListener('change', loadSelection)
+el('reset').addEventListener('click', function () { resetExample(); tell('已还原示例') })
+el('refresh').addEventListener('click', function () { loadSelection(); tell('已刷新当前天体的书籍') })
+el('edit').addEventListener('click', function () {
+    draftIds = saved.map(function (book) { return book.id })
+    render()
+    el('books').querySelector('[data-move]:enabled').focus()
+})
+el('books').addEventListener('click', moveBook)
+el('books').addEventListener('pointerover', trackBlockedCursor)
+el('books').addEventListener('pointermove', trackBlockedCursor)
+el('books').addEventListener('pointerout', clearBlockedCursor)
+el('books').addEventListener('pointercancel', clearBlockedCursor)
+document.addEventListener('scroll', checkBlockedCursorPosition, true)
+window.addEventListener('resize', checkBlockedCursorPosition)
+window.addEventListener('blur', clearBlockedCursor)
+document.addEventListener('visibilitychange', clearBlockedCursor)
+el('save').addEventListener('click', saveOrder)
+el('cancel').addEventListener('click', function () {
+    draftIds = null
+    render()
+    el('edit').focus()
+})
+el('add').addEventListener('click', openAdd)
+el('close-add').addEventListener('click', function () { el('add-dialog').close() })
+el('cancel-add').addEventListener('click', function () { el('add-dialog').close() })
+el('book-form').addEventListener('submit', submitBook)
+resetExample()
+  </script>
+</body>
+</html>

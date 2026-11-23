@@ -1,0 +1,1243 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>目录管理页面实现指南 · SolarNotes</title>
+<meta name="description" content="在现有 Vue 管理后台中接入目录树、同级排序、级联隐藏和 Markdown 预览。">
+<style>
+
+:root{color-scheme:light;--paper:#f3f6f2;--ink:#1d302a;--muted:#5e7068;--line:#dce5dc;--green:#21644c;--soft:#e7f1e8;--amber:#846013;--warm:#fbf2db;--blue:#275e7a;--mono:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:24px}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.82 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+a{color:var(--green);text-underline-offset:4px;overflow-wrap:anywhere}a:hover{color:#103d2b}:focus-visible{outline:3px solid #4485ae;outline-offset:3px}[hidden]{display:none!important}
+.skip{position:absolute;top:-80px;left:20px;background:white;padding:10px 16px;z-index:4}.skip:focus{top:12px}
+.page{width:min(1350px,100%);margin:auto;display:grid;grid-template-columns:228px minmax(0,1fr);gap:54px;padding:40px 38px 80px}.sidebar{position:sticky;top:28px;align-self:start;max-height:calc(100vh - 56px);overflow:auto}
+.brand{font-size:12px;font-weight:800;letter-spacing:.1em;color:var(--green)}.brand::before{content:"";display:inline-block;width:12px;height:12px;border:3px solid var(--green);border-radius:50%;margin-right:8px;vertical-align:-1px}.sidebar p{font-size:13px;color:var(--muted);line-height:1.7}.sidebar nav{display:grid;gap:3px;margin-top:22px}.sidebar nav a{display:flex;gap:12px;padding:7px 9px;border-radius:7px;text-decoration:none;color:var(--muted);font-size:14px}.sidebar nav a:hover{background:var(--soft);color:var(--green)}.sidebar nav span{color:var(--green);font:12px/2 var(--mono)}.side-note{border-top:1px solid var(--line);padding-top:16px;margin-top:22px}
+main{min-width:0}.eyebrow,.section-label{color:var(--green);font:700 12px/1.5 var(--mono);letter-spacing:.1em}.hero h1{font-size:clamp(33px,4vw,48px);line-height:1.25;letter-spacing:-.03em;margin:16px 0}.lede{font-size:18px;color:var(--muted);max-width:820px}.tags{display:flex;flex-wrap:wrap;gap:8px;margin:24px 0}.tag{border:1px solid var(--line);border-radius:30px;padding:4px 11px;font-size:12px;background:white;color:var(--muted)}
+.thesis{background:#194b39;color:#fff;border-radius:14px;padding:22px 25px}.thesis p{margin:0}.thesis strong{color:#d4f5dc}.page-tools{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:20px 0}.page-tools button,.code-toolbar button{font:inherit;font-size:13px;border:1px solid var(--green);border-radius:7px;background:white;color:var(--green);cursor:pointer;padding:6px 12px}.page-tools button:hover,.code-toolbar button:hover{background:var(--soft)}
+section{padding-top:42px;margin-top:10px}h2{font-size:27px;line-height:1.4;letter-spacing:-.02em;margin:8px 0 20px}h3{font-size:19px;line-height:1.55;margin:27px 0 10px}p{margin:12px 0}code{font:.87em/1.7 var(--mono);background:#e8f0e8;border-radius:4px;padding:2px 5px;overflow-wrap:anywhere}pre{margin:14px 0;padding:19px 22px;background:#1d3029;color:#e5efe6;border-radius:10px;overflow-x:auto;tab-size:2;font:13px/1.75 var(--mono)}pre code{font:inherit;background:transparent;color:inherit;padding:0;border-radius:0;overflow-wrap:normal}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0}.card{border:1px solid var(--line);background:#fffefa;border-radius:12px;padding:18px 19px}.card .n{color:var(--green);font:12px/1.5 var(--mono)}.card h3{margin:6px 0;font-size:16px}.card p{font-size:14px;color:var(--muted);margin:0}
+.note{background:var(--soft);border-left:3px solid var(--green);border-radius:0 8px 8px 0;padding:15px 18px;margin:20px 0;font-size:14px}.note.warning{background:var(--warm);border-color:var(--amber)}.note p{margin:0}.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:white;margin:18px 0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;vertical-align:top;padding:12px 15px;border-bottom:1px solid var(--line);min-width:105px}th{color:var(--green);background:#edf3ec;font-weight:650}tr:last-child td{border-bottom:0}ul,ol{padding-left:23px}li{margin:8px 0}.small{font-size:13px;color:var(--muted)}
+details.code-file{border:1px solid var(--line);background:#fffefa;border-radius:10px;overflow:hidden;margin:18px 0}details.code-file summary{padding:14px 17px;cursor:pointer;font-weight:650;overflow-wrap:anywhere;line-height:1.7}.file-mode{display:inline-block;font-size:11px;padding:2px 7px;border-radius:5px;background:var(--soft);color:var(--green);margin-right:9px;font-weight:500}.file-path{font:13px/1.7 var(--mono)}.code-toolbar{display:flex;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid var(--line)}.copy-feedback{font-size:12px;color:var(--muted)}.code-file pre{margin:0;border-radius:0;font-size:12.5px}footer{margin-top:45px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+@media(max-width:1050px){.page{gap:27px;padding-left:24px;padding-right:24px;grid-template-columns:185px minmax(0,1fr)}}@media(max-width:800px){.page{display:block;padding:24px 20px 55px}.sidebar{position:static;max-height:none;margin-bottom:32px}.sidebar nav{display:flex;gap:5px;overflow-x:auto;margin-top:15px;padding-bottom:8px}.sidebar nav a{white-space:nowrap;border:1px solid var(--line);padding:5px 9px}.sidebar p,.side-note{display:none}.grid{grid-template-columns:1fr}h2{font-size:24px}}
+@media(max-width:520px){pre{padding:16px;font-size:12px}th,td{padding:10px 12px}}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}@media print{body{background:white;color:black;font-size:11pt}.page{display:block;width:100%;padding:0}.sidebar,.page-tools,.code-toolbar,.skip{display:none!important}.thesis{background:#eee;color:black}.thesis strong{color:black}section{padding-top:20px}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f3f3f3;color:black;font-size:8pt}.code-file{overflow:visible!important}.table-wrap{overflow:visible}a{color:black}}
+
+.flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:10px;margin:24px 0}.flow-step{flex:1 1 175px;border:1px solid var(--line);border-radius:10px;background:#fffefa;padding:13px 16px;font-size:14px}.flow-step strong{display:block;color:var(--green);font-size:15px}.flow-step span{color:var(--muted)}.flow-arrow{display:flex;align-items:center;color:var(--green);font-size:18px}.lead-code{font:13px/1.7 var(--mono);color:var(--green)}@media(max-width:800px){.flow-arrow{display:none}.flow-step{flex-basis:100%}}
+
+.endpoint{display:inline-flex;align-items:center;gap:10px;margin:5px 0 13px;color:var(--green);font:14px/1.6 var(--mono)}.endpoint b{font-size:11px;letter-spacing:.05em;background:var(--soft);padding:3px 8px;border-radius:5px}.status-pass{color:var(--green);font-weight:650}.change-list strong{color:var(--green)}.table-wrap caption{text-align:left;padding:12px 15px;background:#fffefa;font-weight:650}.inline-path{font-family:var(--mono);font-size:.9em}main section{scroll-margin-top:20px}.flow-step code{font-size:12px}
+
+.pipeline{list-style:none;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:22px 0}.pipeline li{margin:0;border:1px solid var(--line);background:#fffefa;border-radius:10px;padding:16px}.pipeline .index{display:block;font:12px/1.5 var(--mono);color:var(--green);margin-bottom:5px}.pipeline strong{display:block;font-size:15px}.pipeline p{font-size:13px;color:var(--muted);margin:5px 0 0}.source-ref{font-size:12px;white-space:normal}.rule-line{border-top:1px solid var(--line);padding-top:16px;margin-top:22px}.endpoint span{overflow-wrap:anywhere}@media(max-width:800px){.pipeline{grid-template-columns:1fr}.pipeline li{padding:13px 15px}}
+
+.summary-row{display:flex;gap:1em;align-items:center;margin:.6em 0 1.1em}.summary-row code{font-size:1em}.code-file summary:focus-visible{outline-offset:-3px}.code-file pre{max-height:42rem}.table-wrap td code{overflow-wrap:anywhere}@media print{.code-file pre{max-height:none}}
+.contract-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.contract-grid .card{min-width:0}.code-file{scroll-margin-top:24px}.code-toolbar button:disabled{cursor:wait;opacity:.7}@media(max-width:800px){.contract-grid{grid-template-columns:1fr}}
+
+  </style></head><body><a class="skip" href="#main">跳至正文</a><div class="page">
+<aside class="sidebar"><div class="brand">SolarNotes 管理后台</div><nav aria-label="文档目录"><a href="#flow"><span>01</span>交互与接口</a><a href="#prepare"><span>02</span>依赖与错误码</a><a href="#api"><span>03</span>API 模块</a><a href="#drawer"><span>04</span>排序抽屉</a><a href="#preview"><span>05</span>Markdown 预览</a><a href="#page"><span>06</span>页面与状态同步</a><a href="#navigation"><span>07</span>路由与侧边栏</a><a href="#verify"><span>08</span>联调验收</a></nav>
+<p class="side-note"><a href="catalogue-management-prototype.html">打开交互原型</a><br><a href="catalogue-api-design.html">查阅 API 契约</a></p></aside>
+<main id="main"><header class="hero"><h1>目录管理页面实现指南</h1>
+<p class="lede">在当前 Vue 3 与 Element Plus 工程中实现目录管理页。按顺序复制完整文件和局部修改，即可从后台侧边栏进入页面，选择书籍、编排目录并预览文章。</p>
+<p>新增一个 API 模块、两个子组件和一个页面，沿用现有的登录、请求封装和管理布局。每个代码块的标题会标明目标文件与放置位置。</p>
+<div class="page-tools"><button id="expand-all" type="button" hidden>展开全部代码</button><button id="collapse-all" type="button" hidden>折叠全部代码</button></div>
+</header>
+<section id="flow"><h2>1. 从选择书籍到打开文件</h2>
+<p>登录后进入 <code>/admin/catalogues</code>。初次进入只加载天体，选择天体后列出该天体下的书籍。选书后展示书籍自身的显隐、全书排序进度、左侧目录树和右侧当前目录的直接子项。选择目录浏览下一层，点击文件在当前页预览 Markdown。</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">页面动作</th><th scope="col">管理 API</th><th scope="col">页面取值或动作</th></tr></thead><tbody><tr><td>进入页面</td><td><code>GET /v1/planet/list</code></td><td>复用 <code>getBodyList()</code>，以字符串 ID 为选项值，用 <code>getBodyLabel(name)</code> 显示中文名称。</td></tr><tr><td>选择天体</td><td><code>POST /v1/book/options</code></td><td>发送 <code>{planet: {id}}</code>，使用 <code>data.books</code>，包含该天体下的隐藏书籍。</td></tr><tr><td>选择书籍或同步目录</td><td><code>POST /v1/catalogue/tree</code></td><td>发送 <code>{book: {id}}</code>。读取 <code>data.book.catalogues</code>。同级的 <code>children</code> 已由服务端排好。</td></tr><tr><td>在抽屉中保存排序</td><td><code>POST /v1/catalogue/reorder</code></td><td>同一份请求提交父节点 ID、打开抽屉时的分组与最终分组。成功后重读树。</td></tr><tr><td>切换显隐</td><td><code>POST /v1/catalogue/display</code></td><td>发送 <code>{catalogue: {id, display_status}}</code>，<code>code === 200</code> 即写入成功。用最新目录数据同步开关。</td></tr><tr><td>点击文件</td><td><code>POST /v1/article/preview</code></td><td>发送 <code>{catalogue: {id}}</code>。<code>data.article</code> 提供文章主键、标题和 Markdown 正文。</td></tr></tbody></table></div>
+<p>浏览器通过现有的 <code>request</code> 实例发起请求。开发环境会把 <code>/api/v1/…</code> 代理到管理后端，示例函数只传 <code>/v1/…</code>。该实例已负责添加 Bearer token、判断业务码、解包 <code>data</code> 并处理登录失效。</p>
+</section>
+<section id="prepare"><h2>2. 准备依赖和业务码</h2>
+<p>在管理前端工程根目录执行以下命令。版本与本地阅读端工程使用的两项预览依赖一致。一份负责解析 Markdown，一份负责净化输出的 HTML。</p>
+<details class="code-file" open><summary><span class="file-mode">终端</span><span class="file-path">安装 Markdown 预览依赖</span></summary><div class="code-toolbar"><button type="button" data-copy="install" hidden>复制代码</button><span class="copy-feedback" role="status" aria-live="polite"></span></div><pre><code id="install">npm install --save-exact marked@18.0.4 dompurify@3.4.8</code></pre></details>
+<p>在 <code>src/constants/apiCode.js</code> 的 <code>API_CODE</code> 对象内、<code>BOOK_SORT_OCCUPIED</code> 之后加入以下属性。现有的 <code>BOOK_PLANET_NOT_FOUND</code> 和鉴权业务码继续复用。</p>
+<details class="code-file" open><summary><span class="file-mode">局部修改</span><span class="file-path">src/constants/apiCode.js · 追加对象属性</span></summary><div class="code-toolbar"><button type="button" data-copy="codes" hidden>复制代码</button><span class="copy-feedback" role="status" aria-live="polite"></span></div><pre><code id="codes">/** 所选书籍已不存在. */
+BOOK_NOT_FOUND: 20202,
+/** 目录节点已不存在. */
+CATALOGUE_NOT_FOUND: 20301,
+/** 同级排序快照已失效. */
+CATALOGUE_ORDER_CHANGED: 20302,
+/** 显示该节点前需要先排序. */
+CATALOGUE_SORT_REQUIRED: 20303,
+/** 文章正文暂时无法预览. */
+ARTICLE_PREVIEW_UNAVAILABLE: 20401,</code></pre></details>
+</section>
+<section id="api"><h2>3. 封装页面请求</h2>
+<p>新建以下模块。<code>getBookOptions()</code> 可供目录管理和按天体选书的其他页面共用，天体列表沿用 <code>src/api/body.js</code>。新函数都接收业务参数、返回解包后的业务值。接口抛出的业务错误会保留给页面处理。</p>
+<details class="code-file"><summary><span class="file-mode">新建文件</span><span class="file-path">src/api/catalogue.js</span></summary><div class="code-toolbar"><button type="button" data-copy="catalogue-api" hidden>复制代码</button><span class="copy-feedback" role="status" aria-live="polite"></span></div><pre><code id="catalogue-api">import request from '@/utils/request'
+import {isRecord} from '@/utils/typeGuard'
+import {readRequiredStringField, readSafeIntegerField, readStringField} from '@/utils/fileReader'
+import {BOOK_SORT_MAX} from '@/constants/book'
+
+/** @typedef {import('@/constants/book').BookDisplayStatus} DisplayStatus */
+/**
+ * @typedef {Object} BookOption
+ * @property {string} id 书籍 ID.
+ * @property {string} title 书名.
+ * @property {number} sort 书籍排序.
+ * @property {DisplayStatus} display_status 书籍自身的显隐.
+ */
+/**
+ * @typedef {Object} CatalogueNode
+ * @property {string} id 目录节点 ID.
+ * @property {string} parent_id 直接父节点的 ID, 根节点为 "0".
+ * @property {string} name 目录名或文件名.
+ * @property {'folder' | 'file'} type 节点类型.
+ * @property {number | null} sort 序号, null 表示待排.
+ * @property {DisplayStatus} display_status 节点自身的显隐.
+ * @property {CatalogueNode[]} children 已按阅读顺序排列的直接子节点.
+ */
+/** @typedef {BookOption &amp; {catalogues: CatalogueNode[]}} CatalogueBook */
+/** @typedef {{sorted_children: {id: string}[], unsorted_children: {id: string}[]}} OrderGroups */
+/** @typedef {{catalogue: {parent_id: string, expected: OrderGroups, target: OrderGroups}}} ReorderRequest */
+/** @typedef {{id: string, title: string, content: string}} ArticlePreview */
+
+/**
+ * 读取书籍或目录的显示状态.
+ * @param {Record&lt;string, unknown&gt;} record 解包后的记录.
+ * @returns {DisplayStatus} 服务端保存的状态.
+ */
+function readDisplayStatus(record) {
+    const status = readRequiredStringField(record, 'display_status')
+    if (status !== 'visible' &amp;&amp; status !== 'hidden') {
+        throw new Error('显示状态无效')
+    }
+    return status
+}
+
+/**
+ * 读取书籍下拉选项与目录树共有的书籍字段.
+ * @param {unknown} value 接口返回的书籍.
+ * @returns {BookOption} 书籍摘要.
+ */
+function readBookOption(value) {
+    if (isRecord(value) === false) {
+        throw new Error('书籍记录格式异常')
+    }
+    return {
+        id: readRequiredStringField(value, 'id'),
+        title: readStringField(value, 'title'),
+        // 读取时保留历史书籍的序号 0.
+        sort: readSafeIntegerField(value, 'sort', 0, BOOK_SORT_MAX),
+        display_status: readDisplayStatus(value),
+    }
+}
+
+/**
+ * 读取后端已组装的节点, 保留各层 children 的顺序.
+ * @param {unknown} value 目录树中的一个节点.
+ * @returns {CatalogueNode} 可交给页面的节点.
+ */
+function readCatalogueNode(value) {
+    if (isRecord(value) === false || Array.isArray(value.children) === false) {
+        throw new Error('目录节点缺少 children 数组')
+    }
+    const type = readRequiredStringField(value, 'type')
+    if (type !== 'folder' &amp;&amp; type !== 'file') {
+        throw new Error('目录节点类型无效')
+    }
+    const parentId = readRequiredStringField(value, 'parent_id')
+    let sort = null
+    if (parentId === '0') {
+        sort = readSafeIntegerField(value, 'sort', 0, 0)
+    } else if (value.sort !== null) {
+        sort = readSafeIntegerField(value, 'sort', 1, Number.MAX_SAFE_INTEGER)
+    }
+    return {
+        id: readRequiredStringField(value, 'id'),
+        parent_id: parentId,
+        name: readStringField(value, 'name'),
+        type,
+        sort,
+        display_status: readDisplayStatus(value),
+        children: value.children.map(readCatalogueNode),
+    }
+}
+
+/**
+ * 读取选中天体下的全部书籍选项, 包括隐藏书籍.
+ * @param {string} planetId 天体 ID.
+ * @returns {Promise&lt;BookOption[]&gt;} 服务端排序后的书籍选项.
+ */
+async function getBookOptions(planetId) {
+    /** @type {unknown} request 已解包的 data. */
+    const data = await request.post('/v1/book/options', {planet: {id: planetId}})
+    if (isRecord(data) === false || Array.isArray(data.books) === false) {
+        throw new Error('书籍选项响应缺少 books 数组')
+    }
+    return data.books.map(readBookOption)
+}
+
+/**
+ * 读取一本书和它的完整目录树.
+ * @param {string} bookId 书籍 ID.
+ * @returns {Promise&lt;CatalogueBook&gt;} 尚未导入目录时 catalogues 是空数组.
+ */
+async function getCatalogueTree(bookId) {
+    /** @type {unknown} request 已解包的 data. */
+    const data = await request.post('/v1/catalogue/tree', {book: {id: bookId}})
+    if (isRecord(data) === false || isRecord(data.book) === false ||
+        Array.isArray(data.book.catalogues) === false) {
+        throw new Error('目录树响应缺少 book.catalogues 数组')
+    }
+    const book = readBookOption(data.book)
+    if (book.id !== bookId) {
+        throw new Error('目录树响应中的书籍 ID 与请求不一致')
+    }
+    return {...book, catalogues: data.book.catalogues.map(readCatalogueNode)}
+}
+
+/**
+ * 保存父目录下的阅读顺序. 两个分组均包含该层全部直接子项.
+ * @param {ReorderRequest} payload 已含外层 catalogue 的完整请求体.
+ * @returns {Promise&lt;void&gt;} 排序事务已提交.
+ */
+async function saveCatalogueOrder(payload) {
+    await request.post('/v1/catalogue/reorder', payload)
+}
+
+/**
+ * 设置单个节点的目标状态, 由后端处理级联隐藏.
+ * @param {string} id 目录节点 ID.
+ * @param {DisplayStatus} status 目标显隐状态.
+ * @returns {Promise&lt;void&gt;} 显隐事务已提交.
+ */
+async function setCatalogueDisplay(id, status) {
+    await request.post('/v1/catalogue/display', {catalogue: {id, display_status: status}})
+}
+
+/**
+ * 用文件节点 ID 读取文章. 响应内的 id 是文章主键.
+ * @param {string} nodeId 所点击的文件节点 ID.
+ * @returns {Promise&lt;ArticlePreview&gt;} 标题与保留换行的 Markdown 正文.
+ */
+async function getArticlePreview(nodeId) {
+    /** @type {unknown} request 已解包的 data. */
+    const data = await request.post('/v1/article/preview', {catalogue: {id: nodeId}})
+    if (isRecord(data) === false || isRecord(data.article) === false) {
+        throw new Error('预览响应缺少 article 对象')
+    }
+    return {
+        id: readRequiredStringField(data.article, 'id'),
+        title: readStringField(data.article, 'title'),
+        content: readStringField(data.article, 'content'),
+    }
+}
+
+export {getBookOptions, getCatalogueTree, saveCatalogueOrder, setCatalogueDisplay, getArticlePreview}</code></pre></details>
+<p>所有 ID 按字符串传递。目录根序号 <code>0</code> 合法，非根节点的 <code>null</code> 表示待排。书籍选项和目录树中的 <code>display_status</code> 属于不同记录，界面须分别读取。空的 <code>catalogues</code> 表示该书暂未导入目录。</p>
+</section>
+<section id="drawer"><h2>4. 编排一个父目录的直接子项</h2>
+<p>新建排序抽屉。它在打开时复制本层条目，将 <code>id</code> 分成有顺序的 <code>sorted_children</code> 和按成员比较的 <code>unsorted_children</code>。两组覆盖本层全部直接子项。管理员在草稿中加入、上移、下移或移回待排，首次打开时的 <code>expected</code> 始终代表原分组。</p>
+<details class="code-file"><summary><span class="file-mode">新建文件</span><span class="file-path">src/components/CatalogueOrderDrawer.vue</span></summary><div class="code-toolbar"><button type="button" data-copy="drawer-file" hidden>复制代码</button><span class="copy-feedback" role="status" aria-live="polite"></span></div><pre><code id="drawer-file">&lt;template&gt;
+    &lt;el-drawer
+        :model-value="modelValue" title="编排同级节点" size="min(560px, 100%)"
+        :show-close="!busy" :close-on-press-escape="!busy" :close-on-click-modal="!busy"
+        :before-close="beforeClose" @update:model-value="changeOpen" @opened="focusCandidate"
+    &gt;
+        &lt;div ref="listArea" :aria-busy="busy"&gt;
+            &lt;p&gt;{{ parentName }}&lt;/p&gt;
+            &lt;p&gt;将节点加入阅读顺序后, 可用上下箭头调整位置. 保存时, 可见目录移回待排区会隐藏整棵子树, 后代保留原序号.&lt;/p&gt;
+            &lt;h3&gt;阅读顺序 ({{ ranked.length }})&lt;/h3&gt;
+            &lt;p v-if="ranked.length === 0"&gt;请从待排区加入节点.&lt;/p&gt;
+            &lt;ol v-else class="draft-list"&gt;
+                &lt;li v-for="(node, index) in ranked" :key="node.id" :data-node="node.id" tabindex="-1"&gt;
+                    &lt;span class="node-name"&gt;{{ index + 1 }}. {{ node.name }}&lt;/span&gt;
+                    &lt;div class="row-actions"&gt;
+                        &lt;button type="button" :disabled="busy || index === 0"
+                                :aria-label="'上移 ' + node.name" @click="moveAt(index, -1)"&gt;↑&lt;/button&gt;
+                        &lt;button type="button" :disabled="busy || index === ranked.length - 1"
+                                :aria-label="'下移 ' + node.name" @click="moveAt(index, 1)"&gt;↓&lt;/button&gt;
+                        &lt;button type="button" :disabled="busy" @click="removeAt(index)"&gt;
+                            {{ node.sort === null ? '撤回加入' : '移回待排' }}
+                        &lt;/button&gt;
+                    &lt;/div&gt;
+                &lt;/li&gt;
+            &lt;/ol&gt;
+            &lt;h3&gt;待排区 ({{ pending.length }})&lt;/h3&gt;
+            &lt;p v-if="pending.length === 0"&gt;本级节点已全部加入阅读顺序.&lt;/p&gt;
+            &lt;ul v-else class="draft-list"&gt;
+                &lt;li v-for="node in pending" :key="node.id" :data-node="node.id" tabindex="-1"&gt;
+                    &lt;span class="node-name"&gt;{{ node.name }}&lt;/span&gt;
+                    &lt;button type="button" :disabled="busy" @click="addNode(node)"&gt;加入&lt;/button&gt;
+                &lt;/li&gt;
+            &lt;/ul&gt;
+        &lt;/div&gt;
+        &lt;template #footer&gt;
+            &lt;el-button :disabled="busy" @click="changeOpen(false)"&gt;取消&lt;/el-button&gt;
+            &lt;el-button type="primary" :loading="busy" :disabled="busy || !changed" @click="submit"&gt;
+                保存排序
+            &lt;/el-button&gt;
+        &lt;/template&gt;
+    &lt;/el-drawer&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import {computed, nextTick, ref, watch} from 'vue'
+
+/** @typedef {import('@/api/catalogue').CatalogueNode} CatalogueNode */
+/** @typedef {Pick&lt;CatalogueNode, 'id' | 'name' | 'sort'&gt;} DraftNode */
+/** @typedef {import('@/api/catalogue').OrderGroups} OrderGroups */
+
+/** 抽屉显示状态, 当前父目录, 可选的快捷编排项和提交状态. */
+const props = defineProps({
+    modelValue: {type: Boolean, required: true},
+    parent: {type: /** @type {import('vue').PropType&lt;CatalogueNode | null&gt;} */ (Object), default: null},
+    candidateId: {type: String, default: ''},
+    busy: {type: Boolean, default: false},
+})
+/** 父页面执行 API 写入和目录刷新. */
+const emit = defineEmits(['update:modelValue', 'save'])
+/** @type {import('vue').Ref&lt;HTMLElement | null&gt;} 抽屉内的列表区域. */
+const listArea = ref(null)
+/** 打开时的父目录 ID. */
+const parentId = ref('')
+/** 打开时的父目录名称. */
+const parentName = ref('')
+/** @type {import('vue').Ref&lt;DraftNode[]&gt;} 本层记录的副本. */
+const siblings = ref([])
+/** @type {import('vue').Ref&lt;DraftNode[]&gt;} 按阅读顺序排列的草稿. */
+const ranked = ref([])
+/** @type {OrderGroups} 打开时的快照, 编辑草稿期间保留原值. */
+let expected = {sorted_children: [], unsorted_children: []}
+/** 待排项按中文名称自然排序. */
+const collator = new Intl.Collator('zh-CN', {numeric: true})
+/** 剩余节点形成待排组, 保证每个直接子项仅出现一次. */
+const pending = computed(function () {
+    const rankedIds = new Set(ranked.value.map(node =&gt; node.id))
+    return siblings.value.filter(node =&gt; !rankedIds.has(node.id)).sort(function (a, b) {
+        return collator.compare(a.name, b.name) || collator.compare(a.id, b.id)
+    })
+})
+/** 成员变化或已排项换位均允许保存. */
+const changed = computed(function () {
+    const original = expected.sorted_children
+    return ranked.value.length !== original.length ||
+        ranked.value.some((node, index) =&gt; node.id !== original[index].id)
+})
+
+/**
+ * 生成 API 要求的两份完整子项数组.
+ * @returns {OrderGroups} ID 分组.
+ */
+function groups() {
+    return {
+        sorted_children: ranked.value.map(node =&gt; ({id: node.id})),
+        unsorted_children: pending.value.map(node =&gt; ({id: node.id})),
+    }
+}
+
+/** 每次打开时取得新的快照, 将快捷编入操作应用到草稿. */
+function startDraft() {
+    const parent = props.parent
+    if (parent === null) return
+    parentId.value = parent.id
+    parentName.value = parent.name
+    siblings.value = parent.children.map(node =&gt; ({id: node.id, name: node.name, sort: node.sort}))
+    ranked.value = siblings.value.filter(node =&gt; node.sort !== null)
+    expected = groups()
+    const candidate = siblings.value.find(node =&gt; node.id === props.candidateId)
+    if (candidate &amp;&amp; candidate.sort === null) ranked.value.push(candidate)
+}
+watch(() =&gt; props.modelValue, function (open) {
+    if (open) startDraft()
+}, {immediate: true})
+
+/**
+ * 将焦点放在移动后的节点, 支持键盘连续操作.
+ * @param {string} id 节点 ID.
+ */
+async function focusRow(id) {
+    await nextTick()
+    if (listArea.value === null || id === '') return
+    const row = listArea.value.querySelector('[data-node="' + CSS.escape(id) + '"]')
+    if (row instanceof HTMLElement) row.focus()
+}
+
+/** 从表格行进入时滚动到相应节点. */
+function focusCandidate() {
+    focusRow(props.candidateId)
+}
+
+/**
+ * 加入阅读顺序.
+ * @param {DraftNode} node 待排节点.
+ */
+function addNode(node) {
+    if (props.busy) return
+    ranked.value.push(node)
+    focusRow(node.id)
+}
+
+/**
+ * 将节点移回待排组.
+ * @param {number} index 当前索引.
+ */
+function removeAt(index) {
+    if (props.busy) return
+    const [node] = ranked.value.splice(index, 1)
+    focusRow(node.id)
+}
+
+/**
+ * 调整已排节点的位置.
+ * @param {number} index 当前索引.
+ * @param {number} delta 移动距离.
+ */
+function moveAt(index, delta) {
+    const to = index + delta
+    if (props.busy || to &lt; 0 || to &gt;= ranked.value.length) return
+    const [node] = ranked.value.splice(index, 1)
+    ranked.value.splice(to, 0, node)
+    focusRow(node.id)
+}
+
+/**
+ * 写入期间阻止关闭.
+ * @param {Function} done Element Plus 提供的关闭回调.
+ */
+function beforeClose(done) {
+    if (!props.busy) done()
+}
+
+/**
+ * 通知父页面切换抽屉.
+ * @param {boolean} open 期望的打开状态.
+ */
+function changeOpen(open) {
+    if (!props.busy) emit('update:modelValue', open)
+}
+
+/** 发送完整请求体, 父页面根据服务端结果决定是否关闭. */
+function submit() {
+    if (props.busy || !changed.value) return
+    emit('save', {catalogue: {parent_id: parentId.value, expected, target: groups()}})
+}
+&lt;/script&gt;
+
+&lt;style scoped&gt;
+.draft-list { list-style: none; padding: 0; }
+.draft-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 9px 0; border-bottom: 1px solid var(--el-border-color-lighter); }
+.node-name { min-width: 0; overflow-wrap: anywhere; }
+.row-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.draft-list button { border: 1px solid var(--el-border-color); background: var(--el-bg-color);
+    color: var(--el-text-color-primary); border-radius: 4px; padding: 5px 8px; cursor: pointer; }
+.draft-list button:disabled { color: var(--el-disabled-text-color); cursor: not-allowed; }
+.draft-list li:focus-visible, .draft-list button:focus-visible { outline: 2px solid var(--el-color-primary); }
+&lt;/style&gt;</code></pre></details>
+<p>例如本层已排第三章、第一章，第二章待排。把第三章移回待排，再加入第二章后，<code>expected.sorted_children</code> 仍为第三章、第一章，<code>target.sorted_children</code> 变为第一章、第二章，第三章进入 <code>target.unsorted_children</code>。只有点击「保存排序」才发送写请求。返回 <code>20302</code> 时先读取最新目录，让管理员重新确认。</p>
+</section>
+<section id="preview"><h2>5. 从文件节点打开文章预览</h2>
+<p>新建预览对话框。点击文件时以该节点的 <code>id</code> 请求，返回的 <code>article.id</code> 属于文章记录。后端读取磁盘正文并改写本地图片 URL，组件直接使用返回的 <code>content</code>。渲染顺序是 Markdown → HTML → DOMPurify → <code>v-html</code>。<a href="https://marked.js.org/#usage">Marked 文档</a> · <a href="https://github.com/cure53/DOMPurify#how-do-i-use-it">DOMPurify 用法</a></p>
+<details class="code-file"><summary><span class="file-mode">新建文件</span><span class="file-path">src/components/ArticlePreviewDialog.vue</span></summary><div class="code-toolbar"><button type="button" data-copy="preview-file" hidden>复制代码</button><span class="copy-feedback" role="status" aria-live="polite"></span></div><pre><code id="preview-file">&lt;template&gt;
+    &lt;el-dialog
+        :model-value="modelValue"
+        :title="title"
+        width="min(860px, 94vw)"
+        append-to-body
+        @update:model-value="emit('update:modelValue', $event)"
+    &gt;
+        &lt;p v-if="loading" role="status"&gt;正在读取正文...&lt;/p&gt;
+        &lt;div v-else-if="errorText !== ''" role="alert"&gt;
+            &lt;p&gt;{{ errorText }}&lt;/p&gt;
+            &lt;el-button @click="loadPreview"&gt;重新读取&lt;/el-button&gt;
+        &lt;/div&gt;
+        &lt;article v-else-if="html !== ''" class="markdown" v-html="html"&gt;&lt;/article&gt;
+        &lt;el-empty v-else description="这篇文章暂无正文" /&gt;
+    &lt;/el-dialog&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import {computed, onBeforeUnmount, ref, watch} from 'vue'
+import {marked} from 'marked'
+import DOMPurify from 'dompurify'
+import {getArticlePreview} from '@/api/catalogue'
+import {API_CODE} from '@/constants/apiCode'
+import {getApiErrorCode, getApiErrorMessage, isAuthError} from '@/utils/apiError'
+
+/** @typedef {import('@/api/catalogue').CatalogueNode} CatalogueNode */
+const props = defineProps({
+    modelValue: {type: Boolean, required: true},
+    node: {type: /** @type {import('vue').PropType&lt;CatalogueNode&gt;} */ (Object), default: null},
+})
+const emit = defineEmits(['update:modelValue', 'lost'])
+
+/** 只展示本次打开时请求的正文. */
+const loading = ref(false)
+const html = ref('')
+const errorText = ref('')
+const articleTitle = ref('')
+let requestNumber = 0
+
+const title = computed(function () {
+    if (articleTitle.value !== '') return articleTitle.value
+    if (props.node !== null) return props.node.name
+    return 'Markdown 预览'
+})
+
+/** 打开文件或点击重试时读取正文. 已关闭或已切换文件的响应会被丢弃. */
+async function loadPreview() {
+    const number = ++requestNumber
+    const node = props.node
+    html.value = ''
+    errorText.value = ''
+    articleTitle.value = ''
+    loading.value = false
+    if (!props.modelValue || node === null || node.type !== 'file') return
+
+    loading.value = true
+    try {
+        const article = await getArticlePreview(node.id)
+        if (number !== requestNumber) return
+        articleTitle.value = article.title
+        const rendered = marked.parse(article.content, {async: false, gfm: true})
+        html.value = DOMPurify.sanitize(rendered, {USE_PROFILES: {html: true}})
+    } catch (error) {
+        if (number !== requestNumber || isAuthError(error)) return
+        const code = getApiErrorCode(error)
+        if (code === API_CODE.CATALOGUE_NOT_FOUND) {
+            errorText.value = '该目录节点已删除'
+            emit('lost')
+        } else if (code === API_CODE.ARTICLE_PREVIEW_UNAVAILABLE) {
+            errorText.value = '该节点的 Markdown 正文暂时无法预览'
+        } else {
+            errorText.value = getApiErrorMessage(error, '读取文章失败')
+        }
+    } finally {
+        if (number === requestNumber) loading.value = false
+    }
+}
+
+watch([() =&gt; props.modelValue, () =&gt; props.node?.id], loadPreview, {immediate: true})
+onBeforeUnmount(function () { requestNumber++ })
+&lt;/script&gt;
+
+&lt;style scoped&gt;
+.markdown { line-height: 1.75; overflow-wrap: anywhere; }
+.markdown :deep(img) { max-width: 100%; height: auto; }
+.markdown :deep(pre), .markdown :deep(table) { display: block; overflow-x: auto; }
+.markdown :deep(pre) { padding: 14px; background: #f4f6fa; }
+&lt;/style&gt;</code></pre></details>
+<p>对话框显示加载、空正文和读取失败状态。切换文件或关闭对话框会使先前的请求失效，晚到的响应无法覆盖新文件。图片请求直接使用正文里已经生成的资源地址。</p>
+</section>
+<section id="page"><h2>6. 组合目录管理页面</h2>
+<p>新建页面组件。左栏基于后端给出的树展示可见行，右栏始终以选中目录的 <code>children</code> 为数据源。任何已选书都能管理，包括书籍自身被隐藏的情况。</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">页面状态</th><th scope="col">实现时的约定</th></tr></thead><tbody><tr><td>选择天体或书籍</td><td>先清空下一级选项及旧目录。只接收仍属于当前选择的异步响应。</td></tr><tr><td>首次读取与刷新</td><td>首次只展开并选中根节点。写操作后的刷新按节点 ID 恢复当前目录和展开位置，已删除的节点回退到有效目录。</td></tr><tr><td>全书排序进度</td><td>分子为整棵树中已排序的非根节点数，分母为所有非根节点数。单独切换显隐不会改变进度。</td></tr><tr><td>隐藏与重新显示</td><td>可见目录被隐藏，或者在保存排序时移回待排，会在服务端隐藏同书全部后代。后代保留序号。重新显示目录或重新编入排序，只显示该目录。</td></tr><tr><td>成功与重新同步</td><td>排序和显隐写入成功都返回空对象。隐藏后重取目录树，因为重复隐藏与实际切换的响应相同。显示状态的确认只依赖显隐接口的业务结果，排序仅由抽屉发起。</td></tr><tr><td>写入结果未知</td><td>超时或断线时先读取服务端最新状态。即便读取失败，管理员也有明确的刷新入口，可恢复后再继续编辑。</td></tr></tbody></table></div>
+<h3>代码阅读顺序</h3><ol><li>从 <code>selectPlanet()</code>、<code>selectBook()</code> 和 <code>loadTree()</code> 看联动与回显。每次读取递增版本号，即使用户从 A 切到 B 又切回 A，旧响应也不会覆盖最后一次选择。</li><li><code>indexTree()</code> 为服务端提供的树建立 ID 索引，<code>visibleRows</code> 仅计算左侧已展开的行。右侧表格绑定 <code>folder.children</code>，保持单层。全书进度遍历全部节点，包含当前折叠的分支。</li><li><code>openNode()</code> 区分文件与文件夹，<code>openOrder()</code> 打开草稿。<code>writeChange()</code> 串行提交一次写请求，并处理显隐、冲突和刷新。排序成功后按原路径恢复目录，显示单个节点成功后可直接更新该开关。</li></ol>
+<details class="code-file"><summary><span class="file-mode">新建文件</span><span class="file-path">src/views/CataloguePage.vue</span></summary><div class="code-toolbar"><button type="button" data-copy="page-file" hidden>复制代码</button><span class="copy-feedback" role="status" aria-live="polite"></span></div><pre><code id="page-file">&lt;template&gt;
+    &lt;section class="catalogue-page"&gt;
+        &lt;el-breadcrumb separator="/"&gt;
+            &lt;el-breadcrumb-item&gt;管理后台&lt;/el-breadcrumb-item&gt;
+            &lt;el-breadcrumb-item&gt;目录管理&lt;/el-breadcrumb-item&gt;
+        &lt;/el-breadcrumb&gt;
+        &lt;div class="toolbar"&gt;
+            &lt;h1&gt;目录管理&lt;/h1&gt;
+            &lt;el-button :disabled="reading || writing" @click="retryRead"&gt;刷新数据&lt;/el-button&gt;
+        &lt;/div&gt;
+        &lt;el-card shadow="never"&gt;
+            &lt;div class="filters"&gt;
+                &lt;label&gt;天体
+                    &lt;select :value="planetId" :disabled="writing || planets.length === 0"
+                            @change="selectPlanet($event.target.value)"&gt;
+                        &lt;option value=""&gt;请选择天体&lt;/option&gt;
+                        &lt;option v-for="planet in planets" :key="planet.id" :value="planet.id"&gt;
+                            {{ getBodyLabel(planet.name) }}
+                        &lt;/option&gt;
+                    &lt;/select&gt;
+                &lt;/label&gt;
+                &lt;label&gt;书籍
+                    &lt;select :value="bookId" :disabled="writing || books.length === 0"
+                            @change="selectBook($event.target.value)"&gt;
+                        &lt;option value=""&gt;请选择书籍&lt;/option&gt;
+                        &lt;option v-for="item in books" :key="item.id" :value="item.id"&gt;{{ item.title }}&lt;/option&gt;
+                    &lt;/select&gt;
+                &lt;/label&gt;
+                &lt;div v-if="selectedBook"&gt;
+                    书籍状态
+                    &lt;el-tag :type="selectedBook.display_status === 'visible' ? 'success' : 'info'"&gt;
+                        {{ selectedBook.display_status === 'visible' ? '显示' : '隐藏' }}
+                    &lt;/el-tag&gt;
+                &lt;/div&gt;
+                &lt;div v-if="book &amp;&amp; readError === ''" class="progress"&gt;
+                    &lt;label&gt;全书排序进度 {{ sortedCount }} / {{ nonRootCount }}
+                        &lt;progress :value="sortedCount" :max="Math.max(1, nonRootCount)"&gt;&lt;/progress&gt;
+                    &lt;/label&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+        &lt;/el-card&gt;
+
+        &lt;div v-if="readError !== ''" role="alert" class="notice"&gt;
+            {{ readError }}
+            &lt;el-button @click="retryRead" :disabled="reading || writing"&gt;重新读取&lt;/el-button&gt;
+        &lt;/div&gt;
+        &lt;p v-else-if="reading" role="status"&gt;正在读取...&lt;/p&gt;
+        &lt;el-empty v-else-if="book === null" :description="selectionHint" /&gt;
+        &lt;el-empty v-else-if="folder === null" description="这本书尚未导入目录" /&gt;
+
+        &lt;div v-else class="panels"&gt;
+            &lt;el-card shadow="never"&gt;
+                &lt;div class="toolbar"&gt;
+                    &lt;h2&gt;目录树&lt;/h2&gt;
+                    &lt;el-button link type="primary" :disabled="expandableIds.length === 0"
+                               @click="toggleAll"&gt;{{ allOpen ? '收起全部' : '展开全部' }}&lt;/el-button&gt;
+                &lt;/div&gt;
+                &lt;p&gt;全书 {{ index.size }} 个节点&lt;/p&gt;
+                &lt;ul aria-label="目录树" class="tree"&gt;
+                    &lt;li v-for="entry in visibleRows" :key="entry.node.id"
+                        :style="{ paddingInlineStart: (entry.depth * 14) + 'px' }"
+                        :class="{ selected: entry.node.id === (fileId || folderId) }"&gt;
+                        &lt;button v-if="entry.node.children.length &gt; 0" type="button" class="arrow"
+                                :aria-expanded="expanded.has(entry.node.id)"
+                                :aria-label="(expanded.has(entry.node.id) ? '收起' : '展开') + entry.node.name"
+                                @click="toggleFolder(entry.node.id)"&gt;
+                            {{ expanded.has(entry.node.id) ? '▾' : '▸' }}
+                        &lt;/button&gt;
+                        &lt;span v-else class="arrow"&gt;&lt;/span&gt;
+                        &lt;button class="node" type="button" @click="openNode(entry.node)"
+                                :aria-current="entry.node.id === (fileId || folderId) ? 'true' : undefined"&gt;
+                            &lt;el-icon&gt;&lt;component :is="entry.node.type === 'folder' ? Folder : Document" /&gt;&lt;/el-icon&gt;
+                            {{ entry.node.name }}
+                        &lt;/button&gt;
+                        &lt;span class="dot" :class="{ ranked: entry.node.sort !== null }"
+                              role="img" :aria-label="entry.node.sort === null ? '待排序' : '已排序'"&gt;&lt;/span&gt;
+                    &lt;/li&gt;
+                &lt;/ul&gt;
+                &lt;small&gt;绿色 · 已排序　橙色 · 待排序&lt;/small&gt;
+            &lt;/el-card&gt;
+
+            &lt;el-card shadow="never"&gt;
+                &lt;nav class="path" aria-label="当前目录路径"&gt;
+                    &lt;el-button v-for="item in currentPath" :key="item.id" link @click="openNode(item)"&gt;
+                        {{ item.parent_id === '0' ? '书籍根目录' : item.name }}
+                    &lt;/el-button&gt;
+                &lt;/nav&gt;
+                &lt;div class="toolbar"&gt;
+                    &lt;h2&gt;{{ folder.name }}&lt;/h2&gt;
+                    &lt;el-button type="primary" :disabled="writing || folder.children.length === 0"
+                               @click="openOrder('')"&gt;编排本级&lt;/el-button&gt;
+                &lt;/div&gt;
+                &lt;p&gt;本级 {{ folder.children.length }} 项 · 已排序 {{ rankedChildren }} 项 · 待排序 {{ folder.children.length - rankedChildren }} 项&lt;/p&gt;
+                &lt;div class="current"&gt;
+                    {{ folder.parent_id === '0' ? '根节点' : '当前目录' }} ·
+                    {{ folder.sort === null ? '待排序' : '序号 ' + folder.sort }}
+                    &lt;el-switch :model-value="folder.display_status === 'visible'" :aria-label="folder.name + '的显示状态'"
+                               active-text="显示" inactive-text="隐藏" :disabled="writing || folder.sort === null"
+                               @change="changeDisplay(folder, $event)" /&gt;
+                &lt;/div&gt;
+                &lt;!-- 右表只列直接子项. 将树表子节点键指向此 DTO 未使用的名称. --&gt;
+                &lt;el-table :data="folder.children" row-key="id" :tree-props="{ children: 'tableChildren' }"
+                          empty-text="该目录没有子节点"&gt;
+                    &lt;el-table-column label="节点名称" min-width="190"&gt;
+                        &lt;template #default="{ row }"&gt;
+                            &lt;el-button link type="primary" class="name" @click="openNode(row)"&gt;
+                                &lt;el-icon&gt;&lt;component :is="row.type === 'folder' ? Folder : Document" /&gt;&lt;/el-icon&gt;
+                                {{ row.name }}
+                            &lt;/el-button&gt;
+                        &lt;/template&gt;
+                    &lt;/el-table-column&gt;
+                    &lt;el-table-column label="同级序号" width="86"&gt;
+                        &lt;template #default="{ row }"&gt;{{ row.sort === null ? '待排序' : row.sort }}&lt;/template&gt;
+                    &lt;/el-table-column&gt;
+                    &lt;el-table-column label="显示状态" width="106"&gt;
+                        &lt;template #default="{ row }"&gt;
+                            &lt;el-switch :model-value="row.display_status === 'visible'"
+                                       :aria-label="row.name + '的显示状态'" :disabled="writing || row.sort === null"
+                                       @change="changeDisplay(row, $event)" /&gt;
+                            {{ row.display_status === 'visible' ? '显示' : '隐藏' }}
+                        &lt;/template&gt;
+                    &lt;/el-table-column&gt;
+                    &lt;el-table-column label="排序操作" width="98"&gt;
+                        &lt;template #default="{ row }"&gt;
+                            &lt;el-button link type="primary" :disabled="writing" @click="openOrder(row.id)"&gt;
+                                {{ row.sort === null ? '编入顺序' : '调整顺序' }}
+                            &lt;/el-button&gt;
+                        &lt;/template&gt;
+                    &lt;/el-table-column&gt;
+                &lt;/el-table&gt;
+                &lt;p&gt;&lt;small&gt;隐藏可见目录会同时隐藏全部下级, 后代的序号保留. 重新显示时仅显示该目录.&lt;/small&gt;&lt;/p&gt;
+            &lt;/el-card&gt;
+        &lt;/div&gt;
+        &lt;CatalogueOrderDrawer v-model="orderOpen" :parent="folder" :busy="writing" :candidate-id="candidateId"
+                              @save="saveOrder" /&gt;
+        &lt;ArticlePreviewDialog v-model="previewOpen" :node="previewNode" @lost="loadTree" /&gt;
+    &lt;/section&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import {computed, onBeforeUnmount, onMounted, ref} from 'vue'
+import {ElMessage} from 'element-plus'
+import {Document, Folder} from '@element-plus/icons-vue'
+import {getBodyList} from '@/api/body'
+import {getBodyLabel} from '@/utils/body'
+import {getBookOptions, getCatalogueTree, saveCatalogueOrder, setCatalogueDisplay} from '@/api/catalogue'
+import {API_CODE} from '@/constants/apiCode'
+import {getApiErrorCode, getApiErrorMessage, isAuthError} from '@/utils/apiError'
+import CatalogueOrderDrawer from '@/components/CatalogueOrderDrawer.vue'
+import ArticlePreviewDialog from '@/components/ArticlePreviewDialog.vue'
+
+/** @typedef {import('@/api/catalogue').CatalogueNode} CatalogueNode */
+/** @type {import('vue').Ref&lt;import('@/api/body').BodyRecord[]&gt;} 天体选项. */
+const planets = ref([])
+/** @type {import('vue').Ref&lt;import('@/api/catalogue').BookOption[]&gt;} 所选天体的书籍. */
+const books = ref([])
+/** @type {import('vue').Ref&lt;import('@/api/catalogue').CatalogueBook | null&gt;} 当前已读取的书和目录树. */
+const book = ref(null)
+const planetId = ref('')
+const bookId = ref('')
+const folderId = ref('')
+const fileId = ref('')
+const expanded = ref(new Set())
+const readError = ref('')
+const reading = ref(false)
+const writing = ref(false)
+const orderOpen = ref(false)
+const candidateId = ref('')
+const previewOpen = ref(false)
+/** 最近一次读取的编号. 切换选项及离开页面时, 作废较早的响应. */
+let readVersion = 0
+let active = true
+
+/** @returns {Map&lt;string, CatalogueNode&gt;} 便于按 ID 恢复选择及获取父节点. */
+function indexTree() {
+    const result = new Map()
+    const stack = book.value === null ? [] : [...book.value.catalogues]
+    while (stack.length &gt; 0) {
+        const node = stack.pop()
+        result.set(node.id, node)
+        for (const child of node.children) stack.push(child)
+    }
+    return result
+}
+const index = computed(indexTree)
+const folder = computed(() =&gt; index.value.get(folderId.value) || null)
+const previewNode = computed(() =&gt; index.value.get(fileId.value) || null)
+const selectedBook = computed(() =&gt; book.value || books.value.find(item =&gt; item.id === bookId.value))
+const nonRootCount = computed(() =&gt; [...index.value.values()].filter(node =&gt; node.parent_id !== '0').length)
+const sortedCount = computed(() =&gt; [...index.value.values()].filter(node =&gt; node.parent_id !== '0' &amp;&amp; node.sort !== null).length)
+const rankedChildren = computed(() =&gt; folder.value === null ? 0 : folder.value.children.filter(node =&gt; node.sort !== null).length)
+const expandableIds = computed(() =&gt; [...index.value.values()].filter(node =&gt; node.children.length &gt; 0).map(node =&gt; node.id))
+const allOpen = computed(() =&gt; expandableIds.value.length &gt; 0 &amp;&amp; expandableIds.value.every(id =&gt; expanded.value.has(id)))
+const selectionHint = computed(function () {
+    if (planets.value.length === 0) return '暂无已创建的天体'
+    if (planetId.value === '') return '请先选择天体'
+    if (books.value.length === 0) return '该天体暂无书籍'
+    return '请选择书籍'
+})
+
+/**
+ * @param {CatalogueNode | null} node 路径终点.
+ * @returns {CatalogueNode[]} 从根到终点的路径.
+ */
+function pathTo(node) {
+    const path = []
+    while (node) {
+        path.push(node)
+        node = index.value.get(node.parent_id)
+    }
+    return path.reverse()
+}
+const currentPath = computed(() =&gt; pathTo(folder.value))
+/** 按后端给定的顺序生成可见行. 展开状态与节点的显示开关相互独立. */
+const visibleRows = computed(function () {
+    const rows = []
+    function visit(node, depth) {
+        rows.push({node, depth})
+        if (expanded.value.has(node.id)) {
+            for (const child of node.children) visit(child, depth + 1)
+        }
+    }
+    if (book.value !== null) {
+        for (const root of book.value.catalogues) visit(root, 0)
+    }
+    return rows
+})
+
+/** @param {string} id 手动展开或收起的节点. */
+function toggleFolder(id) {
+    if (expanded.value.has(id)) expanded.value.delete(id)
+    else expanded.value.add(id)
+}
+/** 展开或收起全部有子项的节点. */
+function toggleAll() {
+    expanded.value = new Set(allOpen.value ? [] : expandableIds.value)
+}
+/** @param {CatalogueNode} node 选中的目录或待预览的文件. */
+function openNode(node) {
+    if (writing.value) return
+    const isFile = node.type === 'file'
+    fileId.value = isFile ? node.id : ''
+    folderId.value = isFile ? node.parent_id : node.id
+    for (const parent of currentPath.value) expanded.value.add(parent.id)
+    previewOpen.value = isFile
+}
+
+/** 丢弃上一棵树的视图状态. 请求版本号由发起新读取的调用方维护. */
+function clearBook() {
+    book.value = null
+    bookId.value = ''
+    folderId.value = ''
+    fileId.value = ''
+    expanded.value = new Set()
+    orderOpen.value = false
+    previewOpen.value = false
+}
+/** 开始一次可作废的读取. */
+function startRead() {
+    readError.value = ''
+    reading.value = true
+    return ++readVersion
+}
+/** @param {number} version 此次读取编号. */
+function finishRead(version) {
+    if (version === readVersion) reading.value = false
+}
+/** 获取天体选项. */
+async function loadPlanets() {
+    const version = startRead()
+    clearBook()
+    planets.value = []
+    planetId.value = ''
+    books.value = []
+    try {
+        const result = await getBodyList()
+        if (version === readVersion) planets.value = result
+    } catch (error) {
+        if (version === readVersion &amp;&amp; !isAuthError(error)) readError.value = getApiErrorMessage(error, '读取天体失败')
+    } finally {
+        finishRead(version)
+    }
+}
+/** @param {string} id 新选择的天体, 空串清空选择. */
+async function selectPlanet(id) {
+    const version = startRead()
+    planetId.value = id
+    books.value = []
+    clearBook()
+    try {
+        if (id === '') return
+        const result = await getBookOptions(id)
+        if (version === readVersion) books.value = result
+    } catch (error) {
+        if (version !== readVersion || isAuthError(error)) return
+        if (getApiErrorCode(error) === API_CODE.BOOK_PLANET_NOT_FOUND) {
+            ElMessage.warning('所选天体已不存在, 请重新选择')
+            await loadPlanets()
+        } else {
+            readError.value = getApiErrorMessage(error, '读取书籍选项失败')
+        }
+    } finally {
+        finishRead(version)
+    }
+}
+/** @param {string} id 书籍 ID, 保持为字符串. */
+function selectBook(id) {
+    ++readVersion
+    clearBook()
+    reading.value = false
+    readError.value = ''
+    bookId.value = id
+    if (id !== '') loadTree()
+}
+/** 重读权威目录树, 尽量恢复选中的目录和展开位置. */
+async function loadTree() {
+    const id = bookId.value
+    if (id === '') return
+    const version = startRead()
+    const previousPath = currentPath.value.map(node =&gt; node.id).reverse()
+    const hadTree = book.value !== null &amp;&amp; book.value.catalogues.length &gt; 0
+    try {
+        const result = await getCatalogueTree(id)
+        if (version !== readVersion) return
+        book.value = result
+        const root = result.catalogues[0]
+        expanded.value = hadTree
+            ? new Set([...expanded.value].filter(key =&gt; index.value.has(key)))
+            : new Set(root ? [root.id] : [])
+        const nearest = previousPath.find(key =&gt; index.value.get(key)?.type === 'folder')
+        folderId.value = nearest || (root ? root.id : '')
+        if (!index.value.has(fileId.value)) {
+            fileId.value = ''
+            previewOpen.value = false
+        }
+    } catch (error) {
+        if (version !== readVersion || isAuthError(error)) return
+        if (getApiErrorCode(error) === API_CODE.BOOK_NOT_FOUND) {
+            ElMessage.warning('书籍已不存在, 请重新选择')
+            await selectPlanet(planetId.value)
+        } else {
+            readError.value = getApiErrorMessage(error, '目录读取失败, 请重新读取')
+        }
+    } finally {
+        finishRead(version)
+    }
+}
+/** 按当前选择重试失败的读取. */
+function retryRead() {
+    if (bookId.value !== '') return loadTree()
+    if (planetId.value !== '') return selectPlanet(planetId.value)
+    return loadPlanets()
+}
+/** @param {string} id 表格行的 ID, 从标题进入时使用空串. */
+function openOrder(id) {
+    if (writing.value || reading.value || folder.value === null) return
+    candidateId.value = id
+    orderOpen.value = true
+}
+
+/** 在单次写入结束前锁定上下文. 排序或隐藏成功后重新读取整棵树.
+ * @param {() =&gt; Promise&lt;void&gt;} send 发出一次写请求.
+ * @param {boolean} isOrder 是否从排序抽屉提交.
+ * @param {CatalogueNode} [shownNode] 仅显示此节点时可直接更新开关.
+ */
+async function writeChange(send, isOrder, shownNode) {
+    if (writing.value || reading.value || readError.value !== '') return
+    writing.value = true
+    try {
+        await send()
+        if (!active) return
+        if (isOrder) orderOpen.value = false
+        if (shownNode) shownNode.display_status = 'visible'
+        else await loadTree()
+    } catch (error) {
+        if (!active || isAuthError(error)) return
+        const code = getApiErrorCode(error)
+        if (code === API_CODE.VALIDATION_ERROR) {
+            ElMessage.error(getApiErrorMessage(error, '请核对提交内容'))
+            return
+        }
+        orderOpen.value = false
+        if (code === API_CODE.CATALOGUE_ORDER_CHANGED) ElMessage.warning('同级目录已变化, 请核对新顺序后重新编排')
+        else if (code === API_CODE.CATALOGUE_SORT_REQUIRED) ElMessage.warning('请先为该节点排序')
+        else if (code === API_CODE.CATALOGUE_NOT_FOUND) ElMessage.warning('节点已不存在, 正在刷新目录')
+        else if (code === API_CODE.BOOK_NOT_FOUND) ElMessage.warning('书籍已不存在, 请重新选择')
+        else ElMessage.warning(getApiErrorMessage(error, '请重新读取目录以确认保存结果'))
+        if (code === API_CODE.BOOK_NOT_FOUND) await selectPlanet(planetId.value)
+        else await loadTree()
+    } finally {
+        writing.value = false
+    }
+}
+/** @param {import('@/api/catalogue').ReorderRequest} payload 抽屉冻结的快照与目标分组. */
+function saveOrder(payload) {
+    if (!orderOpen.value || payload.catalogue.parent_id !== folderId.value) return
+    return writeChange(() =&gt; saveCatalogueOrder(payload), true)
+}
+/**
+ * @param {CatalogueNode} node 目录或文件.
+ * @param {boolean} visible 开关请求的目标状态.
+ */
+function changeDisplay(node, visible) {
+    if (node.sort === null) return
+    const status = visible === true ? 'visible' : 'hidden'
+    return writeChange(() =&gt; setCatalogueDisplay(node.id, status), false, visible === true ? node : undefined)
+}
+
+onMounted(loadPlanets)
+onBeforeUnmount(function () {
+    active = false
+    ++readVersion
+})
+&lt;/script&gt;
+
+&lt;style scoped&gt;
+.catalogue-page { display: grid; gap: 16px; min-width: 0; }
+h1, h2, p { margin: 0; }
+h2 { font-size: 18px; }
+.filters, .toolbar, .current, .path { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.filters label { display: grid; gap: 6px; }
+.filters &gt; label { min-width: 0; max-width: 100%; grid-template-columns: minmax(0, 1fr); }
+.filters select {
+    box-sizing: border-box; width: 100%; min-width: 0; text-overflow: ellipsis;
+    appearance: none; padding: 8px 34px 8px 12px; border: 1px solid #cdd4df;
+    border-radius: 6px; font: inherit; color: inherit; background-color: white;
+    background-image: linear-gradient(45deg, transparent 50%, #57657b 50%),
+                      linear-gradient(135deg, #57657b 50%, transparent 50%);
+    background-size: 5px 5px; background-repeat: no-repeat;
+    background-position: right 16px center, right 11px center;
+}
+@media (forced-colors: active) { .filters select { appearance: auto; background-image: none; } }
+.progress { margin-inline-start: auto; }
+.progress progress { accent-color: #575acb; }
+.panels { display: grid; grid-template-columns: minmax(230px, 1fr) minmax(0, 2fr); gap: 16px; align-items: start; }
+.panels &gt; * { min-width: 0; }
+.toolbar { justify-content: space-between; }
+.toolbar, .path, .current, .notice { margin: 10px 0; }
+.tree { padding: 0; list-style: none; max-height: 58vh; overflow: auto; }
+.tree li { display: flex; align-items: center; padding: 5px 4px; }
+.tree button { border: 0; background: transparent; cursor: pointer; color: inherit; font: inherit; }
+.tree .arrow { flex: 0 0 25px; }
+.tree .node { flex: 1; text-align: start; overflow-wrap: anywhere; }
+.selected { background: #eef0ff; color: #374897; border-radius: 4px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: #bd862f; flex-shrink: 0; }
+.dot.ranked { background: #268168; }
+.name { height: auto; max-width: 100%; white-space: normal; text-align: start; }
+.notice { color: #9c403c; }
+@media (max-width: 880px) {
+    .panels { grid-template-columns: minmax(0, 1fr); }
+    .progress { margin-inline-start: 0; }
+}
+&lt;/style&gt;</code></pre></details>
+<p>如果根目录下还没有排过序，可以先用表格中的「编入顺序」选择一章，在抽屉中保存。此时返回的序号从 1 开始，显隐开关也可操作，进入该章可以继续编排它的子项。</p>
+</section>
+<section id="navigation"><h2>7. 将页面接入后台路由和菜单</h2>
+<p>在 <code>src/router/index.js</code> 的 <code>/admin</code> 路由的 <code>children</code> 中，将下面的对象插在 <code>bookList</code> 与 <code>noteList</code> 之间。使用相对路径 <code>catalogues</code> 可复用管理布局和父路由的登录检查。</p>
+<details class="code-file" open><summary><span class="file-mode">插入</span><span class="file-path">src/router/index.js · /admin 的子路由</span></summary><div class="code-toolbar"><button type="button" data-copy="route" hidden>复制代码</button><span class="copy-feedback" role="status" aria-live="polite"></span></div><pre><code id="route">{
+    path: 'catalogues',
+    name: 'catalogueList',
+    component: () =&gt; import('@/views/CataloguePage.vue'),
+    meta: {
+        title: '目录管理',
+        description: '编排书籍目录并预览文章',
+    },
+},</code></pre></details>
+<p>在 <code>src/views/LayoutPage.vue</code> 的脚本中，用下面这行替换原来的图标导入。再将菜单片段插在「书籍管理」与「笔记管理」之间，沿用 <code>getMenuPath()</code> 解析具名路由，以便菜单跳转和高亮跟随路由配置。</p>
+<details class="code-file" open><summary><span class="file-mode">替换一行</span><span class="file-path">src/views/LayoutPage.vue · 图标导入</span></summary><div class="code-toolbar"><button type="button" data-copy="icons" hidden>复制代码</button><span class="copy-feedback" role="status" aria-live="polite"></span></div><pre><code id="icons">import {Document, Notebook, Reading, Sunny, SwitchButton, User} from '@element-plus/icons-vue'</code></pre></details>
+<details class="code-file" open><summary><span class="file-mode">插入</span><span class="file-path">src/views/LayoutPage.vue · el-menu 内</span></summary><div class="code-toolbar"><button type="button" data-copy="menu" hidden>复制代码</button><span class="copy-feedback" role="status" aria-live="polite"></span></div><pre><code id="menu">&lt;el-menu-item
+    :index="getMenuPath('catalogueList')"
+    title="目录管理"
+    aria-label="目录管理"
+&gt;
+    &lt;el-icon&gt;&lt;Notebook /&gt;&lt;/el-icon&gt;
+    &lt;span&gt;目录管理&lt;/span&gt;
+&lt;/el-menu-item&gt;</code></pre></details>
+</section>
+<section id="verify"><h2>8. 在测试书籍上联调</h2>
+<p>管理 API 与前端分别运行。现有 <code>vite.config.js</code> 把 <code>/api</code> 转发到 <code>http://127.0.0.1:4060</code>。如果后端在虚拟机上运行，代理目标应填写从 Vite 所在机器可访问的后端地址。静态图片使用后端配置的资源域名。</p>
+<details class="code-file" open><summary><span class="file-mode">终端</span><span class="file-path">前端工程根目录</span></summary><div class="code-toolbar"><button type="button" data-copy="run" hidden>复制代码</button><span class="copy-feedback" role="status" aria-live="polite"></span></div><pre><code id="run">npm run build
+npm run dev</code></pre></details>
+<p>完成登录后打开 <code>http://localhost:5062/admin/catalogues</code>。打开浏览器 Network 面板，选一本允许修改的测试书籍验证以下操作。</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">操作</th><th scope="col">请求和可见结果</th></tr></thead><tbody><tr><td>进入页面，切换天体，再选书</td><td>先后出现 planet/list、book/options、catalogue/tree。隐藏书可选，无书或无目录有对应提示。快速切换后只显示最后一次选择。</td></tr><tr><td>在目录树中选择章节，再展开全部或收起</td><td>目录数据本地可浏览。初次只有根展开，点击文件才出现 article/preview。侧边栏仍高亮「目录管理」。</td></tr><tr><td>加两项、调换顺序，先取消再保存</td><td>取消时没有 reorder 请求。保存发送一次完整的 expected 和 target，再读 tree。首项上移和末项下移都被禁用，表格和全书进度同步。</td></tr><tr><td>隐藏可见章节，其中含有已排序的可见文件</td><td>display 请求只含 id、display_status。成功后目录树反映全部后代隐藏。文件序号保留，进度不变。重新显示章节后只有该章节显示。</td></tr><tr><td>将可见章节移回待排，再重新加入</td><td>保存后章节序号为 null，后代隐藏并保留原序号。重新加入后章节获得正序号，后代维持各自显隐。</td></tr><tr><td>两个窗口同时打开同一层的抽屉</td><td>先在窗口 A 改变分组并保存，再在 B 提交不同顺序。B 收到 20302 并重读目录，再次打开抽屉时使用新快照。</td></tr><tr><td>点击隐藏文件、空 Markdown、已删除正文</td><td>依次检查有标题和图片的预览、空正文提示及 20401 错误。关闭预览后可继续浏览原目录。</td></tr><tr><td>令牌失效、节点已删除、网络中断</td><td>20003 / 20004 由已有拦截器清理会话并跳转。20301 时读取最新目录。写请求结果未知时先刷新，确认实际状态后才继续操作。</td></tr></tbody></table></div>
+</section>
+</main></div>
+<script>
+'use strict'
+
+/** @type {WeakMap<HTMLButtonElement, number>} 每个复制按钮对应的反馈清除定时器. */
+const copyFeedbackTimers = new WeakMap()
+
+/**
+ * 统一设置全部代码块的展开状态.
+ * @param {boolean} isOpen 是否展开代码块.
+ * @returns {void}
+ */
+function setCodeExpansion(isOpen) {
+    /** @type {NodeListOf<Element>} 当前文档中的代码块. */
+    const files = document.querySelectorAll('details.code-file')
+
+    /** @type {Element} 当前代码块元素. */
+    for (const file of files) {
+        if (file instanceof HTMLDetailsElement) {
+            file.open = isOpen
+        }
+    }
+}
+
+/**
+ * 展开全部代码块.
+ * @returns {void}
+ */
+function expandAllCode() {
+    setCodeExpansion(true)
+}
+
+/**
+ * 折叠全部代码块.
+ * @returns {void}
+ */
+function collapseAllCode() {
+    setCodeExpansion(false)
+}
+
+/**
+ * 恢复复制前的焦点, 尽量保持页面滚动位置.
+ * @param {Element | null} element 复制前获得焦点的元素.
+ * @returns {void}
+ */
+function restoreCopyFocus(element) {
+    if (element instanceof HTMLElement && element.isConnected === true) {
+        try {
+            element.focus({preventScroll: true})
+        } catch {
+            element.focus()
+        }
+    }
+}
+
+/**
+ * 使用临时文本框执行兼容复制, 完成后移除文本框并恢复焦点.
+ * @param {string} value 要写入剪贴板的完整代码.
+ * @returns {boolean} 浏览器是否确认复制成功.
+ */
+function copyTextWithFallback(value) {
+    /** @type {Element | null} 创建临时文本框前的焦点元素. */
+    const previousFocus = document.activeElement
+    /** @type {HTMLTextAreaElement} 用于选中完整代码的临时文本框. */
+    const field = document.createElement('textarea')
+    /** @type {boolean} 兼容复制的执行结果. */
+    let copied = false
+
+    field.value = value
+    field.readOnly = true
+    field.style.position = 'fixed'
+    field.style.top = '0'
+    field.style.left = '-9999px'
+    field.style.opacity = '0'
+
+    try {
+        document.body.append(field)
+        field.select()
+        field.setSelectionRange(0, field.value.length)
+        copied = document.execCommand('copy') === true
+    } catch {
+        copied = false
+    } finally {
+        field.remove()
+        restoreCopyFocus(previousFocus)
+    }
+
+    return copied
+}
+
+/**
+ * 优先使用 Clipboard API, 不可用或被拒绝时尝试兼容复制.
+ * @param {string} value 要复制的完整代码.
+ * @returns {Promise<boolean>} 是否确认复制成功.
+ */
+async function copyCodeText(value) {
+    try {
+        if (
+            window.isSecureContext === true &&
+            navigator.clipboard !== undefined &&
+            typeof navigator.clipboard.writeText === 'function'
+        ) {
+            await navigator.clipboard.writeText(value)
+            return true
+        }
+    } catch {
+        // 本地文件或浏览器权限可能拒绝 Clipboard API, 继续尝试备用方式.
+    }
+
+    return copyTextWithFallback(value)
+}
+
+/**
+ * 清除已展示的复制反馈并移除定时器记录.
+ * @param {HTMLButtonElement} button 对应的复制按钮.
+ * @param {HTMLElement} feedback 按钮旁的反馈区域.
+ * @returns {void}
+ */
+function clearCopyFeedback(button, feedback) {
+    feedback.textContent = ''
+    copyFeedbackTimers.delete(button)
+}
+
+/**
+ * 复制当前按钮关联的代码, 避免重复执行并展示明确的结果.
+ * @param {MouseEvent} event 复制按钮的点击事件.
+ * @returns {Promise<void>} 本次复制处理结束.
+ */
+async function handleCopyCode(event) {
+    /** @type {EventTarget | null} 触发本次复制的事件元素. */
+    const button = event.currentTarget
+    if (button instanceof HTMLButtonElement === false || button.disabled === true) {
+        return
+    }
+
+    /** @type {string | undefined} 需要复制的代码元素 ID. */
+    const codeId = button.dataset.copy
+    if (typeof codeId !== 'string' || codeId === '') {
+        return
+    }
+
+    /** @type {HTMLElement | null} 需要复制的代码元素. */
+    const code = document.getElementById(codeId)
+    /** @type {Element | null} 位于按钮之后的反馈元素. */
+    const feedback = button.nextElementSibling
+    if (code instanceof HTMLElement === false || feedback instanceof HTMLElement === false) {
+        return
+    }
+
+    /** @type {number | undefined} 上一次结果提示的清除定时器. */
+    const previousTimer = copyFeedbackTimers.get(button)
+    if (typeof previousTimer === 'number') {
+        window.clearTimeout(previousTimer)
+        copyFeedbackTimers.delete(button)
+    }
+
+    /** @type {Element | null} 禁用按钮之前的焦点元素. */
+    const previousFocus = document.activeElement
+    /** @type {string | null} 保留原始换行和缩进的代码文本. */
+    const content = code.textContent
+    /** @type {string} 本次要复制的文本. */
+    let value = ''
+    if (content !== null) {
+        value = content
+    }
+
+    /** @type {boolean} 本次复制是否成功. */
+    let copied = false
+    button.disabled = true
+    feedback.textContent = '正在复制...'
+
+    try {
+        copied = await copyCodeText(value)
+    } catch {
+        copied = false
+    } finally {
+        button.disabled = false
+        restoreCopyFocus(previousFocus)
+    }
+
+    if (copied === true) {
+        feedback.textContent = '已复制'
+    } else {
+        feedback.textContent = '复制失败, 请手动选择代码'
+    }
+
+    /** @type {number} 本次结果提示的清除定时器. */
+    const timer = window.setTimeout(clearCopyFeedback, 2500, button, feedback)
+    copyFeedbackTimers.set(button, timer)
+}
+
+/**
+ * 初始化全部展开按钮和复制按钮, 应在正文元素创建后调用.
+ * @returns {void}
+ */
+function initializeCodeTools() {
+    /** @type {HTMLElement | null} 展开全部代码的按钮. */
+    const expand = document.getElementById('expand-all')
+    /** @type {HTMLElement | null} 折叠全部代码的按钮. */
+    const collapse = document.getElementById('collapse-all')
+    if (expand instanceof HTMLButtonElement) {
+        expand.hidden = false
+        expand.addEventListener('click', expandAllCode)
+    }
+    if (collapse instanceof HTMLButtonElement) {
+        collapse.hidden = false
+        collapse.addEventListener('click', collapseAllCode)
+    }
+
+    /** @type {NodeListOf<Element>} 声明了目标代码 ID 的复制按钮. */
+    const buttons = document.querySelectorAll('button[data-copy]')
+    /** @type {Element} 当前待初始化的复制按钮元素. */
+    for (const button of buttons) {
+        if (button instanceof HTMLButtonElement === false) {
+            continue
+        }
+        /** @type {string | undefined} 按钮关联的代码元素 ID. */
+        const codeId = button.dataset.copy
+        if (typeof codeId !== 'string' || codeId === '') {
+            continue
+        }
+        /** @type {HTMLElement | null} 对应的代码元素. */
+        const code = document.getElementById(codeId)
+        /** @type {Element | null} 对应的复制反馈区域. */
+        const feedback = button.nextElementSibling
+        if (code instanceof HTMLElement === false || feedback instanceof HTMLElement === false) {
+            continue
+        }
+        button.hidden = false
+        button.addEventListener('click', handleCopyCode)
+    }
+}
+
+initializeCodeTools()
+
+</script>
+</body>
+</html>
