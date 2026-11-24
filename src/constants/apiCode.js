@@ -1,4 +1,10 @@
 /**
+ * 天体不存在, 供天体编辑与书籍关联共用.
+ * @type {number}
+ */
+const BODY_NOT_FOUND = 20102
+
+/**
  * 后端业务响应码(对应响应体中的 code 字段)
  * @enum {number}
  * */
@@ -23,8 +29,12 @@ const API_CODE = {
     LOGIN_RATE_LIMIT: 20005,
     /** 请求创建的天体已经存在 */
     BODY_ALREADY_EXISTS: 20101,
-    /** 创建书籍时所选天体已不存在 */
-    BOOK_PLANET_NOT_FOUND: 20102,
+    /** 编辑中的天体已不存在. */
+    BODY_NOT_FOUND,
+    /** 保留现有书籍与目录页面使用的名称. */
+    BOOK_PLANET_NOT_FOUND: BODY_NOT_FOUND,
+    /** 当前标题或简介与编辑前的原文不一致. */
+    BODY_EDIT_CHANGED: 20103,
     /** 所选书籍已不存在. */
     BOOK_NOT_FOUND: 20202,
     /** 所选天体的书单或顺序已变化. */

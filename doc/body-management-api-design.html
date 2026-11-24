@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>天体管理 API 设计 · SolarNotes</title><style>
+:root{color-scheme:light;--paper:#f3f6f2;--ink:#1d302a;--muted:#5e7068;--line:#dce5dc;--green:#21644c;--soft:#e7f1e8;--amber:#846013;--warm:#fbf2db;--blue:#275e7a;--mono:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:24px}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.82 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+a{color:var(--green);text-underline-offset:4px;overflow-wrap:anywhere}a:hover{color:#103d2b}:focus-visible{outline:3px solid #4485ae;outline-offset:3px}[hidden]{display:none!important}
+.skip{position:absolute;top:-80px;left:20px;background:white;padding:10px 16px;z-index:4}.skip:focus{top:12px}
+.page{width:min(1350px,100%);margin:auto;display:grid;grid-template-columns:228px minmax(0,1fr);gap:54px;padding:40px 38px 80px}.sidebar{position:sticky;top:28px;align-self:start;max-height:calc(100vh - 56px);overflow:auto}
+.brand{font-size:12px;font-weight:800;letter-spacing:.1em;color:var(--green)}.brand::before{content:"";display:inline-block;width:12px;height:12px;border:3px solid var(--green);border-radius:50%;margin-right:8px;vertical-align:-1px}.sidebar p{font-size:13px;color:var(--muted);line-height:1.7}.sidebar nav{display:grid;gap:3px;margin-top:22px}.sidebar nav a{display:flex;gap:12px;padding:7px 9px;border-radius:7px;text-decoration:none;color:var(--muted);font-size:14px}.sidebar nav a:hover{background:var(--soft);color:var(--green)}.sidebar nav span{color:var(--green);font:12px/2 var(--mono)}.side-note{border-top:1px solid var(--line);padding-top:16px;margin-top:22px}
+main{min-width:0}.eyebrow,.section-label{color:var(--green);font:700 12px/1.5 var(--mono);letter-spacing:.1em}.hero h1{font-size:clamp(33px,4vw,48px);line-height:1.25;letter-spacing:-.03em;margin:16px 0}.lede{font-size:18px;color:var(--muted);max-width:820px}.tags{display:flex;flex-wrap:wrap;gap:8px;margin:24px 0}.tag{border:1px solid var(--line);border-radius:30px;padding:4px 11px;font-size:12px;background:white;color:var(--muted)}
+.thesis{background:#194b39;color:#fff;border-radius:14px;padding:22px 25px}.thesis p{margin:0}.thesis strong{color:#d4f5dc}.page-tools{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:20px 0}.page-tools button,.code-toolbar button{font:inherit;font-size:13px;border:1px solid var(--green);border-radius:7px;background:white;color:var(--green);cursor:pointer;padding:6px 12px}.page-tools button:hover,.code-toolbar button:hover{background:var(--soft)}
+section{padding-top:42px;margin-top:10px}h2{font-size:27px;line-height:1.4;letter-spacing:-.02em;margin:8px 0 20px}h3{font-size:19px;line-height:1.55;margin:27px 0 10px}p{margin:12px 0}code{font:.87em/1.7 var(--mono);background:#e8f0e8;border-radius:4px;padding:2px 5px;overflow-wrap:anywhere}pre{margin:14px 0;padding:19px 22px;background:#1d3029;color:#e5efe6;border-radius:10px;overflow-x:auto;tab-size:2;font:13px/1.75 var(--mono)}pre code{font:inherit;background:transparent;color:inherit;padding:0;border-radius:0;overflow-wrap:normal}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0}.card{border:1px solid var(--line);background:#fffefa;border-radius:12px;padding:18px 19px}.card .n{color:var(--green);font:12px/1.5 var(--mono)}.card h3{margin:6px 0;font-size:16px}.card p{font-size:14px;color:var(--muted);margin:0}
+.note{background:var(--soft);border-left:3px solid var(--green);border-radius:0 8px 8px 0;padding:15px 18px;margin:20px 0;font-size:14px}.note.warning{background:var(--warm);border-color:var(--amber)}.note p{margin:0}.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:white;margin:18px 0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;vertical-align:top;padding:12px 15px;border-bottom:1px solid var(--line);min-width:105px}th{color:var(--green);background:#edf3ec;font-weight:650}tr:last-child td{border-bottom:0}ul,ol{padding-left:23px}li{margin:8px 0}.small{font-size:13px;color:var(--muted)}
+details.code-file{border:1px solid var(--line);background:#fffefa;border-radius:10px;overflow:hidden;margin:18px 0}details.code-file summary{padding:14px 17px;cursor:pointer;font-weight:650;overflow-wrap:anywhere;line-height:1.7}.file-mode{display:inline-block;font-size:11px;padding:2px 7px;border-radius:5px;background:var(--soft);color:var(--green);margin-right:9px;font-weight:500}.file-path{font:13px/1.7 var(--mono)}.code-toolbar{display:flex;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid var(--line)}.copy-feedback{font-size:12px;color:var(--muted)}.code-file pre{margin:0;border-radius:0;font-size:12.5px}footer{margin-top:45px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+@media(max-width:1050px){.page{gap:27px;padding-left:24px;padding-right:24px;grid-template-columns:185px minmax(0,1fr)}}@media(max-width:800px){.page{display:block;padding:24px 20px 55px}.sidebar{position:static;max-height:none;margin-bottom:32px}.sidebar nav{display:flex;gap:5px;overflow-x:auto;margin-top:15px;padding-bottom:8px}.sidebar nav a{white-space:nowrap;border:1px solid var(--line);padding:5px 9px}.sidebar p,.side-note{display:none}.grid{grid-template-columns:1fr}h2{font-size:24px}}
+@media(max-width:520px){pre{padding:16px;font-size:12px}th,td{padding:10px 12px}}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}@media print{body{background:white;color:black;font-size:11pt}.page{display:block;width:100%;padding:0}.sidebar,.page-tools,.code-toolbar,.skip{display:none!important}.thesis{background:#eee;color:black}.thesis strong{color:black}section{padding-top:20px}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f3f3f3;color:black;font-size:8pt}.code-file{overflow:visible!important}.table-wrap{overflow:visible}a{color:black}}
+section h2 code{font-size:.72em}
+.table-wrap th:first-child{white-space:nowrap}
+</style></head><body>
+<a class="skip" href="#main">跳至正文</a><div class="page"><aside class="sidebar"><div class="brand">SolarNotes 管理后台</div><nav aria-label="文档目录"><a href="#overview">接口变更一览</a><a href="#status">进入页面与复检</a><a href="#update">保存天体编辑</a><a href="#reuse">列表与创建</a><a href="#errors">失败与恢复</a><a href="#verify">联调验收与源码</a></nav><p><a href="body-management-prototype.html">打开天体管理原型</a></p></aside><main id="main">
+<header class="hero"><h1>天体管理 API 设计</h1><p class="lede">现有后端支持列出、创建天体及逐项检查创建状态。为已确认的原型，建议新增一个编辑接口，并在状态接口中补充服务端的完整性检测结论。</p>
+<div class="page-tools"><button type="button" id="expand-all" hidden>展开全部示例</button><button type="button" id="collapse-all" hidden>折叠全部示例</button></div></header>
+<section id="overview"><h2>接口变更一览</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">后端路由</th><th scope="col">核对结果</th><th scope="col">服务于页面的哪一步</th></tr></thead><tbody><tr><td><code>GET /v1/planet/list</code></td><td>现有 · 复用</td><td>读取已创建记录。编辑抽屉从行数据回填。</td></tr><tr><td><code>GET /v1/planet/status</code></td><td>现有 · 扩展响应</td><td>保留九项创建状态，新增 <code>data.readiness</code>，供首次进入、重试和创建后复检。</td></tr><tr><td><code>POST /v1/planet/create</code></td><td>现有 · 复用</td><td>补建缺少的天体，成功后重新读取列表和状态。</td></tr><tr><td><code>POST /v1/planet/update</code></td><td>建议新增</td><td>按 ID 保存标题和简介，返回该条记录供列表回显。</td></tr></tbody></table></div>
+<p>这四个接口均使用管理端鉴权，携带 <code>Authorization: Bearer &lt;access_token&gt;</code>。POST 使用 <code>Content-Type: application/json</code>。下文展示完整 HTTP 响应体示例。现有控制器按项目约定用 HTTP 200 承载业务响应，数值型 <code>code</code> 表示业务结果。成功时 Axios 拦截器已解包到 <code>data</code>。</p>
+</section>
+<section id="status"><h2>进入页面与复检</h2>
+<h3>GET /v1/planet/status · 扩展响应</h3>
+<p>无请求体，无查询参数。现有 <code>biz.Planet.ShowStatus()</code> 对固定九个名称批量查库，按固定顺序返回 <code>data.planets[].name</code> 和 <code>exist</code>。已有数据足以在前端推算缺项。按本次由后端负责检测的要求，建议服务端直接汇总这批结果，在同一响应中给出结论，省去独立检测路由与重复查询。</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">建议新增字段</th><th scope="col">类型与规则</th></tr></thead><tbody><tr><td><code>data.readiness.ready</code></td><td>布尔值。缺失清单为空时为 true。</td></tr><tr><td><code>data.readiness.required_count</code></td><td>整数。固定集合的大小，当前为 9。</td></tr><tr><td><code>data.readiness.created_count</code></td><td>整数。固定集合中 exist 为 true 的数量。</td></tr><tr><td><code>data.readiness.missing_names</code></td><td>字符串数组。按固定顺序列出 exist 为 false 的精确名称，齐全时为 []。页面用 getBodyLabel() 转成中文。</td></tr></tbody></table></div>
+<details class="code-file" open><summary>建议成功响应 · 已创建 7/9，缺少天王星、海王星</summary><div class="code-toolbar"><button type="button" data-copy="status-missing" hidden>复制 JSON</button><span class="copy-feedback" role="status"></span></div><pre><code id="status-missing" data-format="json">{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "planets": [
+      {
+        "name": "Sun",
+        "exist": true
+      },
+      {
+        "name": "Mercury",
+        "exist": true
+      },
+      {
+        "name": "Venus",
+        "exist": true
+      },
+      {
+        "name": "Earth",
+        "exist": true
+      },
+      {
+        "name": "Mars",
+        "exist": true
+      },
+      {
+        "name": "Jupiter",
+        "exist": true
+      },
+      {
+        "name": "Saturn",
+        "exist": true
+      },
+      {
+        "name": "Uranus",
+        "exist": false
+      },
+      {
+        "name": "Neptune",
+        "exist": false
+      }
+    ],
+    "readiness": {
+      "ready": false,
+      "required_count": 9,
+      "created_count": 7,
+      "missing_names": [
+        "Uranus",
+        "Neptune"
+      ]
+    }
+  }
+}</code></pre></details>
+<details class="code-file" open><summary>建议成功响应 · 已创建 9/9</summary><div class="code-toolbar"><button type="button" data-copy="status-ready" hidden>复制 JSON</button><span class="copy-feedback" role="status"></span></div><pre><code id="status-ready" data-format="json">{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "planets": [
+      {
+        "name": "Sun",
+        "exist": true
+      },
+      {
+        "name": "Mercury",
+        "exist": true
+      },
+      {
+        "name": "Venus",
+        "exist": true
+      },
+      {
+        "name": "Earth",
+        "exist": true
+      },
+      {
+        "name": "Mars",
+        "exist": true
+      },
+      {
+        "name": "Jupiter",
+        "exist": true
+      },
+      {
+        "name": "Saturn",
+        "exist": true
+      },
+      {
+        "name": "Uranus",
+        "exist": true
+      },
+      {
+        "name": "Neptune",
+        "exist": true
+      }
+    ],
+    "readiness": {
+      "ready": true,
+      "required_count": 9,
+      "created_count": 9,
+      "missing_names": []
+    }
+  }
+}</code></pre></details>
+<p>缺少天体是检测成功得到的业务结果，仍返回 <code>code: 200</code>。页面在 <code>ready === false</code> 时显示<strong>「尚有未被创建的天体，前台页面无法正常启动」</strong>，并列出缺失名称。在 <code>ready === true</code> 时显示「太阳与八颗行星均已创建」。此检测范围是九个必需天体的创建状态。</p>
+<p>汇总时逐项精确匹配大小写，沿用现有 <code>names</code> 的顺序。库中有历史额外名称时仍只核对这九项。空库应成功返回九项 <code>exist: false</code>、计数 0/9 和全部九个名称。查询失败时走错误响应，页面显示「暂时无法确认天体是否齐全」及「重试检测」。</p>
+<p>兼容发布时可先上线后端扩展。现有 <code>getBodyStatus()</code> 校验并返回九项状态，旧调用方可继续使用。新页面在请求层解析同一响应的 <code>planets</code> 和 <code>readiness</code>，一次请求同时更新创建选项和检测卡。摘要缺失、类型错误或与明细不一致时按检测失败处理。</p>
+</section>
+<section id="update"><h2>保存天体编辑</h2>
+<h3>POST /v1/planet/update · 建议新增</h3>
+<p>按列表中的 <code>planet.id</code> 定位记录。为避免两位管理员互相覆盖，建议沿用已实现的书籍编辑契约：<code>expected</code> 是打开抽屉时记录的原文，<code>target</code> 是本次保存的完整标题与简介。两组均必填，即使只改一个字段也提交另一字段的值。</p>
+<details class="code-file" open><summary>建议请求体 · 编辑太阳</summary><div class="code-toolbar"><button type="button" data-copy="edit-req" hidden>复制 JSON</button><span class="copy-feedback" role="status"></span></div><pre><code id="edit-req" data-format="json">{
+  "planet": {
+    "id": "2123435429930733568",
+    "expected": {
+      "title": "太阳系的中心",
+      "intro": "太阳是太阳系中唯一的恒星。"
+    },
+    "target": {
+      "title": "认识太阳",
+      "intro": "太阳是太阳系中唯一的恒星，为地球提供光和热。"
+    }
+  }
+}</code></pre></details>
+<details class="code-file" open><summary>建议成功响应 · 与列表中的单行同形</summary><div class="code-toolbar"><button type="button" data-copy="edit-res" hidden>复制 JSON</button><span class="copy-feedback" role="status"></span></div><pre><code id="edit-res" data-format="json">{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "planet": {
+      "id": "2123435429930733568",
+      "name": "Sun",
+      "title": "认识太阳",
+      "intro": "太阳是太阳系中唯一的恒星，为地球提供光和热。"
+    }
+  }
+}</code></pre></details>
+<p>ID 使用正 int64 范围内的十进制字符串，前端原样传递。<code>expected.title</code> 和 <code>expected.intro</code> 须为字符串，按读取时原文比较，包含首尾空白；允许历史空串。<code>target</code> 的两个字符串由后端去除首尾空白，再按 Unicode 码点校验，标题 1–20，简介 1–150。</p>
+<p>写入字段白名单为 <code>title</code>、<code>intro</code>。<code>id</code> 仅定位，<code>name</code> 由服务器从已有记录回传，以保持前台资源匹配和书籍关联。列表中的历史名称也能按 ID 编辑。</p>
+<p>建议在一个事务中按 ID 锁定记录，比对原文再更新。记录已不存在时返回 20102，原值变化时返回建议的新码 20103，两种情况均不写入。原值匹配且目标值相同时直接成功返回该行。事务提交后返回最终行，前端按 ID 替换列表对应项。修改标题和简介不影响天体创建状态，无须触发复检。</p>
+</section>
+<section id="reuse"><h2>列表与创建</h2>
+<h3>GET /v1/planet/list · 直接复用</h3>
+<p>无请求体，无查询参数。返回已创建天体的 <code>id</code>、<code>name</code>、<code>title</code> 和 <code>intro</code>。已知名称按固定顺序排列，历史额外名称排在末尾，空表返回 <code>data.planets: []</code>。以下是仅创建太阳时的完整响应示例，点击「编辑」即可用这一行填入抽屉。</p>
+<details class="code-file" open><summary>现有成功响应 · 一条记录</summary><div class="code-toolbar"><button type="button" data-copy="list-res" hidden>复制 JSON</button><span class="copy-feedback" role="status"></span></div><pre><code id="list-res" data-format="json">{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "planets": [
+      {
+        "id": "2123435429930733568",
+        "name": "Sun",
+        "title": "太阳系的中心",
+        "intro": "太阳是太阳系中唯一的恒星。"
+      }
+    ]
+  }
+}</code></pre></details>
+<h3>POST /v1/planet/create · 直接复用</h3>
+<p>名称精确匹配固定选项，标题、简介为必填且不能全为空白，现行长度上限分别为 20、150。现有前端提交前会修剪首尾空白。ID 由服务端生成。</p>
+<details class="code-file" open><summary>现有请求体 · 补建海王星</summary><div class="code-toolbar"><button type="button" data-copy="create-req" hidden>复制 JSON</button><span class="copy-feedback" role="status"></span></div><pre><code id="create-req" data-format="json">{
+  "planet": {
+    "name": "Neptune",
+    "title": "遥远的蓝色行星",
+    "intro": "海王星是八颗行星中距离太阳最远的一颗。"
+  }
+}</code></pre></details>
+<details class="code-file" open><summary>现有成功响应</summary><div class="code-toolbar"><button type="button" data-copy="create-res" hidden>复制 JSON</button><span class="copy-feedback" role="status"></span></div><pre><code id="create-res" data-format="json">{
+  "code": 200,
+  "message": "success",
+  "data": {}
+}</code></pre></details>
+<p>创建成功后并行重读 <code>list</code> 与扩展后的 <code>status</code>。若另一位管理员先创建了同名天体，沿用 <code>20101</code>，也刷新这两份数据。复检失败时单独提示检测失败，已经成功的创建仍然有效。</p>
+</section>
+<section id="errors"><h2>失败与恢复</h2>
+<details class="code-file" open><summary>建议失败响应 · 原文已变更</summary><div class="code-toolbar"><button type="button" data-copy="edit-conflict" hidden>复制 JSON</button><span class="copy-feedback" role="status"></span></div><pre><code id="edit-conflict" data-format="json">{
+  "code": 20103,
+  "message": "天体标题或简介已变化,请刷新后重新确认",
+  "data": {}
+}</code></pre></details>
+<div class="table-wrap"><table><thead><tr><th scope="col">业务码</th><th scope="col">来源与含义</th><th scope="col">页面处理</th></tr></thead><tbody><tr><td>20003 / 20004</td><td>现有 · 令牌过期或无效</td><td>沿用公共鉴权拦截器处理。</td></tr><tr><td>10101</td><td>现有 · 请求校验失败</td><td>保留抽屉输入，提示检查字段。</td></tr><tr><td>20101</td><td>现有 · 创建时名称已存在</td><td>刷新列表和可创建选项。</td></tr><tr><td>20102</td><td>现有 · 所选天体不存在</td><td>建议让编辑接口复用此码。关闭失效记录的编辑抽屉，刷新列表及状态。</td></tr><tr><td>20103</td><td>建议新增 · 天体编辑快照失效</td><td>保留草稿，重读列表，管理员核对最新原文后再提交。</td></tr><tr><td>10201 / 500</td><td>现有 · 数据库或服务内部错误</td><td>检测失败可单独重试。编辑失败保留草稿；写请求超时时先重读记录核对结果。</td></tr></tbody></table></div>
+<p>现有 20102 在后端名为 <code>BookPlanetNotFoundCode</code>，前端常量为 <code>BOOK_PLANET_NOT_FOUND</code>。若用于天体编辑，建议抽出通用的天体不存在常量，保留现有书籍接口的数值及行为。建议把 20103 纳入前后端共同的响应码定义。所有错误响应的 <code>data</code> 沿用空对象。</p>
+</section>
+<section id="verify"><h2>联调验收与源码</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">操作或数据</th><th scope="col">预期结果</th></tr></thead><tbody><tr><td>初次进入，天王星和海王星缺失</td><td>并行请求 list 和 status。列表可编辑，检测卡显示 7/9、缺失名称及原型中的提示。</td></tr><tr><td>库中有 9 条记录，但其中一条是历史额外名称</td><td>若固定集合仅命中 8 项，仍显示 8/9 和缺少的那一项。</td></tr><tr><td>连续补建两个缺失天体</td><td>每次创建成功都复检，依次显示 8/9 和 9/9，齐全后禁用创建入口。</td></tr><tr><td>检测请求出错后重试</td><td>检测卡先显示未知状态，列表可独立展示；重试仅请求 status，以最新一次结果更新检测卡。</td></tr><tr><td>取消、正常保存、用旧原值保存</td><td>取消不发请求；正常保存只更新对应天体的两项内容；过期快照收到冲突响应并保留草稿。</td></tr></tbody></table></div>
+<p>现有路由和返回格式按本地 Go 源码核对。本次交付为接口设计，新增字段、编辑接口和 20103 均属待实现契约。</p>
+<p><a href="../../SolarNotesAdminAPI/main.go">路由与中间件注册</a> · <a href="../../SolarNotesAdminAPI/controller/v1/planet/planet.go">天体控制器</a> · <a href="../../SolarNotesAdminAPI/biz/planet.go">天体顺序与状态查询</a> · <a href="../../SolarNotesAdminAPI/param/req/v1/planet/create.go">现有创建校验</a> · <a href="../../SolarNotesAdminAPI/param/req/v1/book/update.go">书籍编辑契约</a> · <a href="../../SolarNotesAdminAPI/resp_body/resp_body.go">响应码定义</a> · <a href="../src/api/body.js">现有前端天体请求</a> · <a href="body-management-prototype.html">已确认的交互原型</a></p>
+</section></main></div><script>
+'use strict'
+
+/** @type {WeakMap<HTMLButtonElement, number>} 每个复制按钮对应的反馈清除定时器. */
+const copyFeedbackTimers = new WeakMap()
+
+/**
+ * 统一设置全部代码块的展开状态.
+ * @param {boolean} isOpen 是否展开代码块.
+ * @returns {void}
+ */
+function setCodeExpansion(isOpen) {
+    /** @type {NodeListOf<Element>} 当前文档中的代码块. */
+    const files = document.querySelectorAll('details.code-file')
+
+    /** @type {Element} 当前代码块元素. */
+    for (const file of files) {
+        if (file instanceof HTMLDetailsElement) {
+            file.open = isOpen
+        }
+    }
+}
+
+/**
+ * 展开全部代码块.
+ * @returns {void}
+ */
+function expandAllCode() {
+    setCodeExpansion(true)
+}
+
+/**
+ * 折叠全部代码块.
+ * @returns {void}
+ */
+function collapseAllCode() {
+    setCodeExpansion(false)
+}
+
+/**
+ * 恢复复制前的焦点, 尽量保持页面滚动位置.
+ * @param {Element | null} element 复制前获得焦点的元素.
+ * @returns {void}
+ */
+function restoreCopyFocus(element) {
+    if (element instanceof HTMLElement && element.isConnected === true) {
+        try {
+            element.focus({preventScroll: true})
+        } catch {
+            element.focus()
+        }
+    }
+}
+
+/**
+ * 使用临时文本框执行兼容复制, 完成后移除文本框并恢复焦点.
+ * @param {string} value 要写入剪贴板的完整代码.
+ * @returns {boolean} 浏览器是否确认复制成功.
+ */
+function copyTextWithFallback(value) {
+    /** @type {Element | null} 创建临时文本框前的焦点元素. */
+    const previousFocus = document.activeElement
+    /** @type {HTMLTextAreaElement} 用于选中完整代码的临时文本框. */
+    const field = document.createElement('textarea')
+    /** @type {boolean} 兼容复制的执行结果. */
+    let copied = false
+
+    field.value = value
+    field.readOnly = true
+    field.style.position = 'fixed'
+    field.style.top = '0'
+    field.style.left = '-9999px'
+    field.style.opacity = '0'
+
+    try {
+        document.body.append(field)
+        field.select()
+        field.setSelectionRange(0, field.value.length)
+        copied = document.execCommand('copy') === true
+    } catch {
+        copied = false
+    } finally {
+        field.remove()
+        restoreCopyFocus(previousFocus)
+    }
+
+    return copied
+}
+
+/**
+ * 优先使用 Clipboard API, 不可用或被拒绝时尝试兼容复制.
+ * @param {string} value 要复制的完整代码.
+ * @returns {Promise<boolean>} 是否确认复制成功.
+ */
+async function copyCodeText(value) {
+    try {
+        if (
+            window.isSecureContext === true &&
+            navigator.clipboard !== undefined &&
+            typeof navigator.clipboard.writeText === 'function'
+        ) {
+            await navigator.clipboard.writeText(value)
+            return true
+        }
+    } catch {
+        // 本地文件或浏览器权限可能拒绝 Clipboard API, 继续尝试备用方式.
+    }
+
+    return copyTextWithFallback(value)
+}
+
+/**
+ * 清除已展示的复制反馈并移除定时器记录.
+ * @param {HTMLButtonElement} button 对应的复制按钮.
+ * @param {HTMLElement} feedback 按钮旁的反馈区域.
+ * @returns {void}
+ */
+function clearCopyFeedback(button, feedback) {
+    feedback.textContent = ''
+    copyFeedbackTimers.delete(button)
+}
+
+/**
+ * 复制当前按钮关联的代码, 避免重复执行并展示明确的结果.
+ * @param {MouseEvent} event 复制按钮的点击事件.
+ * @returns {Promise<void>} 本次复制处理结束.
+ */
+async function handleCopyCode(event) {
+    /** @type {EventTarget | null} 触发本次复制的事件元素. */
+    const button = event.currentTarget
+    if (button instanceof HTMLButtonElement === false || button.disabled === true) {
+        return
+    }
+
+    /** @type {string | undefined} 需要复制的代码元素 ID. */
+    const codeId = button.dataset.copy
+    if (typeof codeId !== 'string' || codeId === '') {
+        return
+    }
+
+    /** @type {HTMLElement | null} 需要复制的代码元素. */
+    const code = document.getElementById(codeId)
+    /** @type {Element | null} 位于按钮之后的反馈元素. */
+    const feedback = button.nextElementSibling
+    if (code instanceof HTMLElement === false || feedback instanceof HTMLElement === false) {
+        return
+    }
+
+    /** @type {number | undefined} 上一次结果提示的清除定时器. */
+    const previousTimer = copyFeedbackTimers.get(button)
+    if (typeof previousTimer === 'number') {
+        window.clearTimeout(previousTimer)
+        copyFeedbackTimers.delete(button)
+    }
+
+    /** @type {Element | null} 禁用按钮之前的焦点元素. */
+    const previousFocus = document.activeElement
+    /** @type {string | null} 保留原始换行和缩进的代码文本. */
+    const content = code.textContent
+    /** @type {string} 本次要复制的文本. */
+    let value = ''
+    if (content !== null) {
+        value = content
+    }
+
+    /** @type {boolean} 本次复制是否成功. */
+    let copied = false
+    button.disabled = true
+    feedback.textContent = '正在复制...'
+
+    try {
+        copied = await copyCodeText(value)
+    } catch {
+        copied = false
+    } finally {
+        button.disabled = false
+        restoreCopyFocus(previousFocus)
+    }
+
+    if (copied === true) {
+        feedback.textContent = '已复制'
+    } else {
+        feedback.textContent = '复制失败, 请手动选择代码'
+    }
+
+    /** @type {number} 本次结果提示的清除定时器. */
+    const timer = window.setTimeout(clearCopyFeedback, 2500, button, feedback)
+    copyFeedbackTimers.set(button, timer)
+}
+
+/**
+ * 初始化全部展开按钮和复制按钮, 应在正文元素创建后调用.
+ * @returns {void}
+ */
+function initializeCodeTools() {
+    /** @type {HTMLElement | null} 展开全部代码的按钮. */
+    const expand = document.getElementById('expand-all')
+    /** @type {HTMLElement | null} 折叠全部代码的按钮. */
+    const collapse = document.getElementById('collapse-all')
+    if (expand instanceof HTMLButtonElement) {
+        expand.hidden = false
+        expand.addEventListener('click', expandAllCode)
+    }
+    if (collapse instanceof HTMLButtonElement) {
+        collapse.hidden = false
+        collapse.addEventListener('click', collapseAllCode)
+    }
+
+    /** @type {NodeListOf<Element>} 声明了目标代码 ID 的复制按钮. */
+    const buttons = document.querySelectorAll('button[data-copy]')
+    /** @type {Element} 当前待初始化的复制按钮元素. */
+    for (const button of buttons) {
+        if (button instanceof HTMLButtonElement === false) {
+            continue
+        }
+        /** @type {string | undefined} 按钮关联的代码元素 ID. */
+        const codeId = button.dataset.copy
+        if (typeof codeId !== 'string' || codeId === '') {
+            continue
+        }
+        /** @type {HTMLElement | null} 对应的代码元素. */
+        const code = document.getElementById(codeId)
+        /** @type {Element | null} 对应的复制反馈区域. */
+        const feedback = button.nextElementSibling
+        if (code instanceof HTMLElement === false || feedback instanceof HTMLElement === false) {
+            continue
+        }
+        button.hidden = false
+        button.addEventListener('click', handleCopyCode)
+    }
+}
+
+initializeCodeTools()
+</script></body></html>

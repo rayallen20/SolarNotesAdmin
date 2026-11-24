@@ -1,172 +1,192 @@
-/**
- * @typedef {Object} BodyStatus 本对象表示天体下拉选项对应的服务端状态
- * @property {string} name 天体标识(区分大小写)
- * @property {boolean} exist 是否已经创建(true 表示不可再次创建)
- * */
+import request from '@/utils/request'
+import {bodyOptions} from '@/constants/body'
+import {isRecord} from '@/utils/typeGuard'
+import {readRequiredStringField, readSafeIntegerField, readStringField} from '@/utils/fileReader'
 
 /**
- * @typedef {Object} BodyRecord 列表接口返回的一条天体记录
- * @property {string} id 雪花 ID 的字符串(不转换为 Number )
- * @property {string} name 天体标识(历史未知名称也保留展示)
- * @property {string} title 天体标题
- * @property {string} intro 天体简介
- * */
+ * @typedef {Object} BodyStatus 固定天体的创建状态.
+ * @property {string} name 固定英文标识.
+ * @property {boolean} exist 已创建时为 true.
+ */
 
 /**
- * @typedef {Object} AddBodyForm 创建天体的表单数据
- * @property {string} name 固定选项中的天体标识(保持大小写及原值)
- * @property {string} title 天体标题
- * @property {string} intro 天体简介
- * */
-
-import {isRecord} from "@/utils/typeGuard";
-import {bodyOptions} from "@/constants/body";
-import {readRequiredStringField, readStringField} from "@/utils/fileReader";
-import request from "@/utils/request";
+ * @typedef {Object} BodyReadiness 后端完整性检测结果.
+ * @property {boolean} ready 九个必需天体均已创建时为 true.
+ * @property {number} required_count 必需天体总数.
+ * @property {number} created_count 已创建的必需天体数.
+ * @property {string[]} missing_names 按固定顺序列出的缺失标识.
+ */
 
 /**
- * 本函数用于从已解包的 data 中读取 planets 数组
- * @param {unknown} data request 响应拦截器返回的 payload.data
- * @returns {unknown[]} 尚未逐项校验的数组
- * @throws {Error} 缺少数组或数据结构异常时抛出
- * */
+ * @typedef {Object} BodyStatusResult 同一次检测的明细和摘要.
+ * @property {BodyStatus[]} planets 太阳与八颗行星的创建状态.
+ * @property {BodyReadiness} readiness 完整性摘要.
+ */
+
+/**
+ * @typedef {Object} BodyFields 可编辑的字段.
+ * @property {string} title 天体标题.
+ * @property {string} intro 天体简介.
+ */
+
+/**
+ * @typedef {Object} BodyRecord 数据库中已创建的天体.
+ * @property {string} id 十进制字符串 ID.
+ * @property {string} name 大小写敏感的原始标识.
+ * @property {string} title 天体标题原文.
+ * @property {string} intro 天体简介原文.
+ */
+
+/**
+ * @typedef {Object} AddBodyForm 创建表单.
+ * @property {string} name 待创建天体的固定标识.
+ * @property {string} title 天体标题.
+ * @property {string} intro 天体简介.
+ */
+
+/**
+ * 读取已经由 Axios 解包的数据中的 planets.
+ * @param {unknown} data 业务响应中的 data.
+ * @returns {unknown[]} 待校验的数组.
+ */
 function readPlanets(data) {
-    if (isRecord(data) === false) {
-        throw new Error('天体接口响应格式异常,请刷新后重试')
-    }
-
-    if (Array.isArray(data.planets) === false) {
+    if (isRecord(data) === false || Array.isArray(data.planets) === false) {
         throw new Error('天体接口响应缺少 planets 数组')
     }
-
     return data.planets
 }
 
 /**
- * 本函数用于判断状态项的名称是否属于当前前端支持的9个选项
- * @param {string} name 待检查的天体标识
- * @returns {boolean} 名称精确匹配时返回 true
- * */
-function isKnownBodyName(name) {
-    for (const option of bodyOptions) {
-        if (option.name === name) {
-            return true
-        }
+ * 逐项核对后端约定的九个固定标识及其顺序.
+ * @param {unknown[]} items 状态明细原值.
+ * @returns {BodyStatus[]} 可供表单使用的创建状态.
+ */
+function readStatuses(items) {
+    if (items.length !== bodyOptions.length) {
+        throw new Error('天体状态明细不完整')
     }
-
-    return false
-}
-
-/**
- * 本函数用于请求天体状态接口(任何缺失/重复/格式错误都视为加载失败)
- * @returns {Promise<BodyStatus[]>} 包含全部9个天体的有效状态
- * @throws {Error} 响应结构或状态字段不符合当前协议时拒绝
- * */
-async function getBodyStatus() {
-    /** @type {unknown} 已解包的响应 data(不用再读取一层 data) */
-    const data = await request.get('/v1/planet/status')
-
-    /** @type {unknown[]} 未经校验的状态项 */
-    const planets = readPlanets(data)
-
-    /** @type {Set<string>} 已出现的名称,防止重复项冒充完整状态 */
-    const seenNames = new Set()
-
-    /** @type {BodyStatus[]} 返回给组件的已校验状态 */
-    const result = []
-
-    for (const item of planets) {
+    /** @type {BodyStatus[]} */
+    const planets = []
+    for (const [index, item] of items.entries()) {
         if (isRecord(item) === false) {
             throw new Error('天体状态记录格式异常')
         }
-
-        /** @type {string} 状态项中的精确名称 */
         const name = readRequiredStringField(item, 'name')
-
-        if (isKnownBodyName(name) === false || seenNames.has(name) === true) {
-            throw new Error('天体状态包含未知或重复的名称')
+        if (name !== bodyOptions[index].name || typeof item.exist !== 'boolean') {
+            throw new Error('天体状态的标识, 顺序或创建标记异常')
         }
-
-        if (typeof item.exist !== 'boolean') {
-            throw new Error('天体状态中的 exist 必须为布尔值')
-        }
-
-        seenNames.add(name)
-        result.push({name: name, exist: item.exist})
+        planets.push({name, exist: item.exist})
     }
-
-    if (seenNames.size !== bodyOptions.length) {
-        throw new Error('天体状态不完整,请刷新状态后重试')
-    }
-
-    return result
+    return planets
 }
 
 /**
- * 本函数用于请求天体列表接口
- * @returns {Promise<BodyRecord[]>} 天体列表(按接口返回顺序)
- * @throws {Error} 列表字段缺失或类型错误时拒绝
+ * 核对同一响应的摘要与逐项状态, 拒绝相互矛盾的结果.
+ * @param {unknown} value 后端返回的 readiness.
+ * @param {BodyStatus[]} planets 已校验的明细.
+ * @returns {BodyReadiness} 可用于提示和计数的摘要.
+ */
+function readReadiness(value, planets) {
+    if (isRecord(value) === false || typeof value.ready !== 'boolean' || Array.isArray(value.missing_names) === false) {
+        throw new Error('天体完整性摘要格式异常')
+    }
+
+    const required = readSafeIntegerField(value, 'required_count', planets.length, planets.length)
+    const created = readSafeIntegerField(value, 'created_count', 0, required)
+    /** @type {string[]} */
+    const missing = []
+    for (const planet of planets) {
+        if (planet.exist === false) {
+            if (value.missing_names[missing.length] !== planet.name) {
+                throw new Error('缺失天体与逐项状态不一致')
+            }
+            missing.push(planet.name)
+        }
+    }
+    if (value.missing_names.length !== missing.length ||
+        created !== required - missing.length || value.ready !== (missing.length === 0)) {
+        throw new Error('天体完整性摘要与逐项状态不一致')
+    }
+    return {ready: value.ready, required_count: required, created_count: created, missing_names: missing}
+}
+
+/**
+ * 同时获取固定天体的创建状态和完整性检测结论.
+ * @returns {Promise<BodyStatusResult>} 已校验的一次检测结果.
+ */
+async function getBodyStatus() {
+    /** @type {unknown} */
+    const data = await request.get('/v1/planet/status')
+    if (isRecord(data) === false) {
+        throw new Error('天体状态响应格式异常')
+    }
+    const planets = readStatuses(readPlanets(data))
+    return {planets, readiness: readReadiness(data.readiness, planets)}
+}
+
+/**
+ * 从列表元素或编辑响应读取完整天体, 保留历史标题和简介原文.
+ * @param {unknown} value 一条天体记录.
+ * @returns {BodyRecord} 已校验的天体.
+ */
+function readBodyRecord(value) {
+    if (isRecord(value) === false) {
+        throw new Error('天体记录格式异常')
+    }
+    return {
+        id: readRequiredStringField(value, 'id'),
+        name: readRequiredStringField(value, 'name'),
+        title: readStringField(value, 'title'),
+        intro: readStringField(value, 'intro'),
+    }
+}
+
+/**
+ * 按服务端顺序读取全部已创建记录, 包括历史名称.
+ * @returns {Promise<BodyRecord[]>} 列表为空时返回空数组.
  */
 async function getBodyList() {
-    /** @type {unknown} 已解包的响应 data */
     const data = await request.get('/v1/planet/list')
-    /** @type {unknown[]} 未经校验的天体记录 */
-    const planets = readPlanets(data)
-
-    /** @type {BodyRecord[]} 返回给页面的天体列表 */
-    const result = []
-
-    for (const item of planets) {
-        if (isRecord(item) === false) {
-            throw new Error('天体列表记录格式异常')
-        }
-
-        /** @type {string} 保持为字符串的天体 ID */
-        const id = readRequiredStringField(item, 'id')
-        /** @type {string} 不转换大小写的名称 */
-        const name = readRequiredStringField(item, 'name')
-        /** @type {string} 数据库中的标题 */
-        const title = readStringField(item, 'title')
-        /** @type {string} 数据库中的简介 */
-        const intro = readStringField(item, 'intro')
-
-        result.push({
-            id: id,
-            name: name,
-            title: title,
-            intro: intro
-        })
-    }
-
-    return result
+    return readPlanets(data).map(readBodyRecord)
 }
 
 /**
- * 本函数用于创建天体解耦
- * @param {AddBodyForm} form 已通过前端校验的3个必填字段
- * @returns {Promise<void>} 后端确认创建成功
- * @throws {Error} 成功响应结构异常时拒绝(业务及网络错误直接向外传递)
- * */
+ * 创建一个缺失天体.
+ * @param {AddBodyForm} form 已校验的创建表单.
+ * @returns {Promise<void>} 创建成功后由页面重查列表与状态.
+ */
 async function addBody(form) {
-    /** @type {{planet: AddBodyForm}} 后端要求的嵌套请求体 */
-    const body = {
-        planet: {
-            name: form.name,
-            title: form.title.trim(),
-            intro: form.intro.trim(),
-        },
-    }
-
-    /** @type {unknown} 创建成功时,解包后的 data 是空对象 */
-    const data = await request.post('/v1/planet/create', body)
-
+    const data = await request.post('/v1/planet/create', {
+        planet: {name: form.name, title: form.title.trim(), intro: form.intro.trim()},
+    })
     if (isRecord(data) === false) {
-        throw new Error('创建接口响应格式异常,请刷新列表确认结果')
+        throw new Error('创建响应格式异常, 请刷新列表确认结果')
     }
 }
 
-export {
-    getBodyStatus,
-    getBodyList,
-    addBody,
+/**
+ * 按 ID 保存标题和简介.
+ * @param {string} id 列表中的字符串 ID.
+ * @param {BodyFields} expected 打开抽屉或确认最新版本时取得的原文.
+ * @param {BodyFields} target 本次表单的目标值.
+ * @returns {Promise<BodyRecord>} 数据库已保存的完整行.
+ */
+async function updateBody(id, expected, target) {
+    const data = await request.post('/v1/planet/update', {
+        planet: {
+            id,
+            expected: {title: expected.title, intro: expected.intro},
+            target: {title: target.title.trim(), intro: target.intro.trim()},
+        },
+    })
+    if (isRecord(data) === false) {
+        throw new Error('编辑响应格式异常, 请刷新列表确认结果')
+    }
+    const saved = readBodyRecord(data.planet)
+    if (saved.id !== id) {
+        throw new Error('返回的天体 ID 与请求不一致, 请刷新列表确认结果')
+    }
+    return saved
 }
+
+export {getBodyStatus, getBodyList, addBody, updateBody}
