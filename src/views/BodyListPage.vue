@@ -145,23 +145,25 @@
                 label-position="top"
                 @submit.prevent="submitBody"
             >
-                <el-form-item label="天体" prop="name">
-                    <el-select
+                <el-form-item label="天体" prop="name" for="create-body-name">
+                    <select
+                        id="create-body-name"
                         v-model="addForm.name"
-                        placeholder="请选择天体"
-                        class="body-select"
+                        class="admin-select"
+                        :disabled="isSubmitting || isStatusLoading || statusFailed"
+                        aria-describedby="create-body-name-help"
+                        required
                     >
-                        <el-option
+                        <option value="" disabled>请选择天体</option>
+                        <option
                             v-for="option in bodyOptions"
                             :key="option.name"
-                            :label="getOptionLabel(option.name)"
                             :value="option.name"
                             :disabled="isBodySelectable(option.name) === false"
-                        >
-                        </el-option>
-                    </el-select>
+                        >{{ getOptionLabel(option.name) }}</option>
+                    </select>
 
-                    <p class="field-help">已创建的天体不可重复选择.状态加载失败时请先刷新.</p>
+                    <p id="create-body-name-help" class="field-help">已创建的天体不可重复选择.状态加载失败时请先刷新.</p>
                 </el-form-item>
 
                 <el-form-item label="简介标题" prop="title">
@@ -705,10 +707,6 @@ onMounted(refreshData)
 .body-table :deep(.cell) {
     white-space: pre-wrap;
     overflow-wrap: anywhere;
-}
-
-.body-select {
-    width: 100%;
 }
 
 .field-help {

@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="天体管理交互原型，演示天体完整性检测，以及标题和简介的编辑。">
+  <title>天体管理 · SolarNotes 管理后台</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font: 14px/1.55 "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --ink: #29354a;
+      --muted: #65738a;
+      --line: #e2e7ef;
+      --accent: #555fc7;
+      color: var(--ink);
+      background: #f7f8fb;
+    }
+    * { box-sizing: border-box; }
+    body, h1, h2, p { margin: 0; }
+    button, input, select, textarea { color: inherit; font: inherit; }
+    button, select { cursor: pointer; }
+    button:disabled, select:disabled { cursor: not-allowed; }
+    :where(a, button, select, input, textarea, [tabindex]):focus-visible { outline: 3px solid #858ceb; outline-offset: 3px; }
+    [hidden] { display: none !important; }
+    .icons { position: absolute; width: 0; height: 0; overflow: hidden; }
+    .icon { flex: none; width: 17px; height: 17px; vertical-align: middle; }
+    .shell { display: grid; grid-template-columns: 240px minmax(0, 1fr); min-height: 100vh; }
+    .sidebar { position: sticky; top: 0; height: 100vh; height: 100dvh; color: #c6cedd; background: #2d3a4b; }
+    .brand, .nav-link, .btn, .scenario, .body-name { display: inline-flex; align-items: center; }
+    .brand { gap: 11px; min-height: 60px; padding: 0 22px; color: #fff; font-weight: 650; font-size: 17px; white-space: nowrap; }
+    .brand .icon { width: 24px; height: 24px; color: #b7b7ff; }
+    .sidebar nav { display: grid; gap: 4px; padding: 16px 12px; }
+    .nav-link { gap: 14px; min-height: 45px; padding: 0 15px; border-radius: 7px; color: inherit; text-decoration: none; }
+    .nav-link .icon { width: 19px; height: 19px; }
+    .nav-link:hover { background: #39495e; color: white; }
+    .nav-link[aria-current="page"] { color: white; background: #6c75db; font-weight: 650; }
+    .workspace { min-width: 0; }
+    .topbar, .heading, .list-head, .drawer-head, .drawer-foot, .field-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .topbar { min-height: 60px; padding: 10px 30px; border-bottom: 1px solid var(--line); background: white; }
+    .crumbs, .scenario { color: var(--muted); font-size: 13px; }
+    .crumbs strong { color: #415067; font-weight: 600; }
+    .scenario { gap: 9px; }
+    select {
+      min-width: 0; appearance: none; text-align: center; text-align-last: center;
+      padding: 6px 27px; border: 1px solid #ccd3e0; border-radius: 6px;
+      background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='m1 1.5 5 5 5-5' fill='none' stroke='%234d5970' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") right 10px center / 10px auto no-repeat;
+    }
+    option { text-align: center; }
+    main { max-width: 1590px; margin-inline: auto; padding: 28px clamp(16px, 2.4vw, 40px) 36px; }
+    .heading { margin-bottom: 20px; }
+    h1 { font-size: clamp(26px, 2.5vw, 34px); line-height: 1.3; letter-spacing: -.045em; }
+    .heading p { margin-top: 5px; color: var(--muted); }
+    h2 { font-size: 18px; line-height: 1.45; }
+    .btn { justify-content: center; gap: 7px; min-height: 36px; padding: 6px 14px; font-weight: 550; border: 1px solid #d4dae6; border-radius: 6px; background: #fff; white-space: nowrap; }
+    .btn:hover:enabled { border-color: #b8bced; color: var(--accent); background: #f7f7ff; }
+    .btn.primary { border-color: var(--accent); color: #fff; background: var(--accent); }
+    .btn.primary:hover:enabled { border-color: #434cab; background: #434cab; color: white; }
+    button:disabled { opacity: .53; }
+    #readiness {
+      --tone: #91531d; --tint: #fff8ed; --edge: #edcf9c; --tile: #ffedce;
+      display: flex; align-items: center; justify-content: space-between; gap: 22px;
+      margin-bottom: 18px; padding: 22px 24px; border: 1px solid var(--edge);
+      border-radius: 12px; background: linear-gradient(105deg, var(--tint), #fff 85%);
+    }
+    #readiness[data-state="checking"] { --tone: #51599a; --tint: #f6f6ff; --edge: #d7d8f1; --tile: #e8e8fe; }
+    #readiness[data-state="complete"] { --tone: #227258; --tint: #f0faf5; --edge: #bddfce; --tile: #d9f1e6; }
+    #readiness[data-state="error"] { --tone: #a03e44; --tint: #fff6f5; --edge: #f0c9c9; --tile: #fce0dd; }
+    .result, .result-tools { display: flex; align-items: center; gap: 15px; }
+    .result { min-width: 0; }
+    #state-icon { display: grid; place-items: center; flex: none; width: 44px; height: 44px; border: 1px solid var(--edge); border-radius: 50%; color: var(--tone); background: var(--tile); font: 700 23px/1 system-ui, sans-serif; }
+    .result-kicker { margin-bottom: 4px; color: var(--tone); font-size: 12px; font-weight: 650; }
+    #state-title { font-size: clamp(16px, 1.45vw, 20px); line-height: 1.5; }
+    #state-detail { margin-top: 3px; color: #566277; font-size: 13px; overflow-wrap: anywhere; }
+    .result-tools { flex: none; gap: 23px; }
+    .meter { display: grid; min-width: 50px; text-align: center; }
+    .meter small, #list-count { color: var(--muted); font-size: 12px; }
+    #state-count { color: var(--tone); font: 650 23px/1.3 system-ui, sans-serif; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+    #retry-check { font-size: 13px; }
+    .card { min-width: 0; overflow: hidden; background: white; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 3px 12px rgb(37 49 75 / 3%); }
+    .list-head { flex-wrap: wrap; padding: 18px 20px; }
+    .list-title { display: inline-flex; align-items: baseline; gap: 10px; }
+    .table-wrap { overflow: auto; }
+    table { width: 100%; min-width: 650px; border-collapse: collapse; table-layout: fixed; text-align: center; }
+    col.body-col { width: 14%; }
+    col.key-col { width: 14%; }
+    col.title-col { width: 21%; }
+    col.action-col { width: 11%; }
+    th, td { padding: 13px 12px; border-top: 1px solid var(--line); vertical-align: middle; overflow-wrap: anywhere; }
+    th { color: #647086; background: #f7f9fc; font-size: 12px; font-weight: 650; }
+    tbody tr:hover { background: #fafaff; }
+    td:nth-child(4) { color: #58657a; line-height: 1.65; white-space: pre-line; }
+    code { font: 13px/1.4 ui-monospace, Menlo, Consolas, monospace; color: #57647b; }
+    .body-name { gap: 9px; font-weight: 650; white-space: nowrap; }
+    .planet { display: inline-block; flex: none; position: relative; width: 20px; height: 20px; border-radius: 50%; background: radial-gradient(at 33% 25%, #f7eed5, #a89b82 72%); }
+    .planet-Sun { background: radial-gradient(at 34% 28%, #fff3ac, #f2b841 53%, #db812c); box-shadow: 0 0 0 3px #fff2d0; }
+    .planet-Mercury { background: radial-gradient(at 32% 20%, #e0d9cf, #9a9087 72%); }
+    .planet-Venus { background: repeating-linear-gradient(163deg, #ebc58b 0 4px, #d7a871 5px 7px, #f0d6a4 8px 10px); }
+    .planet-Earth { background: radial-gradient(ellipse at 29% 33%, #83b59d 0 22%, transparent 24%), radial-gradient(ellipse at 75% 64%, #75aa8c 0 23%, transparent 25%), linear-gradient(135deg, #98cce8, #416eaa); }
+    .planet-Mars { background: radial-gradient(at 28% 23%, #efb195, #cc7c62 60%, #ad624d); }
+    .planet-Jupiter { background: repeating-linear-gradient(173deg, #d4a383 0 3px, #edcead 4px 7px, #af795f 8px 9px); }
+    .planet-Saturn { background: linear-gradient(157deg, #f2dab0, #bb9a74); }
+    .planet-Saturn::after { position: absolute; content: ""; inset: 5px -4px; border: 1.5px solid #a48a6b; border-radius: 50%; transform: rotate(-25deg); }
+    .planet-Uranus { background: radial-gradient(at 28% 20%, #b4eded, #78b8c0 62%, #639aa8); }
+    .planet-Neptune { background: linear-gradient(156deg, #a4bfee, #547fc5 59%, #446fae); }
+    .edit-button { padding: 5px 9px; border: 0; border-radius: 4px; color: var(--accent); background: transparent; font-weight: 600; }
+    .edit-button:hover { background: #eeeefd; }
+    .preview-note { margin-top: 14px; color: var(--muted); font-size: 12px; text-align: end; }
+    dialog { position: fixed; inset: 0 0 0 auto; width: min(480px, 100%); max-width: 100%; height: 100vh; height: 100dvh; max-height: 100%; margin: 0; padding: 0; border: 0; color: var(--ink); background: white; box-shadow: -8px 0 34px rgb(34 44 69 / 15%); }
+    dialog::backdrop { background: rgb(27 36 51 / 42%); }
+    dialog form { display: flex; flex-direction: column; height: 100%; }
+    .drawer-head, .drawer-foot { flex: none; padding: 17px 22px; }
+    .drawer-head { border-bottom: 1px solid var(--line); }
+    .drawer-foot { justify-content: flex-end; border-top: 1px solid var(--line); }
+    .drawer-body { min-height: 0; flex: 1; overflow: auto; padding: 22px; }
+    .icon-btn { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); font: 25px/1 system-ui, sans-serif; }
+    .icon-btn:hover { background: #f0f2f7; color: var(--ink); }
+    .field { display: grid; gap: 7px; }
+    .field + .field { margin-top: 19px; }
+    .field label, .field-label { font-weight: 600; color: #445169; }
+    .field-head small { color: var(--muted); font-variant-numeric: tabular-nums; }
+    .identity { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; background: #f7f8fb; }
+    .drawer-body :is(input, textarea, select) { width: 100%; border: 1px solid #cad2de; border-radius: 6px; background-color: white; }
+    input, textarea { padding: 9px 12px; }
+    textarea { resize: vertical; line-height: 1.65; }
+    #form-error { margin-top: 15px; color: #ab3d43; }
+    [aria-invalid="true"] { border-color: #bd4249 !important; }
+    #toast { position: fixed; z-index: 2; bottom: 24px; left: 50%; transform: translateX(-50%); width: max-content; max-width: calc(100% - 30px); padding: 10px 18px; border-radius: 7px; background: #304057; color: white; box-shadow: 0 5px 22px #23304729; }
+    @media (max-width: 1080px) {
+      .shell { grid-template-columns: 70px minmax(0, 1fr); }
+      .brand, .nav-link { justify-content: center; width: 100%; padding-inline: 0; }
+      .brand span, .nav-link span { display: none; }
+      .sidebar nav { padding-inline: 8px; }
+    }
+    @media (max-width: 780px) {
+      #readiness { align-items: stretch; flex-direction: column; gap: 14px; padding: 18px; }
+      .result-tools { justify-content: space-between; }
+      .meter { display: flex; align-items: baseline; gap: 8px; }
+      #state-count { font-size: 20px; }
+    }
+    @media (max-width: 640px) {
+      .shell { display: block; }
+      .sidebar { display: none; }
+      .topbar { min-height: 52px; padding-inline: 12px; flex-wrap: wrap; }
+      .scenario { gap: 5px; }
+      main { padding: 19px 12px 26px; }
+      .heading { margin-bottom: 14px; }
+      .result { align-items: flex-start; gap: 10px; }
+      #state-icon { width: 32px; height: 32px; font-size: 19px; }
+      .list-head { padding: 14px 12px; }
+      th:last-child, td:last-child { position: sticky; right: 0; box-shadow: -1px 0 var(--line); }
+      th:last-child { background: #f7f9fc; }
+      td:last-child { background: white; }
+      .drawer-body, .drawer-foot, .drawer-head { padding-inline: 16px; }
+    }
+    @media (forced-colors: active) {
+      select { appearance: auto; background-image: none; }
+      .nav-link[aria-current="page"], .planet { border: 1px solid CanvasText; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Embedded icons from @element-plus/icons-vue.
+The MIT License (MIT)
+
+Copyright (c) 2020-PRESENT Element Plus (https://github.com/element-plus)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+  -->
+  <svg class="icons" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="icon-sun" viewBox="0 0 1024 1024"><path fill="currentColor" d="M512 704a192 192 0 1 0 0-384 192 192 0 0 0 0 384m0 64a256 256 0 1 1 0-512 256 256 0 0 1 0 512m0-704a32 32 0 0 1 32 32v64a32 32 0 0 1-64 0V96a32 32 0 0 1 32-32m0 768a32 32 0 0 1 32 32v64a32 32 0 1 1-64 0v-64a32 32 0 0 1 32-32M195.2 195.2a32 32 0 0 1 45.248 0l45.248 45.248a32 32 0 1 1-45.248 45.248L195.2 240.448a32 32 0 0 1 0-45.248m543.104 543.104a32 32 0 0 1 45.248 0l45.248 45.248a32 32 0 0 1-45.248 45.248l-45.248-45.248a32 32 0 0 1 0-45.248M64 512a32 32 0 0 1 32-32h64a32 32 0 0 1 0 64H96a32 32 0 0 1-32-32m768 0a32 32 0 0 1 32-32h64a32 32 0 1 1 0 64h-64a32 32 0 0 1-32-32M195.2 828.8a32 32 0 0 1 0-45.248l45.248-45.248a32 32 0 0 1 45.248 45.248L240.448 828.8a32 32 0 0 1-45.248 0m543.104-543.104a32 32 0 0 1 0-45.248l45.248-45.248a32 32 0 0 1 45.248 45.248l-45.248 45.248a32 32 0 0 1-45.248 0"></path></symbol>
+    <symbol id="icon-planet" viewBox="0 0 1024 1024"><path fill="currentColor" d="M240.448 240.448a384 384 0 1 0 559.424 525.696 448 448 0 0 1-542.016-542.08 391 391 0 0 0-17.408 16.384m181.056 362.048a384 384 0 0 0 525.632 16.384A448 448 0 1 1 405.056 76.8a384 384 0 0 0 16.448 525.696"></path></symbol>
+    <symbol id="icon-book" viewBox="0 0 1024 1024"><path fill="currentColor" d="m512 863.36 384-54.848v-638.72L525.568 222.72a96 96 0 0 1-27.136 0L128 169.792v638.72zM137.024 106.432l370.432 52.928a32 32 0 0 0 9.088 0l370.432-52.928A64 64 0 0 1 960 169.792v638.72a64 64 0 0 1-54.976 63.36l-388.48 55.488a32 32 0 0 1-9.088 0l-388.48-55.488A64 64 0 0 1 64 808.512v-638.72a64 64 0 0 1 73.024-63.36"></path><path fill="currentColor" d="M480 192h64v704h-64z"></path></symbol>
+    <symbol id="icon-catalogue" viewBox="0 0 1024 1024"><path fill="currentColor" d="M192 736h640V128H256a64 64 0 0 0-64 64zm64-672h608a32 32 0 0 1 32 32v672a32 32 0 0 1-32 32H160l-32 57.536V192A128 128 0 0 1 256 64"></path><path fill="currentColor" d="M240 800a48 48 0 1 0 0 96h592v-96zm0-64h656v160a64 64 0 0 1-64 64H240a112 112 0 0 1 0-224m144-608v250.88l96-76.8 96 76.8V128zm-64-64h320v381.44a32 32 0 0 1-51.968 24.96L480 384l-108.032 86.4A32 32 0 0 1 320 445.44z"></path></symbol>
+    <symbol id="icon-plus" viewBox="0 0 1024 1024"><path fill="currentColor" d="M480 480V128a32 32 0 0 1 64 0v352h352a32 32 0 1 1 0 64H544v352a32 32 0 1 1-64 0V544H128a32 32 0 0 1 0-64z"></path></symbol>
+  </svg>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand"><svg class="icon" aria-hidden="true"><use href="#icon-sun"></use></svg><span>SolarNotes 管理后台</span></div>
+      <nav aria-label="后台栏目">
+        <a class="nav-link" aria-label="天体管理" aria-current="page" href="#main"><svg class="icon" aria-hidden="true"><use href="#icon-planet"></use></svg><span>天体管理</span></a>
+        <a class="nav-link" aria-label="书籍管理" href="book-management-prototype.html"><svg class="icon" aria-hidden="true"><use href="#icon-book"></use></svg><span>书籍管理</span></a>
+        <a class="nav-link" aria-label="目录管理" href="catalogue-management-prototype.html"><svg class="icon" aria-hidden="true"><use href="#icon-catalogue"></use></svg><span>目录管理</span></a>
+      </nav>
+    </aside>
+    <div class="workspace">
+      <header class="topbar">
+        <p class="crumbs">管理后台　/　<strong>天体管理</strong></p>
+        <label class="scenario">演示场景
+          <select id="scenario">
+            <option value="missing" selected>缺少天体</option>
+            <option value="complete">全部齐全</option>
+            <option value="error">检测失败</option>
+          </select>
+        </label>
+      </header>
+      <main id="main">
+        <div class="heading">
+          <div><h1>天体管理</h1><p>管理太阳与八颗行星的标题和简介。</p></div>
+        </div>
+        <section id="readiness" data-state="checking" aria-labelledby="state-title">
+          <div class="result">
+            <span id="state-icon" aria-hidden="true">…</span>
+            <div role="status">
+              <p class="result-kicker">前台启动检测</p>
+              <h2 id="state-title">正在检测天体完整性</h2>
+              <p id="state-detail"></p>
+            </div>
+          </div>
+          <div class="result-tools">
+            <div class="meter"><small>已创建天体</small><strong id="state-count">—</strong></div>
+            <button id="retry-check" class="btn" type="button">重新检测</button>
+          </div>
+        </section>
+        <section class="card" aria-labelledby="list-title">
+          <div class="list-head">
+            <div class="list-title"><h2 id="list-title">天体列表</h2><span id="list-count"></span></div>
+            <button id="create-body" class="btn primary" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-plus"></use></svg>创建天体</button>
+          </div>
+          <div class="table-wrap" tabindex="0" role="region" aria-label="天体列表">
+            <table aria-labelledby="list-title">
+              <colgroup><col class="body-col"><col class="key-col"><col class="title-col"><col><col class="action-col"></colgroup>
+              <thead><tr><th scope="col">天体</th><th scope="col">匹配标识</th><th scope="col">天体标题</th><th scope="col">天体简介</th><th scope="col">操作</th></tr></thead>
+              <tbody id="body-rows"></tbody>
+            </table>
+          </div>
+        </section>
+        <p class="preview-note">交互原型 · 使用示例数据，更改仅在本页生效。</p>
+      </main>
+    </div>
+  </div>
+  <dialog id="body-drawer" aria-labelledby="drawer-title">
+    <form id="body-form" novalidate>
+      <div class="drawer-head">
+        <h2 id="drawer-title">编辑天体</h2>
+        <button id="close-drawer" class="icon-btn" type="button" aria-label="关闭抽屉">×</button>
+      </div>
+      <div class="drawer-body">
+        <div id="identity" class="field" hidden>
+          <span class="field-label">天体</span>
+          <div class="identity"><strong id="identity-label"></strong><code id="identity-name"></code></div>
+        </div>
+        <div id="choose-body" class="field">
+          <label for="body-choice">天体</label>
+          <select id="body-choice" required></select>
+        </div>
+        <div class="field">
+          <div class="field-head"><label for="body-title">天体标题</label><small id="title-count">0 / 20</small></div>
+          <input id="body-title" aria-describedby="title-count" required placeholder="请输入天体标题">
+        </div>
+        <div class="field">
+          <div class="field-head"><label for="body-intro">天体简介</label><small id="intro-count">0 / 150</small></div>
+          <textarea id="body-intro" rows="6" aria-describedby="intro-count" required placeholder="请输入天体简介"></textarea>
+        </div>
+        <p id="form-error" role="alert" hidden></p>
+      </div>
+      <div class="drawer-foot">
+        <button id="cancel" type="button" class="btn">取消</button>
+        <button id="save" type="submit" class="btn primary">保存修改</button>
+      </div>
+    </form>
+  </dialog>
+  <div id="toast" role="status" hidden></div>
+  <script>
+'use strict'
+
+const examples = [
+    {name: 'Sun', label: '太阳', title: '太阳系的中心', intro: '太阳是太阳系中唯一的恒星。它的光与热为地球上的生命提供能量。'},
+    {name: 'Mercury', label: '水星', title: '离太阳最近的行星', intro: '水星表面布满撞击坑，绕太阳一周大约需要 88 个地球日。'},
+    {name: 'Venus', label: '金星', title: '云层之下的金星', intro: '浓密的云层包裹着金星，大气中的二氧化碳产生了强烈的温室效应。'},
+    {name: 'Earth', label: '地球', title: '我们的蓝色家园', intro: '海洋覆盖了地球大部分表面，月球是它唯一的天然卫星。'},
+    {name: 'Mars', label: '火星', title: '红色行星', intro: '火星的土壤富含氧化铁。它的表面保留着古老的河道和巨大的火山。'},
+    {name: 'Jupiter', label: '木星', title: '太阳系最大的行星', intro: '木星是一颗气态巨行星。明暗相间的云带和大红斑是它醒目的特征。'},
+    {name: 'Saturn', label: '土星', title: '冰粒构成的光环', intro: '土星周围环绕着由大量冰粒组成的环系，从远处看就像一圈圈光带。'},
+    {name: 'Uranus', label: '天王星', title: '侧身自转的冰巨星', intro: '天王星的自转轴高度倾斜，大气中的甲烷赋予它蓝绿色的外观。'},
+    {name: 'Neptune', label: '海王星', title: '遥远的蓝色行星', intro: '海王星是八颗行星中距离太阳最远的一颗，大气中活跃着强风与风暴。'},
+]
+
+const byId = id => document.getElementById(id)
+const drawer = byId('body-drawer')
+const form = byId('body-form')
+const titleInput = byId('body-title')
+const introInput = byId('body-intro')
+const choice = byId('body-choice')
+const scenario = byId('scenario')
+
+// 仅在内存中模拟后端记录及完整性检测. 视图按检测结果展示提示.
+const records = new Map()
+let failNextCheck = false
+let checkVersion = 0
+let editingName = null
+let toastTimer
+
+async function requestReadiness() {
+    const fail = failNextCheck
+    failNextCheck = false
+    await new Promise(resolve => setTimeout(resolve, 300))
+    if (fail) throw new Error('检测请求失败')
+    const missing = examples.filter(body => !records.has(body.name))
+    return {missing, total: examples.length, created: examples.length - missing.length}
+}
+
+function showReadiness(state, icon, title, detail, count) {
+    byId('readiness').dataset.state = state
+    byId('state-icon').textContent = icon
+    byId('state-title').textContent = title
+    byId('state-detail').textContent = detail
+    byId('state-count').textContent = count
+    byId('retry-check').disabled = state === 'checking'
+    byId('retry-check').textContent = state === 'error' ? '重试检测' : '重新检测'
+}
+
+async function checkReadiness() {
+    const version = ++checkVersion
+    showReadiness('checking', '…', '正在检测必需天体', '正在核对太阳与八颗行星的创建状态。', '—')
+    try {
+        const {missing, created, total} = await requestReadiness()
+        if (version !== checkVersion) return
+        const count = created + ' / ' + total
+        if (missing.length > 0) {
+            scenario.value = 'missing'
+            const names = missing.map(body => body.label).join('、')
+            showReadiness('missing', '!', '尚有未被创建的天体，前台页面无法正常启动', '待创建：' + names, count)
+        } else {
+            scenario.value = 'complete'
+            showReadiness('complete', '✓', '太阳与八颗行星均已创建', '前台页面所需的 9 个天体均已就绪。', count)
+        }
+    } catch {
+        if (version !== checkVersion) return
+        showReadiness('error', '?', '暂时无法确认天体是否齐全', '未能取得检测结果，请重新检测。', '—')
+    }
+}
+
+function renderList() {
+    const tbody = byId('body-rows')
+    tbody.replaceChildren()
+    for (const {name, label} of examples) {
+        if (!records.has(name)) continue
+        const item = records.get(name)
+        const row = tbody.insertRow()
+        const identity = document.createElement('span')
+        identity.className = 'body-name'
+        const planet = document.createElement('i')
+        planet.className = 'planet planet-' + name
+        planet.setAttribute('aria-hidden', 'true')
+        identity.append(planet, label)
+        row.insertCell().append(identity)
+        const code = document.createElement('code')
+        code.textContent = name
+        row.insertCell().append(code)
+        row.insertCell().textContent = item.title
+        row.insertCell().textContent = item.intro
+        const edit = document.createElement('button')
+        edit.type = 'button'
+        edit.className = 'edit-button'
+        edit.dataset.edit = name
+        edit.textContent = '编辑'
+        edit.setAttribute('aria-label', '编辑' + label)
+        row.insertCell().append(edit)
+    }
+    byId('list-count').textContent = '共 ' + records.size + ' 个天体'
+    byId('create-body').disabled = records.size === examples.length
+}
+
+function loadScenario() {
+    records.clear()
+    for (const body of examples) {
+        if (scenario.value !== 'complete' && ['Uranus', 'Neptune'].includes(body.name)) continue
+        records.set(body.name, {title: body.title, intro: body.intro})
+    }
+    byId('toast').hidden = true
+    failNextCheck = scenario.value === 'error'
+    renderList()
+    checkReadiness()
+}
+
+function updateCounts() {
+    byId('title-count').textContent = Array.from(titleInput.value).length + ' / 20'
+    byId('intro-count').textContent = Array.from(introInput.value).length + ' / 150'
+}
+
+function clearError() {
+    byId('form-error').hidden = true
+    for (const field of [choice, titleInput, introInput]) field.removeAttribute('aria-invalid')
+}
+
+function showError(field, message) {
+    byId('form-error').textContent = message
+    byId('form-error').hidden = false
+    field.setAttribute('aria-invalid', 'true')
+    field.focus()
+}
+
+function openDrawer(name) {
+    const isEdit = name !== null
+    editingName = name
+    form.reset()
+    clearError()
+    byId('drawer-title').textContent = isEdit ? '编辑天体' : '创建天体'
+    byId('save').textContent = isEdit ? '保存修改' : '确认创建'
+    byId('identity').hidden = !isEdit
+    byId('choose-body').hidden = isEdit
+    if (isEdit) {
+        const meta = examples.find(body => body.name === name)
+        byId('identity-label').textContent = meta.label
+        byId('identity-name').textContent = name
+        titleInput.value = records.get(name).title
+        introInput.value = records.get(name).intro
+    } else {
+        const placeholder = new Option('请选择天体', '')
+        placeholder.disabled = true
+        choice.replaceChildren(placeholder)
+        const missing = examples.filter(body => !records.has(body.name))
+        for (const body of missing) choice.add(new Option(body.label, body.name))
+        choice.value = missing.length === 1 ? missing[0].name : ''
+    }
+    updateCounts()
+    drawer.showModal()
+    if (isEdit) titleInput.focus()
+    else choice.focus()
+}
+
+function notify(message) {
+    clearTimeout(toastTimer)
+    const toast = byId('toast')
+    toast.textContent = message
+    toast.hidden = false
+    toastTimer = setTimeout(() => { toast.hidden = true }, 2200)
+}
+
+function submitBody(event) {
+    event.preventDefault()
+    clearError()
+    const isCreate = editingName === null
+    const name = isCreate ? choice.value : editingName
+    if (isCreate && (name === '' || records.has(name))) return showError(choice, '请选择尚未创建的天体。')
+    const title = titleInput.value.trim()
+    const intro = introInput.value.trim()
+    if (title === '') return showError(titleInput, '请输入天体标题。')
+    if (Array.from(title).length > 20) return showError(titleInput, '天体标题最多 20 个字符。')
+    if (intro === '') return showError(introInput, '请输入天体简介。')
+    if (Array.from(intro).length > 150) return showError(introInput, '天体简介最多 150 个字符。')
+    records.set(name, {title, intro})
+    drawer.close()
+    renderList()
+    document.querySelector('button[data-edit="' + name + '"]').focus({preventScroll: true})
+    notify(isCreate ? '天体已创建' : '天体信息已更新')
+    if (isCreate) checkReadiness()
+}
+
+scenario.addEventListener('change', loadScenario)
+byId('retry-check').addEventListener('click', checkReadiness)
+byId('create-body').addEventListener('click', () => openDrawer(null))
+byId('body-rows').addEventListener('click', event => {
+    const edit = event.target.closest('button[data-edit]')
+    if (edit) openDrawer(edit.dataset.edit)
+})
+for (const id of ['close-drawer', 'cancel']) byId(id).addEventListener('click', () => drawer.close())
+form.addEventListener('input', () => { clearError(); updateCounts() })
+form.addEventListener('submit', submitBody)
+loadScenario()
+</script>
+</body>
+</html>

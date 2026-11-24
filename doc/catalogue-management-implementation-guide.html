@@ -223,6 +223,7 @@ export {getBookOptions, getCatalogueTree, saveCatalogueOrder, setCatalogueDispla
 </section>
 <section id="drawer"><h2>4. 编排一个父目录的直接子项</h2>
 <p>新建排序抽屉。它在打开时复制本层条目，将 <code>id</code> 分成有顺序的 <code>sorted_children</code> 和按成员比较的 <code>unsorted_children</code>。两组覆盖本层全部直接子项。管理员在草稿中加入、上移、下移或移回待排，首次打开时的 <code>expected</code> 始终代表原分组。</p>
+<p>书籍和目录共用上下移动按钮，首项禁用上移，末项禁用下移。<a href="../src/components/OrderMoveButtons.vue">共享调序按钮组件</a></p>
 <details class="code-file"><summary><span class="file-mode">新建文件</span><span class="file-path">src/components/CatalogueOrderDrawer.vue</span></summary><div class="code-toolbar"><button type="button" data-copy="drawer-file" hidden>复制代码</button><span class="copy-feedback" role="status" aria-live="polite"></span></div><pre><code id="drawer-file">&lt;template&gt;
     &lt;el-drawer
         :model-value="modelValue" title="编排同级节点" size="min(560px, 100%)"
@@ -238,10 +239,10 @@ export {getBookOptions, getCatalogueTree, saveCatalogueOrder, setCatalogueDispla
                 &lt;li v-for="(node, index) in ranked" :key="node.id" :data-node="node.id" tabindex="-1"&gt;
                     &lt;span class="node-name"&gt;{{ index + 1 }}. {{ node.name }}&lt;/span&gt;
                     &lt;div class="row-actions"&gt;
-                        &lt;button type="button" :disabled="busy || index === 0"
-                                :aria-label="'上移 ' + node.name" @click="moveAt(index, -1)"&gt;↑&lt;/button&gt;
-                        &lt;button type="button" :disabled="busy || index === ranked.length - 1"
-                                :aria-label="'下移 ' + node.name" @click="moveAt(index, 1)"&gt;↓&lt;/button&gt;
+                        &lt;OrderMoveButtons :up-label="'上移 ' + node.name" :down-label="'下移 ' + node.name"
+                                          :disable-up="busy || index === 0"
+                                          :disable-down="busy || index === ranked.length - 1"
+                                          @move="moveAt(index, $event)" /&gt;
                         &lt;button type="button" :disabled="busy" @click="removeAt(index)"&gt;
                             {{ node.sort === null ? '撤回加入' : '移回待排' }}
                         &lt;/button&gt;
@@ -268,6 +269,7 @@ export {getBookOptions, getCatalogueTree, saveCatalogueOrder, setCatalogueDispla
 
 &lt;script setup&gt;
 import {computed, nextTick, ref, watch} from 'vue'
+import OrderMoveButtons from '@/components/OrderMoveButtons.vue'
 
 /** @typedef {import('@/api/catalogue').CatalogueNode} CatalogueNode */
 /** @typedef {Pick&lt;CatalogueNode, 'id' | 'name' | 'sort'&gt;} DraftNode */
@@ -519,6 +521,7 @@ onBeforeUnmount(function () { requestNumber++ })
 <p>新建页面组件。左栏基于后端给出的树展示可见行，右栏始终以选中目录的 <code>children</code> 为数据源。任何已选书都能管理，包括书籍自身被隐藏的情况。</p>
 <div class="table-wrap"><table><thead><tr><th scope="col">页面状态</th><th scope="col">实现时的约定</th></tr></thead><tbody><tr><td>选择天体或书籍</td><td>先清空下一级选项及旧目录。只接收仍属于当前选择的异步响应。</td></tr><tr><td>首次读取与刷新</td><td>首次只展开并选中根节点。写操作后的刷新按节点 ID 恢复当前目录和展开位置，已删除的节点回退到有效目录。</td></tr><tr><td>全书排序进度</td><td>分子为整棵树中已排序的非根节点数，分母为所有非根节点数。单独切换显隐不会改变进度。</td></tr><tr><td>隐藏与重新显示</td><td>可见目录被隐藏，或者在保存排序时移回待排，会在服务端隐藏同书全部后代。后代保留序号。重新显示目录或重新编入排序，只显示该目录。</td></tr><tr><td>成功与重新同步</td><td>排序和显隐写入成功都返回空对象。隐藏后重取目录树，因为重复隐藏与实际切换的响应相同。显示状态的确认只依赖显隐接口的业务结果，排序仅由抽屉发起。</td></tr><tr><td>写入结果未知</td><td>超时或断线时先读取服务端最新状态。即便读取失败，管理员也有明确的刷新入口，可恢复后再继续编辑。</td></tr></tbody></table></div>
 <h3>代码阅读顺序</h3><ol><li>从 <code>selectPlanet()</code>、<code>selectBook()</code> 和 <code>loadTree()</code> 看联动与回显。每次读取递增版本号，即使用户从 A 切到 B 又切回 A，旧响应也不会覆盖最后一次选择。</li><li><code>indexTree()</code> 为服务端提供的树建立 ID 索引，<code>visibleRows</code> 仅计算左侧已展开的行。右侧表格绑定 <code>folder.children</code>，保持单层。全书进度遍历全部节点，包含当前折叠的分支。</li><li><code>openNode()</code> 区分文件与文件夹，<code>openOrder()</code> 打开草稿。<code>writeChange()</code> 串行提交一次写请求，并处理显隐、冲突和刷新。排序成功后按原路径恢复目录，显示单个节点成功后可直接更新该开关。</li></ol>
+<p>选择天体和书籍后，宽屏并排展示天体、书籍、书籍状态和全书排序进度。下拉框标题、选中值和展开列表的各个选项均居中，窄屏自动换行。显隐开关旁只显示当前状态。<a href="../src/components/AdminFilterSelect.vue">共用下拉框组件</a> · <a href="../src/styles/element.scss">下拉框样式</a></p>
 <details class="code-file"><summary><span class="file-mode">新建文件</span><span class="file-path">src/views/CataloguePage.vue</span></summary><div class="code-toolbar"><button type="button" data-copy="page-file" hidden>复制代码</button><span class="copy-feedback" role="status" aria-live="polite"></span></div><pre><code id="page-file">&lt;template&gt;
     &lt;section class="catalogue-page"&gt;
         &lt;el-breadcrumb separator="/"&gt;
@@ -531,33 +534,24 @@ onBeforeUnmount(function () { requestNumber++ })
         &lt;/div&gt;
         &lt;el-card shadow="never"&gt;
             &lt;div class="filters"&gt;
-                &lt;label&gt;天体
-                    &lt;select :value="planetId" :disabled="writing || planets.length === 0"
-                            @change="selectPlanet($event.target.value)"&gt;
-                        &lt;option value=""&gt;请选择天体&lt;/option&gt;
-                        &lt;option v-for="planet in planets" :key="planet.id" :value="planet.id"&gt;
-                            {{ getBodyLabel(planet.name) }}
-                        &lt;/option&gt;
-                    &lt;/select&gt;
-                &lt;/label&gt;
-                &lt;label&gt;书籍
-                    &lt;select :value="bookId" :disabled="writing || books.length === 0"
-                            @change="selectBook($event.target.value)"&gt;
-                        &lt;option value=""&gt;请选择书籍&lt;/option&gt;
-                        &lt;option v-for="item in books" :key="item.id" :value="item.id"&gt;{{ item.title }}&lt;/option&gt;
-                    &lt;/select&gt;
-                &lt;/label&gt;
-                &lt;div v-if="selectedBook"&gt;
-                    书籍状态
+                &lt;AdminFilterSelect label="天体" placeholder="请选择天体" :model-value="planetId"
+                                   :disabled="writing || planets.length === 0" @update:model-value="selectPlanet"&gt;
+                    &lt;el-option v-for="planet in planets" :key="planet.id" :value="planet.id" :label="getBodyLabel(planet.name)" /&gt;
+                &lt;/AdminFilterSelect&gt;
+                &lt;AdminFilterSelect label="书籍" placeholder="请选择书籍" :model-value="bookId"
+                                   :disabled="writing || books.length === 0" @update:model-value="selectBook"&gt;
+                    &lt;el-option v-for="item in books" :key="item.id" :value="item.id" :label="item.title" /&gt;
+                &lt;/AdminFilterSelect&gt;
+                &lt;div v-if="selectedBook" class="admin-select-field book-status-field"&gt;
+                    &lt;span&gt;书籍状态&lt;/span&gt;
                     &lt;el-tag :type="selectedBook.display_status === 'visible' ? 'success' : 'info'"&gt;
                         {{ selectedBook.display_status === 'visible' ? '显示' : '隐藏' }}
                     &lt;/el-tag&gt;
                 &lt;/div&gt;
-                &lt;div v-if="book &amp;&amp; readError === ''" class="progress"&gt;
-                    &lt;label&gt;全书排序进度 {{ sortedCount }} / {{ nonRootCount }}
-                        &lt;progress :value="sortedCount" :max="Math.max(1, nonRootCount)"&gt;&lt;/progress&gt;
-                    &lt;/label&gt;
-                &lt;/div&gt;
+                &lt;label v-if="book &amp;&amp; readError === ''" class="admin-select-field progress"&gt;
+                    全书排序进度 {{ sortedCount }} / {{ nonRootCount }}
+                    &lt;progress :value="sortedCount" :max="Math.max(1, nonRootCount)"&gt;&lt;/progress&gt;
+                &lt;/label&gt;
             &lt;/div&gt;
         &lt;/el-card&gt;
 
@@ -616,8 +610,9 @@ onBeforeUnmount(function () { requestNumber++ })
                     {{ folder.parent_id === '0' ? '根节点' : '当前目录' }} ·
                     {{ folder.sort === null ? '待排序' : '序号 ' + folder.sort }}
                     &lt;el-switch :model-value="folder.display_status === 'visible'" :aria-label="folder.name + '的显示状态'"
-                               active-text="显示" inactive-text="隐藏" :disabled="writing || folder.sort === null"
+                               :disabled="writing || folder.sort === null"
                                @change="changeDisplay(folder, $event)" /&gt;
+                    &lt;span&gt;{{ folder.display_status === 'visible' ? '显示' : '隐藏' }}&lt;/span&gt;
                 &lt;/div&gt;
                 &lt;!-- 右表只列直接子项. 将树表子节点键指向此 DTO 未使用的名称. --&gt;
                 &lt;el-table :data="folder.children" row-key="id" :tree-props="{ children: 'tableChildren' }"
@@ -668,6 +663,7 @@ import {getBookOptions, getCatalogueTree, saveCatalogueOrder, setCatalogueDispla
 import {API_CODE} from '@/constants/apiCode'
 import {getApiErrorCode, getApiErrorMessage, isAuthError} from '@/utils/apiError'
 import CatalogueOrderDrawer from '@/components/CatalogueOrderDrawer.vue'
+import AdminFilterSelect from '@/components/AdminFilterSelect.vue'
 import ArticlePreviewDialog from '@/components/ArticlePreviewDialog.vue'
 
 /** @typedef {import('@/api/catalogue').CatalogueNode} CatalogueNode */
@@ -938,21 +934,18 @@ onBeforeUnmount(function () {
 .catalogue-page { display: grid; gap: 16px; min-width: 0; }
 h1, h2, p { margin: 0; }
 h2 { font-size: 18px; }
-.filters, .toolbar, .current, .path { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.filters label { display: grid; gap: 6px; }
-.filters &gt; label { min-width: 0; max-width: 100%; grid-template-columns: minmax(0, 1fr); }
-.filters select {
-    box-sizing: border-box; width: 100%; min-width: 0; text-overflow: ellipsis;
-    appearance: none; padding: 8px 34px 8px 12px; border: 1px solid #cdd4df;
-    border-radius: 6px; font: inherit; color: inherit; background-color: white;
-    background-image: linear-gradient(45deg, transparent 50%, #57657b 50%),
-                      linear-gradient(135deg, #57657b 50%, transparent 50%);
-    background-size: 5px 5px; background-repeat: no-repeat;
-    background-position: right 16px center, right 11px center;
+.filters {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    justify-items: center;
+    gap: 16px;
 }
-@media (forced-colors: active) { .filters select { appearance: auto; background-image: none; } }
-.progress { margin-inline-start: auto; }
-.progress progress { accent-color: #575acb; }
+.filters &gt; .admin-select-field { width: 100%; max-width: 16rem; }
+.book-status-field, .progress { grid-template-rows: max-content 1fr; }
+.book-status-field .el-tag, .progress progress { place-self: center; }
+.progress progress { width: 100%; accent-color: #575acb; }
+.toolbar, .current, .path { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .panels { display: grid; grid-template-columns: minmax(230px, 1fr) minmax(0, 2fr); gap: 16px; align-items: start; }
 .panels &gt; * { min-width: 0; }
 .toolbar { justify-content: space-between; }
@@ -965,11 +958,16 @@ h2 { font-size: 18px; }
 .selected { background: #eef0ff; color: #374897; border-radius: 4px; }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: #bd862f; flex-shrink: 0; }
 .dot.ranked { background: #268168; }
-.name { height: auto; max-width: 100%; white-space: normal; text-align: start; }
+.name { height: auto; max-width: 100%; white-space: normal; }
 .notice { color: #9c403c; }
+@media (max-width: 1060px) {
+    .filters { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 @media (max-width: 880px) {
     .panels { grid-template-columns: minmax(0, 1fr); }
-    .progress { margin-inline-start: 0; }
+}
+@media (max-width: 510px) {
+    .filters { grid-template-columns: minmax(0, 1fr); }
 }
 &lt;/style&gt;</code></pre></details>
 <p>如果根目录下还没有排过序，可以先用表格中的「编入顺序」选择一章，在抽屉中保存。此时返回的序号从 1 开始，显隐开关也可操作，进入该章可以继续编排它的子项。</p>

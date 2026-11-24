@@ -25,10 +25,12 @@ const API_CODE = {
     BODY_ALREADY_EXISTS: 20101,
     /** 创建书籍时所选天体已不存在 */
     BOOK_PLANET_NOT_FOUND: 20102,
-    /** 同一天体下的书籍排序值已被占用 */
-    BOOK_SORT_OCCUPIED: 20201,
     /** 所选书籍已不存在. */
     BOOK_NOT_FOUND: 20202,
+    /** 所选天体的书单或顺序已变化. */
+    BOOK_ORDER_CHANGED: 20203,
+    /** 编辑快照中的书名或显隐已变化. */
+    BOOK_EDIT_CHANGED: 20204,
     /** 目录节点已不存在. */
     CATALOGUE_NOT_FOUND: 20301,
     /** 同级排序快照已失效. */

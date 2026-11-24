@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>书籍管理 API 设计 · SolarNotes</title>
+<meta name="description" content="逐项核对按天体管理书籍所需的后端接口，定义自动追加、编辑书籍和保存书序的请求与响应。">
+<style>
+:root{color-scheme:light;--paper:#f3f6f2;--ink:#1d302a;--muted:#5e7068;--line:#dce5dc;--green:#21644c;--soft:#e7f1e8;--amber:#846013;--warm:#fbf2db;--blue:#275e7a;--mono:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:24px}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.82 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+a{color:var(--green);text-underline-offset:4px;overflow-wrap:anywhere}a:hover{color:#103d2b}:focus-visible{outline:3px solid #4485ae;outline-offset:3px}[hidden]{display:none!important}
+.skip{position:absolute;top:-80px;left:20px;background:white;padding:10px 16px;z-index:4}.skip:focus{top:12px}
+.page{width:min(1350px,100%);margin:auto;display:grid;grid-template-columns:228px minmax(0,1fr);gap:54px;padding:40px 38px 80px}.sidebar{position:sticky;top:28px;align-self:start;max-height:calc(100vh - 56px);overflow:auto}
+.brand{font-size:12px;font-weight:800;letter-spacing:.1em;color:var(--green)}.brand::before{content:"";display:inline-block;width:12px;height:12px;border:3px solid var(--green);border-radius:50%;margin-right:8px;vertical-align:-1px}.sidebar p{font-size:13px;color:var(--muted);line-height:1.7}.sidebar nav{display:grid;gap:3px;margin-top:22px}.sidebar nav a{display:flex;gap:12px;padding:7px 9px;border-radius:7px;text-decoration:none;color:var(--muted);font-size:14px}.sidebar nav a:hover{background:var(--soft);color:var(--green)}.sidebar nav span{color:var(--green);font:12px/2 var(--mono)}.side-note{border-top:1px solid var(--line);padding-top:16px;margin-top:22px}
+main{min-width:0}.eyebrow,.section-label{color:var(--green);font:700 12px/1.5 var(--mono);letter-spacing:.1em}.hero h1{font-size:clamp(33px,4vw,48px);line-height:1.25;letter-spacing:-.03em;margin:16px 0}.lede{font-size:18px;color:var(--muted);max-width:820px}.tags{display:flex;flex-wrap:wrap;gap:8px;margin:24px 0}.tag{border:1px solid var(--line);border-radius:30px;padding:4px 11px;font-size:12px;background:white;color:var(--muted)}
+.thesis{background:#194b39;color:#fff;border-radius:14px;padding:22px 25px}.thesis p{margin:0}.thesis strong{color:#d4f5dc}.page-tools{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:20px 0}.page-tools button,.code-toolbar button{font:inherit;font-size:13px;border:1px solid var(--green);border-radius:7px;background:white;color:var(--green);cursor:pointer;padding:6px 12px}.page-tools button:hover,.code-toolbar button:hover{background:var(--soft)}
+section{padding-top:42px;margin-top:10px}h2{font-size:27px;line-height:1.4;letter-spacing:-.02em;margin:8px 0 20px}h3{font-size:19px;line-height:1.55;margin:27px 0 10px}p{margin:12px 0}code{font:.87em/1.7 var(--mono);background:#e8f0e8;border-radius:4px;padding:2px 5px;overflow-wrap:anywhere}pre{margin:14px 0;padding:19px 22px;background:#1d3029;color:#e5efe6;border-radius:10px;overflow-x:auto;tab-size:2;font:13px/1.75 var(--mono)}pre code{font:inherit;background:transparent;color:inherit;padding:0;border-radius:0;overflow-wrap:normal}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0}.card{border:1px solid var(--line);background:#fffefa;border-radius:12px;padding:18px 19px}.card .n{color:var(--green);font:12px/1.5 var(--mono)}.card h3{margin:6px 0;font-size:16px}.card p{font-size:14px;color:var(--muted);margin:0}
+.note{background:var(--soft);border-left:3px solid var(--green);border-radius:0 8px 8px 0;padding:15px 18px;margin:20px 0;font-size:14px}.note.warning{background:var(--warm);border-color:var(--amber)}.note p{margin:0}.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:white;margin:18px 0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;vertical-align:top;padding:12px 15px;border-bottom:1px solid var(--line);min-width:105px}th{color:var(--green);background:#edf3ec;font-weight:650}tr:last-child td{border-bottom:0}ul,ol{padding-left:23px}li{margin:8px 0}.small{font-size:13px;color:var(--muted)}
+details.code-file{border:1px solid var(--line);background:#fffefa;border-radius:10px;overflow:hidden;margin:18px 0}details.code-file summary{padding:14px 17px;cursor:pointer;font-weight:650;overflow-wrap:anywhere;line-height:1.7}.file-mode{display:inline-block;font-size:11px;padding:2px 7px;border-radius:5px;background:var(--soft);color:var(--green);margin-right:9px;font-weight:500}.file-path{font:13px/1.7 var(--mono)}.code-toolbar{display:flex;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid var(--line)}.copy-feedback{font-size:12px;color:var(--muted)}.code-file pre{margin:0;border-radius:0;font-size:12.5px}footer{margin-top:45px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+@media(max-width:1050px){.page{gap:27px;padding-left:24px;padding-right:24px;grid-template-columns:185px minmax(0,1fr)}}@media(max-width:800px){.page{display:block;padding:24px 20px 55px}.sidebar{position:static;max-height:none;margin-bottom:32px}.sidebar nav{display:flex;gap:5px;overflow-x:auto;margin-top:15px;padding-bottom:8px}.sidebar nav a{white-space:nowrap;border:1px solid var(--line);padding:5px 9px}.sidebar p,.side-note{display:none}.grid{grid-template-columns:1fr}h2{font-size:24px}}
+@media(max-width:520px){pre{padding:16px;font-size:12px}th,td{padding:10px 12px}}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}@media print{body{background:white;color:black;font-size:11pt}.page{display:block;width:100%;padding:0}.sidebar,.page-tools,.code-toolbar,.skip{display:none!important}.thesis{background:#eee;color:black}.thesis strong{color:black}section{padding-top:20px}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f3f3f3;color:black;font-size:8pt}.code-file{overflow:visible!important}.table-wrap{overflow:visible}a{color:black}}
+section h2 code{font-size:.72em}
+.table-wrap th:first-child{white-space:nowrap}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">跳至正文</a>
+<div class="page">
+<aside class="sidebar">
+  <div class="brand">SolarNotes 管理后台</div>
+  <nav aria-label="文档目录">
+    <a href="#overview">接口总览</a><a href="#list">选择天体与读取书单</a>
+    <a href="#create">添加书籍</a><a href="#update">编辑标题与显隐</a>
+    <a href="#reorder">保存书序</a><a href="#errors">错误与恢复</a>
+    <a href="#verify">联调验收</a>
+  </nav>
+  <p class="side-note"><a href="book-management-prototype.html">打开书籍管理交互原型</a></p>
+</aside>
+<main id="main">
+<header class="hero">
+  <h1>书籍管理 API 设计</h1>
+  <p class="lede">新版书籍管理页需要 5 个管理接口。天体列表和书单可以直接复用，创建接口需要支持自动分配末位序号，编辑书籍和保存书序需要新增路由。</p>
+  <div class="page-tools"><button type="button" id="expand-all" hidden>展开全部示例</button><button type="button" id="collapse-all" hidden>折叠全部示例</button></div>
+</header>
+
+<section id="overview"><h2>页面动作与后端接口</h2>
+<div class="table-wrap"><table><thead><tr><th>页面动作</th><th>方法与路径</th><th>当前后端</th></tr></thead><tbody>
+<tr><td>进入书籍管理页</td><td><a href="#planets"><code>GET /v1/planet/list</code></a></td><td>直接复用，提供已创建的天体。</td></tr>
+<tr><td>选择天体或刷新列表</td><td><a href="#options"><code>POST /v1/book/options</code></a></td><td>直接复用，返回该天体的完整书单，包含隐藏书籍。</td></tr>
+<tr><td>确认添加</td><td><a href="#create"><code>POST /v1/book/create</code></a></td><td>改造现有接口，排序值由后端在创建时分配。</td></tr>
+<tr><td>编辑后保存</td><td><a href="#update"><code>POST /v1/book/update</code></a></td><td>建议新增，一次保存标题和书籍自身的显隐。</td></tr>
+<tr><td>保存书序</td><td><a href="#reorder"><code>POST /v1/book/reorder</code></a></td><td>建议新增，一次提交当前天体下所有书籍的目标顺序。</td></tr>
+</tbody></table></div>
+<p>打开抽屉、统计显隐数量、上下移动、取消修改都在本地完成。编辑抽屉用选中行回填，「还原示例」只操作原型数据。书籍 ID 保存在行数据中，用于编辑、调序和识别同名书。</p>
+<p>现有 <code>POST /v1/book/list</code> 按全库分页，入参只有 <code>pagination</code>。原型要求同一天体的完整书单才能统计和调序，直接调用 <code>book/options</code> 即可。目录管理的 <code>catalogue/display</code> 和 <code>catalogue/reorder</code> 写入目录节点，书籍写操作由本页的 <code>book</code> 接口处理。</p>
+<h3>请求与响应约定</h3>
+<p>下列路径均为后端注册路径。前端开发环境的 Axios 实例加上 <code>/api</code> 前缀，Vite 代理转发时去掉该前缀。所有接口都要求管理员登录，POST 使用 JSON。天体和书籍 ID 在 JSON 中始终为正 <code>int64</code> 的十进制字符串，前端原样保存和提交。</p>
+<details class="code-file" open><summary><span class="file-mode">HTTP</span>管理 API 请求头</summary>
+<div class="code-toolbar"><button type="button" data-copy="headers" hidden>复制请求头</button><span class="copy-feedback" role="status" aria-live="polite"></span></div>
+<pre><code id="headers" data-format="http">Authorization: Bearer &lt;access_token&gt;
+Content-Type: application/json</code></pre></details>
+<p>示例给出完整响应体。后端按项目惯例用 HTTP 200 返回已处理的业务结果，以数值型 <code>code</code> 判断成功或失败。成功时前端的 <code>request</code> 拦截器返回 <code>data</code>，失败时保留错误对象。下文标明「现有」的内容来自后端源码，标明「建议」的内容是待实现的契约。示例 ID 和书名用于说明字段之间的对应关系。</p>
+</section>
+
+<section id="list"><h2>直接复用的两个读接口</h2>
+<h3 id="planets">GET /v1/planet/list</h3>
+<p>进入页面时调用一次，无请求体。用 <code>getBodyList()</code> 取得下拉选项，以 <code>id</code> 作为选项值，以 <code>getBodyLabel(name)</code> 显示中文名称。空列表返回 <code>data.planets: []</code>。</p>
+<details class="code-file" open><summary><span class="file-mode">现有响应</span>已创建的天体</summary>
+<div class="code-toolbar"><button type="button" data-copy="planet-res" hidden>复制 JSON</button><span class="copy-feedback" role="status" aria-live="polite"></span></div>
+<pre><code id="planet-res" data-format="json">{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "planets": [
+      {
+        "id": "2123435429930733568",
+        "name": "Sun",
+        "title": "数据库部分",
+        "intro": "数据库学习笔记"
+      }
+    ]
+  }
+}</code></pre></details>
+<h3 id="options">POST /v1/book/options</h3>
+<p>选择天体后调用已有的 <code>getBookOptions(planetId)</code>。后端按 <code>planet_id</code> 读取可见和隐藏书籍，先按 <code>sort</code>、再按 <code>id</code> 升序返回全部行。列表只展示排序值、标题、显隐和操作。总数取 <code>books.length</code>，显示数与隐藏数按 <code>display_status</code> 统计。</p>
+<details class="code-file" open><summary><span class="file-mode">现有请求</span>选择太阳</summary>
+<div class="code-toolbar"><button type="button" data-copy="options-req" hidden>复制 JSON</button><span class="copy-feedback" role="status" aria-live="polite"></span></div>
+<pre><code id="options-req" data-format="json">{
+  "planet": { "id": "2123435429930733568" }
+}</code></pre></details>
+<details class="code-file" open><summary><span class="file-mode">现有响应</span>同一天体下的两本书</summary>
+<div class="code-toolbar"><button type="button" data-copy="options-res" hidden>复制 JSON</button><span class="copy-feedback" role="status" aria-live="polite"></span></div>
+<pre><code id="options-res" data-format="json">{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "books": [
+      {
+        "id": "2123435620763176960",
+        "title": "MySQL是怎样运行的",
+        "sort": 1,
+        "display_status": "visible"
+      },
+      {
+        "id": "4100000000000000002",
+        "title": "SQL 学习笔记",
+        "sort": 2,
+        "display_status": "hidden"
+      }
+    ]
+  }
+}</code></pre></details>
+<p>天体存在但无书时，接口成功返回 <code>data.books: []</code>，页面可以添加第一本书。天体已被删除时返回 <code>20102</code>。快速切换天体时，只有当前选择对应的最新请求可以更新页面。</p>
+</section>
+
+<section id="create"><h2>改造现有接口 <code>POST /v1/book/create</code></h2>
+<p><strong>当前实现</strong>要求 <code>book.sort</code> 为必填正整数（Go 类型为 <code>uint32</code>），按客户端传入的值写库，成功返回 <code>data: {}</code>。把表单改成只读并继续提交前端算出的值，只能覆盖书单没有跳号、也没有其他管理员同时写入的情况。</p>
+<h3>建议契约</h3>
+<p>新客户端提交已选天体、书名和初始显隐。书名去除首尾空白后为 1 至 20 个 Unicode 码点，<code>display_status</code> 只取 <code>visible</code> 或 <code>hidden</code>，原型默认选中「显示」。成功响应沿用现有结构。</p>
+<details class="code-file" open><summary><span class="file-mode">建议请求</span>在所选天体下追加一本书</summary>
+<div class="code-toolbar"><button type="button" data-copy="create-req" hidden>复制 JSON</button><span class="copy-feedback" role="status" aria-live="polite"></span></div>
+<pre><code id="create-req" data-format="json">{
+  "book": {
+    "planet": { "id": "2123435429930733568" },
+    "title": "数据库索引设计",
+    "display_status": "visible"
+  }
+}</code></pre></details>
+<details class="code-file" open><summary><span class="file-mode">成功响应</span>事务提交后返回</summary>
+<div class="code-toolbar"><button type="button" data-copy="create-res" hidden>复制 JSON</button><span class="copy-feedback" role="status" aria-live="polite"></span></div>
+<pre><code id="create-res" data-format="json">{
+  "code": 200,
+  "message": "success",
+  "data": {}
+}</code></pre></details>
+<p>打开添加抽屉时，页面用当前书单长度加 1 显示只读序号。后端以提交时该天体的全部书籍数为准分配 <code>N + 1</code>。已有 5 本就分配 6，首本分配 1，隐藏书籍也占一个位置。创建成功后重新调用 <code>book/options</code>，显示实际分配的序号；上面的两本书示例会新增第 3 本。</p>
+<h3>新旧客户端如何切换</h3>
+<p>目前 <code>src/api/book.js</code> 的 <code>addBook(form)</code> 发送 <code>book.sort</code>。建议先发布兼容的新后端，再发布省略该字段的新前端。过渡期间，旧客户端传来的正整数只用于核对期望末位，恰好等于事务分配值时接受，其他值返回 <code>10101</code> 并提示刷新书单。新版后端的所有调用方都按末尾追加；旧版后端收到省略 <code>sort</code> 的请求会返回 <code>10101</code>。</p>
+<h3>历史数据与并发追加</h3>
+<p>旧接口允许跳号，现有书籍选项读取逻辑也兼容历史序号 0。切换写入规则前，按天体检查实际序号，依原有 <code>(sort, id)</code> 顺序将有缺口或从 0 起排的书单整理为 <code>1..N</code>，迁移时与旧写入协调。假设现有序号为 1、3，整理为 1、2 后追加的新书才会正确得到 3。</p>
+<p>创建与调序都在事务中先锁同一条天体记录，再读取当前书单。即使天体下还没有书也能锁定。现有创建只对天体加共享锁，改造后两种写操作须共用排他锁并保留 <code>(planet_id, sort)</code> 唯一约束。两人同时向有 5 本书的天体追加时，成功的两笔写入应依次得到 6、7。</p>
+</section>
+
+<section id="update"><h2>建议新增 <code>POST /v1/book/update</code></h2>
+<p>点击行内「编辑」后，抽屉只允许修改标题和书籍显隐。保存时用 <code>book.id</code> 定位单本书，<code>expected</code> 带上打开抽屉时的两个原值，<code>target</code> 带上保存后的两个值。两个对象都需要标题和显隐字段，改其中一项时，另一项沿用表单原值。目标字段的校验规则与创建相同。</p>
+<details class="code-file" open><summary><span class="file-mode">建议请求</span>给刚添加的书改名并隐藏</summary>
+<div class="code-toolbar"><button type="button" data-copy="update-req" hidden>复制 JSON</button><span class="copy-feedback" role="status" aria-live="polite"></span></div>
+<pre><code id="update-req" data-format="json">{
+  "book": {
+    "id": "5000000000000000001",
+    "expected": {
+      "title": "数据库索引设计",
+      "display_status": "visible"
+    },
+    "target": {
+      "title": "数据库索引设计笔记",
+      "display_status": "hidden"
+    }
+  }
+}</code></pre></details>
+<details class="code-file" open><summary><span class="file-mode">建议响应</span>返回已保存的书籍摘要</summary>
+<div class="code-toolbar"><button type="button" data-copy="update-res" hidden>复制 JSON</button><span class="copy-feedback" role="status" aria-live="polite"></span></div>
+<pre><code id="update-res" data-format="json">{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "book": {
+      "id": "5000000000000000001",
+      "title": "数据库索引设计笔记",
+      "sort": 3,
+      "display_status": "hidden"
+    }
+  }
+}</code></pre></details>
+<p>后端在事务中按 <code>book.id</code> 执行 <code>SELECT ... FOR UPDATE</code> 锁定该书，再将当前标题和显隐与 <code>expected</code> 逐字段精确比较。快照中的书名保留读取时的原文，去首尾空白和长度校验用于目标书名。核对通过后只更新标题和显隐。书籍已删除时返回 <code>20202</code>，原值已变化时建议返回 <code>20204</code>。仅调整过书序时仍可保存编辑，书内目录各自的状态随原记录保留。</p>
+<p>成功响应中的书籍字段与 <code>book/options</code> 的单项相同。前端可以按字符串 ID 更新该行及显隐统计。如果响应中的序号与本地原值不同，说明其间发生了调序，应刷新该天体的完整书单。</p>
+</section>
+
+<section id="reorder"><h2>建议新增 <code>POST /v1/book/reorder</code></h2>
+<p>进入「调整书序」时复制当前天体的全部书籍 ID 作为 <code>expected.books</code>，移动行只修改草稿。点击「保存书序」时，把最终序列放入 <code>target.books</code>。每项只传 <code>id</code>，数组位置从 1 开始对应新排序值。隐藏书籍也必须出现一次。</p>
+<details class="code-file" open><summary><span class="file-mode">建议请求</span>把刚编辑的书移到第 2 位</summary>
+<div class="code-toolbar"><button type="button" data-copy="reorder-req" hidden>复制 JSON</button><span class="copy-feedback" role="status" aria-live="polite"></span></div>
+<pre><code id="reorder-req" data-format="json">{
+  "planet": {
+    "id": "2123435429930733568",
+    "expected": {
+      "books": [
+        { "id": "2123435620763176960" },
+        { "id": "4100000000000000002" },
+        { "id": "5000000000000000001" }
+      ]
+    },
+    "target": {
+      "books": [
+        { "id": "2123435620763176960" },
+        { "id": "5000000000000000001" },
+        { "id": "4100000000000000002" }
+      ]
+    }
+  }
+}</code></pre></details>
+<details class="code-file" open><summary><span class="file-mode">建议响应</span>返回保存后的整份书单</summary>
+<div class="code-toolbar"><button type="button" data-copy="reorder-res" hidden>复制 JSON</button><span class="copy-feedback" role="status" aria-live="polite"></span></div>
+<pre><code id="reorder-res" data-format="json">{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "books": [
+      {
+        "id": "2123435620763176960",
+        "title": "MySQL是怎样运行的",
+        "sort": 1,
+        "display_status": "visible"
+      },
+      {
+        "id": "5000000000000000001",
+        "title": "数据库索引设计笔记",
+        "sort": 2,
+        "display_status": "hidden"
+      },
+      {
+        "id": "4100000000000000002",
+        "title": "SQL 学习笔记",
+        "sort": 3,
+        "display_status": "hidden"
+      }
+    ]
+  }
+}</code></pre></details>
+<ol>
+<li><strong>校验输入。</strong> 两个数组必填，元素必须是合法 ID 引用，各自没有重复，且两个数组是同一组书籍的排列。目标遗漏、额外添加或者重复任何一本均返回 <code>10101</code>。</li>
+<li><strong>校验当前书单。</strong> 在事务中先锁定天体，再按 <code>sort, id</code> 使用 <code>FOR UPDATE</code> 读取并锁定该天体的书籍行。天体不存在返回 <code>20102</code>。当前 ID 序列与 <code>expected.books</code> 的长度或任一位置不一致时返回 <code>20203</code>，整次写入回滚。即使两份数组都含有外天体 ID，也通不过这一步。</li>
+<li><strong>一次提交新顺序。</strong> 只按目标位置写入 <code>book.sort</code>，保留每本书最新的标题和显隐。交换两个占用中的序号时，在同一事务中先使用合法且未占用的临时序号，再写最终的 <code>1..N</code>，给临时值预留空间并检查列范围。事务提交成功后返回与 <code>book/options</code> 相同格式的整份书单。</li>
+</ol>
+<p>取消调序直接还原草稿。书籍不足两本或者草稿没变化时，页面无需发请求。后端收到与当前状态完全一致的合法快照和目标时可直接返回当前书单。创建或他人调序会让旧顺序失效，只编辑书名或显隐仍允许保存书序。</p>
+</section>
+
+<section id="errors"><h2>错误响应与页面恢复</h2>
+<p>失败响应统一为 <code>{code, message, data: {}}</code>。<code>20203</code> 和 <code>20204</code> 是本设计建议分配的书籍业务码，要在两端定义后再联调。以下为建议的调序冲突响应。</p>
+<details class="code-file" open><summary><span class="file-mode">建议响应</span>旧书序已失效</summary>
+<div class="code-toolbar"><button type="button" data-copy="conflict-res" hidden>复制 JSON</button><span class="copy-feedback" role="status" aria-live="polite"></span></div>
+<pre><code id="conflict-res" data-format="json">{
+  "code": 20203,
+  "message": "书单或书序已变化,请刷新后重新调整",
+  "data": {}
+}</code></pre></details>
+<div class="table-wrap"><table><thead><tr><th>业务码</th><th>含义或适用操作</th><th>页面处理</th></tr></thead><tbody>
+<tr><td><code>10101</code> 已有</td><td>字段、书名、显隐或调序数组不合法。</td><td>显示具体提示，保留待修正内容。</td></tr>
+<tr><td><code>20102</code> 已有</td><td>所选天体已不存在。</td><td>清空关联书单，刷新天体选项。</td></tr>
+<tr><td><code>20201</code> 已有</td><td>旧创建接口发现同一天体的序号被占用。</td><td>刷新书单核对结果；新表单的排序值为只读。</td></tr>
+<tr><td><code>20202</code> 已有</td><td>编辑的书籍已不存在。</td><td>结束该条编辑，刷新当前天体的书单。</td></tr>
+<tr><td><code>20203</code> 建议新增<br><code>BOOK_ORDER_CHANGED</code></td><td>完整书单的成员或顺序与调序快照不一致。</td><td>保留已提交的有效书序，重新读取书单，让管理员基于新顺序调整。</td></tr>
+<tr><td><code>20204</code> 建议新增<br><code>BOOK_EDIT_CHANGED</code></td><td>书籍的标题或显隐与编辑快照不一致。</td><td>保留用户输入供对照，取得最新书籍，重新确认后再保存。</td></tr>
+<tr><td><code>20003</code> / <code>20004</code> 已有</td><td>令牌过期，或令牌缺失、无效。</td><td>交由已有鉴权拦截器处理。</td></tr>
+<tr><td><code>10201</code> / <code>500</code> 已有</td><td>数据库或服务内部错误。</td><td>给出失败提示。请求中断、结果未知时先刷新书单核实，尤其要避免重复创建同名书。</td></tr>
+</tbody></table></div>
+<p>将新增业务码放入后端 <code>resp_body</code> 和前端 <code>API_CODE</code>。页面按业务码处理冲突，错误消息供管理员阅读。如果写入已成功而后续刷新失败，应提示「已保存，列表刷新失败」，只重试读取。</p>
+</section>
+
+<section id="verify"><h2>联调验收</h2>
+<div class="table-wrap"><table><thead><tr><th>操作</th><th>预期结果</th></tr></thead><tbody>
+<tr><td>选择无书天体，再添加一本隐藏书</td><td>列表先为空。新书排第 1，隐藏数为 1。</td></tr>
+<tr><td>同一天体已有 3 本显示、2 本隐藏的书</td><td>添加抽屉显示只读的 6。单人提交后末位为 6，并发提交两本时分别为 6 和 7。</td></tr>
+<tr><td>给同名书中的一本改标题并隐藏</td><td>只有选中 ID 的书被修改，所属天体、书序及目录状态保留。取消编辑时不写库。</td></tr>
+<tr><td>两名管理员同时编辑一本书</td><td>第一人保存的修改生效；若第二人的原值已失效，返回 20204，第二人可核对新值后提交。</td></tr>
+<tr><td>交换两本书，其中一本隐藏</td><td>一次请求保存连续序号。重新请求 options 后同样顺序，书名与显隐保留。</td></tr>
+<tr><td>调序期间有人新增书籍或保存了不同的顺序</td><td>旧快照收到 20203，新加入的书和已保存的书序得到保留。另一人仅编辑标题或显隐时调序可以成功。</td></tr>
+<tr><td>用重复、漏项或其他天体的 ID 提交</td><td>按调序节的校验规则返回错误，任何天体的书序都不会被部分写入。</td></tr>
+</tbody></table></div>
+<h3>实现位置</h3>
+<p>后端当前注册了 <code>book/create</code>、<code>book/list</code> 和 <code>book/options</code>。本次以路由、请求类型、控制器和查询实现为核对依据。<a href="../../SolarNotesAdminAPI/main.go">路由注册</a> · <a href="../../SolarNotesAdminAPI/param/req/v1/book/create.go">创建请求校验</a> · <a href="../../SolarNotesAdminAPI/controller/v1/book/book.go">书籍控制器</a> · <a href="../../SolarNotesAdminAPI/model/book.go">书籍事务与查询</a> · <a href="../../SolarNotesAdminAPI/resp_body/resp_body.go">业务响应码</a></p>
+<p>现有前端的 <code>getBookOptions()</code> 定义于目录 API 模块，两页可共用该函数和书籍摘要解析逻辑。旧的全库分页解析器还要求嵌套的 <code>planet</code> 字段，按天体书单直接使用选项解析器。<a href="../src/api/body.js">天体列表</a> · <a href="../src/api/catalogue.js">书籍选项</a> · <a href="../src/api/book.js">现有书籍请求</a> · <a href="../src/utils/request.js">鉴权与响应解包</a> · <a href="book-management-prototype.html">交互原型</a></p>
+</section>
+</main></div>
+<script>
+'use strict'
+
+/** @type {WeakMap<HTMLButtonElement, number>} 每个复制按钮对应的反馈清除定时器. */
+const copyFeedbackTimers = new WeakMap()
+
+/**
+ * 统一设置全部代码块的展开状态.
+ * @param {boolean} isOpen 是否展开代码块.
+ * @returns {void}
+ */
+function setCodeExpansion(isOpen) {
+    /** @type {NodeListOf<Element>} 当前文档中的代码块. */
+    const files = document.querySelectorAll('details.code-file')
+
+    /** @type {Element} 当前代码块元素. */
+    for (const file of files) {
+        if (file instanceof HTMLDetailsElement) {
+            file.open = isOpen
+        }
+    }
+}
+
+/**
+ * 展开全部代码块.
+ * @returns {void}
+ */
+function expandAllCode() {
+    setCodeExpansion(true)
+}
+
+/**
+ * 折叠全部代码块.
+ * @returns {void}
+ */
+function collapseAllCode() {
+    setCodeExpansion(false)
+}
+
+/**
+ * 恢复复制前的焦点, 尽量保持页面滚动位置.
+ * @param {Element | null} element 复制前获得焦点的元素.
+ * @returns {void}
+ */
+function restoreCopyFocus(element) {
+    if (element instanceof HTMLElement && element.isConnected === true) {
+        try {
+            element.focus({preventScroll: true})
+        } catch {
+            element.focus()
+        }
+    }
+}
+
+/**
+ * 使用临时文本框执行兼容复制, 完成后移除文本框并恢复焦点.
+ * @param {string} value 要写入剪贴板的完整代码.
+ * @returns {boolean} 浏览器是否确认复制成功.
+ */
+function copyTextWithFallback(value) {
+    /** @type {Element | null} 创建临时文本框前的焦点元素. */
+    const previousFocus = document.activeElement
+    /** @type {HTMLTextAreaElement} 用于选中完整代码的临时文本框. */
+    const field = document.createElement('textarea')
+    /** @type {boolean} 兼容复制的执行结果. */
+    let copied = false
+
+    field.value = value
+    field.readOnly = true
+    field.style.position = 'fixed'
+    field.style.top = '0'
+    field.style.left = '-9999px'
+    field.style.opacity = '0'
+
+    try {
+        document.body.append(field)
+        field.select()
+        field.setSelectionRange(0, field.value.length)
+        copied = document.execCommand('copy') === true
+    } catch {
+        copied = false
+    } finally {
+        field.remove()
+        restoreCopyFocus(previousFocus)
+    }
+
+    return copied
+}
+
+/**
+ * 优先使用 Clipboard API, 不可用或被拒绝时尝试兼容复制.
+ * @param {string} value 要复制的完整代码.
+ * @returns {Promise<boolean>} 是否确认复制成功.
+ */
+async function copyCodeText(value) {
+    try {
+        if (
+            window.isSecureContext === true &&
+            navigator.clipboard !== undefined &&
+            typeof navigator.clipboard.writeText === 'function'
+        ) {
+            await navigator.clipboard.writeText(value)
+            return true
+        }
+    } catch {
+        // 本地文件或浏览器权限可能拒绝 Clipboard API, 继续尝试备用方式.
+    }
+
+    return copyTextWithFallback(value)
+}
+
+/**
+ * 清除已展示的复制反馈并移除定时器记录.
+ * @param {HTMLButtonElement} button 对应的复制按钮.
+ * @param {HTMLElement} feedback 按钮旁的反馈区域.
+ * @returns {void}
+ */
+function clearCopyFeedback(button, feedback) {
+    feedback.textContent = ''
+    copyFeedbackTimers.delete(button)
+}
+
+/**
+ * 复制当前按钮关联的代码, 避免重复执行并展示明确的结果.
+ * @param {MouseEvent} event 复制按钮的点击事件.
+ * @returns {Promise<void>} 本次复制处理结束.
+ */
+async function handleCopyCode(event) {
+    /** @type {EventTarget | null} 触发本次复制的事件元素. */
+    const button = event.currentTarget
+    if (button instanceof HTMLButtonElement === false || button.disabled === true) {
+        return
+    }
+
+    /** @type {string | undefined} 需要复制的代码元素 ID. */
+    const codeId = button.dataset.copy
+    if (typeof codeId !== 'string' || codeId === '') {
+        return
+    }
+
+    /** @type {HTMLElement | null} 需要复制的代码元素. */
+    const code = document.getElementById(codeId)
+    /** @type {Element | null} 位于按钮之后的反馈元素. */
+    const feedback = button.nextElementSibling
+    if (code instanceof HTMLElement === false || feedback instanceof HTMLElement === false) {
+        return
+    }
+
+    /** @type {number | undefined} 上一次结果提示的清除定时器. */
+    const previousTimer = copyFeedbackTimers.get(button)
+    if (typeof previousTimer === 'number') {
+        window.clearTimeout(previousTimer)
+        copyFeedbackTimers.delete(button)
+    }
+
+    /** @type {Element | null} 禁用按钮之前的焦点元素. */
+    const previousFocus = document.activeElement
+    /** @type {string | null} 保留原始换行和缩进的代码文本. */
+    const content = code.textContent
+    /** @type {string} 本次要复制的文本. */
+    let value = ''
+    if (content !== null) {
+        value = content
+    }
+
+    /** @type {boolean} 本次复制是否成功. */
+    let copied = false
+    button.disabled = true
+    feedback.textContent = '正在复制...'
+
+    try {
+        copied = await copyCodeText(value)
+    } catch {
+        copied = false
+    } finally {
+        button.disabled = false
+        restoreCopyFocus(previousFocus)
+    }
+
+    if (copied === true) {
+        feedback.textContent = '已复制'
+    } else {
+        feedback.textContent = '复制失败, 请手动选择代码'
+    }
+
+    /** @type {number} 本次结果提示的清除定时器. */
+    const timer = window.setTimeout(clearCopyFeedback, 2500, button, feedback)
+    copyFeedbackTimers.set(button, timer)
+}
+
+/**
+ * 初始化全部展开按钮和复制按钮, 应在正文元素创建后调用.
+ * @returns {void}
+ */
+function initializeCodeTools() {
+    /** @type {HTMLElement | null} 展开全部代码的按钮. */
+    const expand = document.getElementById('expand-all')
+    /** @type {HTMLElement | null} 折叠全部代码的按钮. */
+    const collapse = document.getElementById('collapse-all')
+    if (expand instanceof HTMLButtonElement) {
+        expand.hidden = false
+        expand.addEventListener('click', expandAllCode)
+    }
+    if (collapse instanceof HTMLButtonElement) {
+        collapse.hidden = false
+        collapse.addEventListener('click', collapseAllCode)
+    }
+
+    /** @type {NodeListOf<Element>} 声明了目标代码 ID 的复制按钮. */
+    const buttons = document.querySelectorAll('button[data-copy]')
+    /** @type {Element} 当前待初始化的复制按钮元素. */
+    for (const button of buttons) {
+        if (button instanceof HTMLButtonElement === false) {
+            continue
+        }
+        /** @type {string | undefined} 按钮关联的代码元素 ID. */
+        const codeId = button.dataset.copy
+        if (typeof codeId !== 'string' || codeId === '') {
+            continue
+        }
+        /** @type {HTMLElement | null} 对应的代码元素. */
+        const code = document.getElementById(codeId)
+        /** @type {Element | null} 对应的复制反馈区域. */
+        const feedback = button.nextElementSibling
+        if (code instanceof HTMLElement === false || feedback instanceof HTMLElement === false) {
+            continue
+        }
+        button.hidden = false
+        button.addEventListener('click', handleCopyCode)
+    }
+}
+
+initializeCodeTools()
+</script>
+</body></html>

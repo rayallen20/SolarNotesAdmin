@@ -10,33 +10,24 @@
         </div>
         <el-card shadow="never">
             <div class="filters">
-                <label>天体
-                    <select :value="planetId" :disabled="writing || planets.length === 0"
-                            @change="selectPlanet($event.target.value)">
-                        <option value="">请选择天体</option>
-                        <option v-for="planet in planets" :key="planet.id" :value="planet.id">
-                            {{ getBodyLabel(planet.name) }}
-                        </option>
-                    </select>
-                </label>
-                <label>书籍
-                    <select :value="bookId" :disabled="writing || books.length === 0"
-                            @change="selectBook($event.target.value)">
-                        <option value="">请选择书籍</option>
-                        <option v-for="item in books" :key="item.id" :value="item.id">{{ item.title }}</option>
-                    </select>
-                </label>
-                <div v-if="selectedBook">
-                    书籍状态
+                <AdminFilterSelect label="天体" placeholder="请选择天体" :model-value="planetId"
+                                   :disabled="writing || planets.length === 0" @update:model-value="selectPlanet">
+                    <el-option v-for="planet in planets" :key="planet.id" :value="planet.id" :label="getBodyLabel(planet.name)" />
+                </AdminFilterSelect>
+                <AdminFilterSelect label="书籍" placeholder="请选择书籍" :model-value="bookId"
+                                   :disabled="writing || books.length === 0" @update:model-value="selectBook">
+                    <el-option v-for="item in books" :key="item.id" :value="item.id" :label="item.title" />
+                </AdminFilterSelect>
+                <div v-if="selectedBook" class="admin-select-field book-status-field">
+                    <span>书籍状态</span>
                     <el-tag :type="selectedBook.display_status === 'visible' ? 'success' : 'info'">
                         {{ selectedBook.display_status === 'visible' ? '显示' : '隐藏' }}
                     </el-tag>
                 </div>
-                <div v-if="book && readError === ''" class="progress">
-                    <label>全书排序进度 {{ sortedCount }} / {{ nonRootCount }}
-                        <progress :value="sortedCount" :max="Math.max(1, nonRootCount)"></progress>
-                    </label>
-                </div>
+                <label v-if="book && readError === ''" class="admin-select-field progress">
+                    全书排序进度 {{ sortedCount }} / {{ nonRootCount }}
+                    <progress :value="sortedCount" :max="Math.max(1, nonRootCount)"></progress>
+                </label>
             </div>
         </el-card>
 
@@ -95,8 +86,9 @@
                     {{ folder.parent_id === '0' ? '根节点' : '当前目录' }} ·
                     {{ folder.sort === null ? '待排序' : '序号 ' + folder.sort }}
                     <el-switch :model-value="folder.display_status === 'visible'" :aria-label="folder.name + '的显示状态'"
-                               active-text="显示" inactive-text="隐藏" :disabled="writing || folder.sort === null"
+                               :disabled="writing || folder.sort === null"
                                @change="changeDisplay(folder, $event)" />
+                    <span>{{ folder.display_status === 'visible' ? '显示' : '隐藏' }}</span>
                 </div>
                 <!-- 右表只列直接子项. 将树表子节点键指向此 DTO 未使用的名称. -->
                 <el-table :data="folder.children" row-key="id" :tree-props="{ children: 'tableChildren' }"
@@ -147,6 +139,7 @@ import {getBookOptions, getCatalogueTree, saveCatalogueOrder, setCatalogueDispla
 import {API_CODE} from '@/constants/apiCode'
 import {getApiErrorCode, getApiErrorMessage, isAuthError} from '@/utils/apiError'
 import CatalogueOrderDrawer from '@/components/CatalogueOrderDrawer.vue'
+import AdminFilterSelect from '@/components/AdminFilterSelect.vue'
 import ArticlePreviewDialog from '@/components/ArticlePreviewDialog.vue'
 
 /** @typedef {import('@/api/catalogue').CatalogueNode} CatalogueNode */
@@ -417,21 +410,18 @@ onBeforeUnmount(function () {
 .catalogue-page { display: grid; gap: 16px; min-width: 0; }
 h1, h2, p { margin: 0; }
 h2 { font-size: 18px; }
-.filters, .toolbar, .current, .path { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.filters label { display: grid; gap: 6px; }
-.filters > label { min-width: 0; max-width: 100%; grid-template-columns: minmax(0, 1fr); }
-.filters select {
-    box-sizing: border-box; width: 100%; min-width: 0; text-overflow: ellipsis;
-    appearance: none; padding: 8px 34px 8px 12px; border: 1px solid #cdd4df;
-    border-radius: 6px; font: inherit; color: inherit; background-color: white;
-    background-image: linear-gradient(45deg, transparent 50%, #57657b 50%),
-                      linear-gradient(135deg, #57657b 50%, transparent 50%);
-    background-size: 5px 5px; background-repeat: no-repeat;
-    background-position: right 16px center, right 11px center;
+.filters {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    justify-items: center;
+    gap: 16px;
 }
-@media (forced-colors: active) { .filters select { appearance: auto; background-image: none; } }
-.progress { margin-inline-start: auto; }
-.progress progress { accent-color: #575acb; }
+.filters > .admin-select-field { width: 100%; max-width: 16rem; }
+.book-status-field, .progress { grid-template-rows: max-content 1fr; }
+.book-status-field .el-tag, .progress progress { place-self: center; }
+.progress progress { width: 100%; accent-color: #575acb; }
+.toolbar, .current, .path { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .panels { display: grid; grid-template-columns: minmax(230px, 1fr) minmax(0, 2fr); gap: 16px; align-items: start; }
 .panels > * { min-width: 0; }
 .toolbar { justify-content: space-between; }
@@ -444,10 +434,15 @@ h2 { font-size: 18px; }
 .selected { background: #eef0ff; color: #374897; border-radius: 4px; }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: #bd862f; flex-shrink: 0; }
 .dot.ranked { background: #268168; }
-.name { height: auto; max-width: 100%; white-space: normal; text-align: start; }
+.name { height: auto; max-width: 100%; white-space: normal; }
 .notice { color: #9c403c; }
+@media (max-width: 1060px) {
+    .filters { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 @media (max-width: 880px) {
     .panels { grid-template-columns: minmax(0, 1fr); }
-    .progress { margin-inline-start: 0; }
+}
+@media (max-width: 510px) {
+    .filters { grid-template-columns: minmax(0, 1fr); }
 }
 </style>

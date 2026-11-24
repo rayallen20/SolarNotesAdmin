@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>书籍管理 · SolarNotes 管理后台</title>
-  <meta name="description" content="按天体查看、添加书籍及调整书序的交互原型。">
+  <meta name="description" content="按天体添加书籍、编辑标题和显隐、调整书序的交互原型。">
   <style>
 :root {
   color-scheme: light;
@@ -83,8 +83,9 @@ tbody tr:hover { background: #fafaff; }
 .title-cell { display: flex; align-items: center; gap: 10px; }
 .title-cell strong { font-weight: 610; overflow-wrap: anywhere; }
 .type-icon { display: grid; flex: none; place-items: center; width: 30px; height: 30px; border-radius: 7px; color: var(--accent); background: var(--soft); }
-.book-id { color: var(--muted); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; font-variant-numeric: tabular-nums; }
-.visibility-switch { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: #576277; white-space: nowrap; font-size: 12px; }
+.book-status { color: var(--muted); white-space: nowrap; }
+.book-status.visible { color: #226753; }
+.visibility-switch { display: inline-flex; justify-self: start; align-items: center; gap: 8px; min-height: 32px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: #576277; }
 .switch-track { display: inline-flex; align-items: center; width: 30px; height: 18px; padding: 2px; border: 1px solid transparent; border-radius: 10px; background: #798596; }
 .switch-track::after { content: ""; width: 12px; height: 12px; border-radius: 50%; background: white; }
 .visibility-switch[aria-checked="true"] { color: #226753; }
@@ -112,9 +113,9 @@ tbody tr:hover { background: #fafaff; }
 }
 .disabled-move[data-move="up"] { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 10'%3E%3Cpath d='m1 8 6-6 6 6' fill='none' stroke='%23939cad' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
 .disabled-move[data-move="down"] { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 10'%3E%3Cpath d='m1 2 6 6 6-6' fill='none' stroke='%23939cad' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
-#add-dialog { position: fixed; inset: 0 0 0 auto; width: min(480px, 100%); max-width: 100%; height: 100vh; height: 100dvh; max-height: 100%; margin: 0; padding: 0; border: 0; color: var(--ink); background: #fff; box-shadow: -8px 0 35px rgb(28 36 65 / 12%); }
-#add-dialog::backdrop { background: rgb(26 35 51 / 38%); }
-#add-dialog form { display: flex; flex-direction: column; height: 100%; }
+#book-dialog { position: fixed; inset: 0 0 0 auto; width: min(480px, 100%); max-width: 100%; height: 100vh; height: 100dvh; max-height: 100%; margin: 0; padding: 0; border: 0; color: var(--ink); background: #fff; box-shadow: -8px 0 35px rgb(28 36 65 / 12%); }
+#book-dialog::backdrop { background: rgb(26 35 51 / 38%); }
+#book-dialog form { display: flex; flex-direction: column; height: 100%; }
 .drawer-head, .drawer-foot { padding: 18px 21px; }
 .drawer-head { border-bottom: 1px solid var(--line); }
 .drawer-body { flex: 1; min-height: 0; overflow: auto; padding: 23px 21px; }
@@ -144,14 +145,8 @@ tbody tr:hover { background: #fafaff; }
   th:first-child, td:first-child { padding-left: 12px; }
   .title-cell { gap: 5px; }
   .title-cell .type-icon { display: none; }
-  .book-id { font-size: 11px; overflow-wrap: anywhere; }
   .move-tools { gap: 3px; }
   .drawer-head, .drawer-body, .drawer-foot { padding-inline: 16px; }
-}
-.mobile-id { display: none; }
-@media (max-width: 680px) {
-  .id-col { display: none; }
-  .mobile-id { display: block; margin-top: 3px; color: var(--muted); font: 11px/1.5 ui-monospace, Menlo, monospace; overflow-wrap: anywhere; }
 }
   </style>
 </head>
@@ -206,7 +201,7 @@ SOFTWARE.
       <header class="topbar"><span class="crumbs">管理后台　/　<strong>书籍管理</strong></span><span class="preview-label">示例数据 · 仅在本页生效</span></header>
       <main class="main">
         <div class="page-heading">
-          <div><h1>书籍管理</h1><p>按天体添加书籍、设置显隐和调整阅读顺序。</p></div>
+          <div><h1>书籍管理</h1><p>按天体添加书籍、编辑标题和显隐、调整阅读顺序。</p></div>
           <button type="button" class="btn" id="reset"><i data-icon="reset"></i>还原示例</button>
         </div>
         <section class="selector-card" aria-label="选择所属天体">
@@ -227,10 +222,10 @@ SOFTWARE.
               <button type="button" class="btn primary" id="save" hidden>保存书序</button>
             </div>
           </div>
-          <p class="draft-note" id="draft-note" hidden>上下移动书籍后点击「保存书序」，各位置保留原排序值。显隐开关即时生效。</p>
+          <p class="draft-note" id="draft-note" hidden>上下移动书籍后，点击「保存书序」确认新的阅读顺序。</p>
           <div class="table-wrap" id="table-region">
             <table>
-              <thead><tr><th scope="col">排序值</th><th scope="col">书籍标题</th><th scope="col" class="id-col">书籍 ID</th><th scope="col">显示状态</th><th scope="col" id="move-head" hidden>移动</th></tr></thead>
+              <thead><tr><th scope="col">排序值</th><th scope="col">书籍标题</th><th scope="col">显示状态</th><th scope="col" id="action-head">操作</th></tr></thead>
               <tbody id="books"></tbody>
             </table>
           </div>
@@ -239,17 +234,17 @@ SOFTWARE.
       </main>
     </div>
   </div>
-  <dialog id="add-dialog" aria-labelledby="add-heading">
+  <dialog id="book-dialog" aria-labelledby="book-heading">
     <form id="book-form" novalidate>
-      <div class="drawer-head"><h2 id="add-heading">添加书籍</h2><button type="button" class="icon-btn" id="close-add" aria-label="关闭"><i data-icon="close"></i></button></div>
+      <div class="drawer-head"><h2 id="book-heading">添加书籍</h2><button type="button" class="icon-btn" id="close-book" aria-label="关闭"><i data-icon="close"></i></button></div>
       <div class="drawer-body">
-        <div class="field"><label for="add-planet">所属天体</label><output id="add-planet" class="readonly"></output></div>
+        <div class="field"><label for="book-planet">所属天体</label><output id="book-planet" class="readonly"></output></div>
         <div class="field"><label for="title">书籍标题</label><input id="title" type="text" autocomplete="off" placeholder="请输入书籍标题" required aria-describedby="title-help"><p class="help" id="title-help">最多 20 个字符，首尾空白会自动去除。</p></div>
-        <div class="field"><label for="sort">排序值</label><input id="sort" type="number" min="1" max="4294967295" step="1" required aria-describedby="sort-help"><p class="help" id="sort-help">同一天体下排序值唯一，显示和隐藏的书籍均从 1 起排。</p></div>
-        <div class="field"><label for="display">显示状态</label><select id="display"><option value="visible">显示</option><option value="hidden">隐藏</option></select></div>
+        <div class="field" id="sort-field"><label for="sort">排序值</label><output id="sort" class="readonly" aria-describedby="sort-help"></output><p class="help" id="sort-help">新书自动排在当前天体的最后一本，隐藏书籍也计入排序。</p></div>
+        <div class="field"><label for="display" id="display-label">显示状态</label><button type="button" id="display" class="visibility-switch" role="switch" aria-labelledby="display-label" aria-checked="true"><span class="switch-track" aria-hidden="true"></span><span id="display-text">显示</span></button></div>
         <p class="error" id="error" role="alert" hidden></p>
       </div>
-      <div class="drawer-foot"><button class="btn" type="button" id="cancel-add">取消</button><button class="btn primary" type="submit">确认添加</button></div>
+      <div class="drawer-foot"><button class="btn" type="button" id="cancel-book">取消</button><button class="btn primary" type="submit" id="submit-book">确认添加</button></div>
     </form>
   </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
@@ -267,19 +262,19 @@ const examples = [
     [
         {id: '2123435620763176960', title: 'MySQL是怎样运行的', sort: 1, display_status: 'visible'},
         {id: '4100000000000000002', title: '数据库系统概念', sort: 2, display_status: 'visible'},
-        {id: '4100000000000000003', title: 'SQL 学习笔记', sort: 4, display_status: 'hidden'},
-        {id: '4100000000000000004', title: '数据库索引设计', sort: 8, display_status: 'visible'}
+        {id: '4100000000000000003', title: 'SQL 学习笔记', sort: 3, display_status: 'hidden'},
+        {id: '4100000000000000004', title: '数据库索引设计', sort: 4, display_status: 'visible'}
     ],
     [
         {id: '4100000000000000005', title: '地球科学导论', sort: 1, display_status: 'visible'},
-        {id: '4100000000000000006', title: '地质观察笔记', sort: 3, display_status: 'hidden'}
+        {id: '4100000000000000006', title: '地质观察笔记', sort: 2, display_status: 'hidden'}
     ],
     []
 ]
-const maxSort = 4294967295
 let booksByPlanet = new Map()
 let saved = []
 let draftIds = null
+let editingBook = null
 let addedCount = 0
 let toastTimer
 let blockedControl = null
@@ -345,30 +340,9 @@ function moveButton(book, direction, disabled) {
     return button
 }
 
-/** Create a switch for the saved book, independent of its position in the order draft. */
-function visibilitySwitch(book) {
-    const button = element('button', 'visibility-switch')
-    button.type = 'button'
-    button.setAttribute('role', 'switch')
-    button.setAttribute('aria-label', '《' + book.title + '》的显示状态')
-    const track = element('span', 'switch-track')
-    track.setAttribute('aria-hidden', 'true')
-    const label = element('span')
-    button.append(track, label)
-
-    function updateLabel() {
-        const visible = book.display_status === 'visible'
-        button.setAttribute('aria-checked', String(visible))
-        label.textContent = visible ? '显示' : '隐藏'
-    }
-    updateLabel()
-    button.addEventListener('click', function () {
-        book.display_status = book.display_status === 'visible' ? 'hidden' : 'visible'
-        updateLabel()
-        updateBookCounts()
-        tell('《' + book.title + '》已' + label.textContent)
-    })
-    return button
+function setFormVisibility(visible) {
+    el('display').setAttribute('aria-checked', String(visible))
+    el('display-text').textContent = visible ? '显示' : '隐藏'
 }
 
 function updateBookCounts() {
@@ -380,23 +354,26 @@ function bookRow(book, index, editing) {
     const row = element('tr')
     row.dataset.id = book.id
     const sortCell = row.insertCell()
-    sortCell.append(element('span', 'sort-value', saved[index].sort))
+    sortCell.append(element('span', 'sort-value', editing ? index + 1 : book.sort))
     const titleCell = row.insertCell()
     const titleWrap = element('div', 'title-cell')
     const glyph = element('i', 'type-icon')
     glyph.innerHTML = icon('book')
     titleWrap.append(glyph, element('strong', '', book.title))
     titleCell.append(titleWrap)
-    // Small screens show the same identifier below the book title.
-    titleCell.append(element('span', 'mobile-id', 'ID ' + book.id))
-    const idCell = row.insertCell()
-    idCell.className = 'book-id id-col'
-    idCell.textContent = book.id
-    row.insertCell().append(visibilitySwitch(book))
+    const visible = book.display_status === 'visible'
+    row.insertCell().append(element('span', visible ? 'book-status visible' : 'book-status', visible ? '显示' : '隐藏'))
+    const actionCell = row.insertCell()
     if (editing) {
         const controls = element('div', 'move-tools')
         controls.append(moveButton(book, 'up', index === 0), moveButton(book, 'down', index === saved.length - 1))
-        row.insertCell().append(controls)
+        actionCell.append(controls)
+    } else {
+        const editButton = element('button', 'btn', '编辑')
+        editButton.type = 'button'
+        editButton.setAttribute('aria-label', '编辑《' + book.title + '》')
+        editButton.addEventListener('click', function () { openBookForm(book) })
+        actionCell.append(editButton)
     }
     return row
 }
@@ -459,7 +436,7 @@ function render() {
     el('save').hidden = !editing
     el('save').disabled = !editing || draftIds.every(function (id, index) { return id === saved[index].id })
     el('draft-note').hidden = !editing
-    el('move-head').hidden = !editing
+    el('action-head').textContent = editing ? '移动' : '操作'
     el('table-region').hidden = saved.length === 0
     el('empty-list').hidden = saved.length !== 0
     const lookup = new Map(saved.map(function (book) { return [book.id, book] }))
@@ -485,31 +462,18 @@ function moveBook(event) {
 
 function saveOrder() {
     if (draftIds === null || el('save').disabled) return
-    const slots = saved.map(function (book) { return book.sort })
     const lookup = new Map(saved.map(function (book) { return [book.id, book] }))
-    const reordered = draftIds.map(function (id, index) { return {...lookup.get(id), sort: slots[index]} })
+    const reordered = draftIds.map(function (id, index) { return {...lookup.get(id), sort: index + 1} })
     booksByPlanet.set(selectedPlanet().id, reordered)
     loadSelection()
     el('edit').focus()
     tell('已保存当前天体的书序')
 }
 
-function nextSort() {
-    if (saved.length === 0) return 1
-    const last = saved[saved.length - 1].sort
-    if (last < maxSort) return last + 1
-    let available = 1
-    for (const book of saved) {
-        if (book.sort !== available) break
-        available += 1
-    }
-    return available <= maxSort ? available : ''
-}
-
 function clearError() {
     el('error').hidden = true
     el('error').textContent = ''
-    for (const field of [el('title'), el('sort')]) field.removeAttribute('aria-invalid')
+    el('title').removeAttribute('aria-invalid')
 }
 
 function showError(field, message) {
@@ -519,12 +483,18 @@ function showError(field, message) {
     field.focus()
 }
 
-function openAdd() {
-    el('book-form').reset()
+function openBookForm(book) {
+    editingBook = book
+    const creating = book === null
     clearError()
-    el('add-planet').textContent = selectedPlanet().label
-    el('sort').value = nextSort()
-    el('add-dialog').showModal()
+    el('book-heading').textContent = creating ? '添加书籍' : '编辑书籍'
+    el('submit-book').textContent = creating ? '确认添加' : '保存修改'
+    el('book-planet').textContent = selectedPlanet().label
+    el('title').value = creating ? '' : book.title
+    el('sort-field').hidden = !creating
+    if (creating) el('sort').value = String(saved.length + 1)
+    setFormVisibility(creating || book.display_status === 'visible')
+    el('book-dialog').showModal()
     el('title').focus()
 }
 
@@ -532,24 +502,28 @@ function submitBook(event) {
     event.preventDefault()
     clearError()
     const title = el('title').value.trim()
-    const sort = el('sort').valueAsNumber
     if (title === '' || Array.from(title).length > 20) {
         showError(el('title'), '请输入 1 至 20 个字符的书籍标题。')
         return
     }
-    if (!Number.isInteger(sort) || sort < 1 || sort > maxSort) {
-        showError(el('sort'), '排序值须为 1 至 4294967295 的整数。')
-        return
+    const displayStatus = el('display').getAttribute('aria-checked') === 'true' ? 'visible' : 'hidden'
+    if (editingBook === null) {
+        const books = booksByPlanet.get(selectedPlanet().id)
+        books.push({
+            id: String(5000000000000000000n + BigInt(++addedCount)),
+            title,
+            sort: books.length + 1,
+            display_status: displayStatus
+        })
+        tell('已添加《' + title + '》')
+    } else {
+        editingBook.title = title
+        editingBook.display_status = displayStatus
+        tell('已更新《' + title + '》')
     }
-    if (saved.some(function (book) { return book.sort === sort })) {
-        showError(el('sort'), '该天体下已有书籍使用此排序值，请换一个。')
-        return
-    }
-    const record = {id: String(5000000000000000000n + BigInt(++addedCount)), title, sort, display_status: el('display').value}
-    booksByPlanet.get(selectedPlanet().id).push(record)
-    el('add-dialog').close()
+    el('book-dialog').close()
     loadSelection()
-    tell('已添加《' + title + '》')
+    if (editingBook !== null) el('books').querySelector('tr[data-id="' + editingBook.id + '"] button').focus()
 }
 
 function resetExample() {
@@ -586,9 +560,12 @@ el('cancel').addEventListener('click', function () {
     render()
     el('edit').focus()
 })
-el('add').addEventListener('click', openAdd)
-el('close-add').addEventListener('click', function () { el('add-dialog').close() })
-el('cancel-add').addEventListener('click', function () { el('add-dialog').close() })
+el('add').addEventListener('click', function () { openBookForm(null) })
+el('display').addEventListener('click', function () {
+    setFormVisibility(el('display').getAttribute('aria-checked') !== 'true')
+})
+el('close-book').addEventListener('click', function () { el('book-dialog').close() })
+el('cancel-book').addEventListener('click', function () { el('book-dialog').close() })
 el('book-form').addEventListener('submit', submitBook)
 resetExample()
   </script>

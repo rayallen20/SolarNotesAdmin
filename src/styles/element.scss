@@ -18,3 +18,82 @@ body {
   margin: 0;
   background: #fafbfe;
 }
+
+th,
+td,
+.el-table .el-table__cell {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.admin-select-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  text-align: center;
+}
+
+.admin-select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  text-align: start;
+  text-overflow: ellipsis;
+  appearance: none;
+  padding: 8px 34px 8px 12px;
+  border: 1px solid #cdd4df;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: normal;
+  color: var(--el-text-color-primary);
+  background-color: white;
+  background-image: linear-gradient(45deg, transparent 50%, #57657b 50%),
+                    linear-gradient(135deg, #57657b 50%, transparent 50%);
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+  background-position: right 16px center, right 11px center;
+}
+
+.admin-select:disabled {
+  color: var(--el-text-color-disabled);
+  cursor: not-allowed;
+}
+
+.admin-filter-select {
+  width: 10rem;
+  --el-border-color: #cdd4df;
+  --el-border-radius-base: 6px;
+  --el-input-text-color: var(--el-text-color-primary);
+}
+
+.admin-filter-select .el-select__wrapper {
+  min-height: 42px;
+  padding-inline: 28px;
+  text-align: center;
+  font-size: 1rem;
+}
+
+.admin-filter-select .el-select__suffix {
+  position: absolute;
+  inset-inline-end: 10px;
+}
+
+.admin-filter-options .el-select-dropdown__item {
+  height: auto;
+  padding: 6px 12px;
+  text-align: center;
+  font-size: 1rem;
+  line-height: 1.5;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+@media (forced-colors: active) {
+  .admin-select {
+    appearance: auto;
+    background-image: none;
+  }
+}

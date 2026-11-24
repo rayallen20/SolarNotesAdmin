@@ -1,16 +1,10 @@
 import request from '@/utils/request'
 import {isRecord} from '@/utils/typeGuard'
 import {readRequiredStringField, readSafeIntegerField, readStringField} from '@/utils/fileReader'
-import {BOOK_SORT_MAX} from '@/constants/book'
+import {getBookOptions, readBookOption, readDisplayStatus} from '@/api/book'
 
 /** @typedef {import('@/constants/book').BookDisplayStatus} DisplayStatus */
-/**
- * @typedef {Object} BookOption
- * @property {string} id 书籍 ID.
- * @property {string} title 书名.
- * @property {number} sort 书籍排序.
- * @property {DisplayStatus} display_status 书籍自身的显隐.
- */
+/** @typedef {import('@/api/book').BookOption} BookOption */
 /**
  * @typedef {Object} CatalogueNode
  * @property {string} id 目录节点 ID.
@@ -25,37 +19,6 @@ import {BOOK_SORT_MAX} from '@/constants/book'
 /** @typedef {{sorted_children: {id: string}[], unsorted_children: {id: string}[]}} OrderGroups */
 /** @typedef {{catalogue: {parent_id: string, expected: OrderGroups, target: OrderGroups}}} ReorderRequest */
 /** @typedef {{id: string, title: string, content: string}} ArticlePreview */
-
-/**
- * 读取书籍或目录的显示状态.
- * @param {Record<string, unknown>} record 解包后的记录.
- * @returns {DisplayStatus} 服务端保存的状态.
- */
-function readDisplayStatus(record) {
-    const status = readRequiredStringField(record, 'display_status')
-    if (status !== 'visible' && status !== 'hidden') {
-        throw new Error('显示状态无效')
-    }
-    return status
-}
-
-/**
- * 读取书籍下拉选项与目录树共有的书籍字段.
- * @param {unknown} value 接口返回的书籍.
- * @returns {BookOption} 书籍摘要.
- */
-function readBookOption(value) {
-    if (isRecord(value) === false) {
-        throw new Error('书籍记录格式异常')
-    }
-    return {
-        id: readRequiredStringField(value, 'id'),
-        title: readStringField(value, 'title'),
-        // 读取时保留历史书籍的序号 0.
-        sort: readSafeIntegerField(value, 'sort', 0, BOOK_SORT_MAX),
-        display_status: readDisplayStatus(value),
-    }
-}
 
 /**
  * 读取后端已组装的节点, 保留各层 children 的顺序.
@@ -86,20 +49,6 @@ function readCatalogueNode(value) {
         display_status: readDisplayStatus(value),
         children: value.children.map(readCatalogueNode),
     }
-}
-
-/**
- * 读取选中天体下的全部书籍选项, 包括隐藏书籍.
- * @param {string} planetId 天体 ID.
- * @returns {Promise<BookOption[]>} 服务端排序后的书籍选项.
- */
-async function getBookOptions(planetId) {
-    /** @type {unknown} request 已解包的 data. */
-    const data = await request.post('/v1/book/options', {planet: {id: planetId}})
-    if (isRecord(data) === false || Array.isArray(data.books) === false) {
-        throw new Error('书籍选项响应缺少 books 数组')
-    }
-    return data.books.map(readBookOption)
 }
 
 /**

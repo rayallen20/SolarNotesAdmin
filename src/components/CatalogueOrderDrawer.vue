@@ -13,10 +13,10 @@
                 <li v-for="(node, index) in ranked" :key="node.id" :data-node="node.id" tabindex="-1">
                     <span class="node-name">{{ index + 1 }}. {{ node.name }}</span>
                     <div class="row-actions">
-                        <button type="button" :disabled="busy || index === 0"
-                                :aria-label="'上移 ' + node.name" @click="moveAt(index, -1)">↑</button>
-                        <button type="button" :disabled="busy || index === ranked.length - 1"
-                                :aria-label="'下移 ' + node.name" @click="moveAt(index, 1)">↓</button>
+                        <OrderMoveButtons :up-label="'上移 ' + node.name" :down-label="'下移 ' + node.name"
+                                          :disable-up="busy || index === 0"
+                                          :disable-down="busy || index === ranked.length - 1"
+                                          @move="moveAt(index, $event)" />
                         <button type="button" :disabled="busy" @click="removeAt(index)">
                             {{ node.sort === null ? '撤回加入' : '移回待排' }}
                         </button>
@@ -43,6 +43,7 @@
 
 <script setup>
 import {computed, nextTick, ref, watch} from 'vue'
+import OrderMoveButtons from '@/components/OrderMoveButtons.vue'
 
 /** @typedef {import('@/api/catalogue').CatalogueNode} CatalogueNode */
 /** @typedef {Pick<CatalogueNode, 'id' | 'name' | 'sort'>} DraftNode */
