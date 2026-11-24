@@ -18,6 +18,7 @@
                 <el-menu
                     router
                     :default-active="activeMenuPath"
+                    :default-openeds="route.name === 'changePassword' ? ['account'] : []"
                     background-color="#2D3A4B"
                     text-color="#AEB8C7"
                     active-text-color="#FFFFFF"
@@ -53,6 +54,21 @@
                         <el-icon><Notebook /></el-icon>
                         <span>目录管理</span>
                     </el-menu-item>
+
+                    <el-sub-menu index="account" class="account-menu">
+                        <template #title>
+                            <el-icon aria-hidden="true"><User /></el-icon>
+                            <span class="account-label">账号管理</span>
+                        </template>
+                        <el-menu-item
+                            :index="getMenuPath('changePassword')"
+                            title="修改密码"
+                            aria-label="修改密码"
+                        >
+                            <el-icon aria-hidden="true"><Key /></el-icon>
+                            <span>修改密码</span>
+                        </el-menu-item>
+                    </el-sub-menu>
                 </el-menu>
             </nav>
         </el-aside>
@@ -104,7 +120,7 @@
 </template>
 
 <script setup>
-import {Notebook, Reading, Sunny, SwitchButton, User} from "@element-plus/icons-vue";
+import {Key, Notebook, Reading, Sunny, SwitchButton, User} from "@element-plus/icons-vue";
 import {useRoute, useRouter} from "vue-router";
 import useUserStore from "@/stores/user";
 import {computed} from "vue";
@@ -328,6 +344,28 @@ async function logout() {
 
     .sidebar-menu :deep(.el-menu-item .el-icon) {
         margin-right: 0;
+    }
+
+    .account-menu :deep(.el-sub-menu__title) {
+        justify-content: center;
+        padding: 0 12px 0 0;
+    }
+
+    .account-menu :deep(.el-sub-menu__title > .el-icon:first-child) {
+        margin-right: 0;
+    }
+
+    .account-menu :deep(.el-sub-menu__icon-arrow) {
+        right: 6px;
+    }
+
+    .account-label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
     }
 
     .layout-header {

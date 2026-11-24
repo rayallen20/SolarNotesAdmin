@@ -96,9 +96,15 @@ const userStoreOptions = {
          * @returns {void}
          * */
         clearSession: function () {
+            const previousToken = this.token
             this.token = ''
             this.username = ''
 
+            // 旧标签页收到改密或鉴权响应时, 保留其他标签页已建立的新会话.
+            const storedToken = localStorage.getItem(TOKEN_KEY)
+            if (storedToken !== null && storedToken !== previousToken) {
+                return
+            }
             localStorage.removeItem(TOKEN_KEY)
             localStorage.removeItem(USERNAME_KEY)
         },

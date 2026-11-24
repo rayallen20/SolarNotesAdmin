@@ -61,6 +61,7 @@ import axios from "axios";
 import {loginAdmin} from "@/api/admin";
 import {getApiErrorCode, getApiErrorMessage} from "@/utils/apiError";
 import {API_CODE} from "@/constants/apiCode";
+import {PASSWORD_TEXT_PATTERN, PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH} from "@/constants/adminPassword";
 
 defineOptions({
     name: 'LoginPage',
@@ -100,8 +101,13 @@ const loginFormRules = {
         {min: 5, max: 20, message: '用户名长度为 5-20 个字符', trigger: 'blur'},
     ],
     password: [
-        {required: true, whitespace: true, message: '请输入密码', trigger: 'blur'},
-        {min: 6, max: 20, message: '密码长度为 6-20 个字符', trigger: 'blur'},
+        {required: true, pattern: PASSWORD_TEXT_PATTERN, message: '请输入密码', trigger: 'blur'},
+        {
+            min: PASSWORD_MIN_LENGTH,
+            max: PASSWORD_MAX_LENGTH,
+            message: `密码长度为 ${PASSWORD_MIN_LENGTH}-${PASSWORD_MAX_LENGTH} 个字符`,
+            trigger: 'blur',
+        },
     ],
 }
 

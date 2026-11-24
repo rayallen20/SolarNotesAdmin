@@ -27,6 +27,8 @@ const API_CODE = {
     TOKEN_INVALID: 20004,
     /** 登录请求触发访问频率限制 */
     LOGIN_RATE_LIMIT: 20005,
+    /** 会话有效, 原密码核验失败. */
+    CURRENT_PASSWORD_INCORRECT: 20006,
     /** 请求创建的天体已经存在 */
     BODY_ALREADY_EXISTS: 20101,
     /** 编辑中的天体已不存在. */

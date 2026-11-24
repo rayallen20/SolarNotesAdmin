@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="SolarNotes 管理后台的账号管理原型。可展开账号菜单，体验修改演示密码的表单和反馈。">
+    <title>修改密码 · SolarNotes 管理后台原型</title>
+    <style>
+        :root {
+            color-scheme: light;
+            font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            --ink: #29364b;
+            --muted: #647187;
+            --line: #e1e6ef;
+            --accent: #535fc7;
+            --error: #b13238;
+            color: var(--ink);
+            background: #f7f8fb;
+        }
+        * { box-sizing: border-box; }
+        body, h1, p { margin: 0; }
+        button, input { font: inherit; }
+        button, a { -webkit-tap-highlight-color: transparent; }
+        button { cursor: pointer; }
+        button:disabled { cursor: wait; opacity: .65; }
+        a { color: inherit; text-decoration: none; }
+        :focus-visible { outline: 3px solid #8791ec; outline-offset: 3px; }
+        [hidden] { display: none !important; }
+        .icons { position: absolute; width: 0; height: 0; overflow: hidden; }
+        .icon { width: 20px; height: 20px; flex: none; }
+        .shell { min-height: 100vh; display: grid; grid-template-columns: 240px minmax(0, 1fr); }
+        aside { background: #2d3a4b; color: #c8d1de; }
+        .brand, .nav-item, .topbar, .crumbs, .account, .heading, .input-wrap, .buttons { display: flex; align-items: center; }
+        .brand { height: 60px; gap: 11px; padding: 0 23px; color: white; font-size: 17px; font-weight: 650; white-space: nowrap; }
+        .brand .icon { color: #b4b7ff; width: 24px; height: 24px; }
+        aside nav { padding: 16px 12px; }
+        .nav-item {
+            width: 100%; gap: 13px; min-height: 46px; margin-bottom: 3px; padding: 0 15px;
+            border: 0; border-radius: 7px; text-align: start; background: transparent; color: inherit;
+        }
+        .nav-item:hover { background: #39485b; color: white; }
+        .nav-item .chevron { margin-left: auto; width: 14px; height: 14px; }
+        .nav-item[aria-expanded="true"] .chevron { transform: rotate(180deg); }
+        #account-toggle { color: white; }
+        .subnav { margin: 3px 0 0 24px; padding-left: 11px; border-left: 1px solid #526073; }
+        .nav-item[aria-current="page"] { min-height: 38px; color: white; background: #5966c8; font-weight: 600; }
+        .subnav .icon { width: 16px; height: 16px; }
+        .workspace { min-width: 0; }
+        .topbar { min-height: 60px; padding: 0 clamp(14px, 2.5vw, 36px); gap: 20px; justify-content: space-between; border-bottom: 1px solid var(--line); background: white; }
+        .crumbs { gap: 11px; color: var(--muted); font-size: 13px; }
+        .crumbs i { font-style: normal; color: #a6afbd; }
+        .crumbs strong { font-weight: 600; color: var(--ink); }
+        .account { gap: 9px; color: var(--muted); font-size: 14px; }
+        .avatar, .lock-tile { display: grid; place-items: center; border-radius: 50%; background: #ebedff; color: var(--accent); }
+        .avatar { width: 30px; height: 30px; }
+        .avatar .icon { width: 16px; height: 16px; }
+        main { max-width: 784px; padding: clamp(26px, 5vw, 64px) 22px 40px; margin: 0 auto; }
+        .heading { gap: 16px; margin-bottom: 24px; }
+        .lock-tile { width: 52px; height: 52px; flex: none; border: 1px solid #dadff9; border-radius: 14px; }
+        .lock-tile .icon { width: 25px; height: 25px; }
+        h1 { font-size: clamp(24px, 3.2vw, 32px); line-height: 1.3; letter-spacing: -.035em; }
+        .heading p { margin-top: 4px; font-size: 14px; color: var(--muted); }
+        .card { background: white; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 3px 15px rgb(34 49 81 / 4%); }
+        .fields { padding: clamp(20px, 4vw, 34px); }
+        .field + .field { margin-top: 22px; }
+        .field:first-child { margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #e9edf3; }
+        label { display: inline-block; margin-bottom: 8px; font-size: 14px; font-weight: 640; }
+        .input-wrap { overflow: hidden; min-height: 44px; border: 1px solid #c9d2e0; border-radius: 7px; background: white; }
+        .input-wrap:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px #eceefe; }
+        .input-wrap.invalid { border-color: var(--error); }
+        .input-wrap input { min-width: 0; width: 100%; border: 0; padding: 11px 13px; outline: 0; background: transparent; color: var(--ink); }
+        .input-wrap input::placeholder { color: #8591a5; font-size: 14px; }
+        .eye { display: grid; place-items: center; align-self: stretch; flex: 0 0 44px; border: 0; color: #6e7b91; background: transparent; }
+        .eye .icon { width: 18px; height: 18px; }
+        .eye:hover { color: var(--accent); background: #f5f6fd; }
+        .eye:focus-visible { outline-offset: -4px; }
+        .hint, .error { margin-top: 6px; font-size: 13px; }
+        .hint { color: var(--muted); }
+        .error { color: var(--error); }
+        .hint code { background: #f0f2fa; color: #434f6c; padding: 2px 5px; border-radius: 4px; }
+        .footer { padding: 17px clamp(20px, 4vw, 34px); border-top: 1px solid var(--line); }
+        .buttons { justify-content: flex-end; gap: 10px; }
+        .btn { min-height: 39px; border: 1px solid #cdd5e1; border-radius: 6px; padding: 6px 17px; font-size: 14px; background: white; color: var(--ink); }
+        .btn:hover:enabled { border-color: var(--accent); color: var(--accent); }
+        .btn.primary { background: var(--accent); color: white; font-weight: 600; border-color: var(--accent); }
+        .btn.primary:hover:enabled { color: white; background: #444fae; }
+        .status:not(:empty) { padding: 10px 14px; margin-bottom: 14px; font-size: 14px; border: 1px solid #b9dfd0; border-radius: 7px; color: #205a46; background: #f0f9f4; }
+        .preview-note { margin-top: 12px; text-align: end; font-size: 12px; color: var(--muted); }
+        @media (max-width: 767px) {
+            .shell { grid-template-columns: 64px minmax(0, 1fr); }
+            .brand, .nav-item { justify-content: center; padding: 0; }
+            .brand span, .nav-item span, .nav-item .chevron, .username { display: none; }
+            aside nav { padding: 14px 7px; }
+            .subnav { margin-left: 4px; padding-left: 3px; }
+            .topbar { gap: 8px; }
+            .crumbs { gap: 6px; }
+            main { padding: 24px 12px; }
+            .heading { gap: 10px; }
+            .lock-tile { width: 40px; height: 40px; border-radius: 10px; }
+            .fields { padding: 20px 14px; }
+            .footer { padding: 14px; }
+        }
+        @media (max-width: 400px) {
+            .topbar { padding-inline: 10px; }
+            .crumbs { font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Element Plus icons.
+The MIT License (MIT)
+
+Copyright (c) 2020-PRESENT Element Plus (https://github.com/element-plus)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+    -->
+    <svg class="icons" aria-hidden="true" focusable="false">
+        <symbol id="Sunny" viewBox="0 0 1024 1024"><path fill="currentColor" d="M512 704a192 192 0 1 0 0-384 192 192 0 0 0 0 384m0 64a256 256 0 1 1 0-512 256 256 0 0 1 0 512m0-704a32 32 0 0 1 32 32v64a32 32 0 0 1-64 0V96a32 32 0 0 1 32-32m0 768a32 32 0 0 1 32 32v64a32 32 0 1 1-64 0v-64a32 32 0 0 1 32-32M195.2 195.2a32 32 0 0 1 45.248 0l45.248 45.248a32 32 0 1 1-45.248 45.248L195.2 240.448a32 32 0 0 1 0-45.248m543.104 543.104a32 32 0 0 1 45.248 0l45.248 45.248a32 32 0 0 1-45.248 45.248l-45.248-45.248a32 32 0 0 1 0-45.248M64 512a32 32 0 0 1 32-32h64a32 32 0 0 1 0 64H96a32 32 0 0 1-32-32m768 0a32 32 0 0 1 32-32h64a32 32 0 1 1 0 64h-64a32 32 0 0 1-32-32M195.2 828.8a32 32 0 0 1 0-45.248l45.248-45.248a32 32 0 0 1 45.248 45.248L240.448 828.8a32 32 0 0 1-45.248 0m543.104-543.104a32 32 0 0 1 0-45.248l45.248-45.248a32 32 0 0 1 45.248 45.248l-45.248 45.248a32 32 0 0 1-45.248 0"></path></symbol>
+        <symbol id="Moon" viewBox="0 0 1024 1024"><path fill="currentColor" d="M240.448 240.448a384 384 0 1 0 559.424 525.696 448 448 0 0 1-542.016-542.08 391 391 0 0 0-17.408 16.384m181.056 362.048a384 384 0 0 0 525.632 16.384A448 448 0 1 1 405.056 76.8a384 384 0 0 0 16.448 525.696"></path></symbol>
+        <symbol id="Reading" viewBox="0 0 1024 1024"><path fill="currentColor" d="m512 863.36 384-54.848v-638.72L525.568 222.72a96 96 0 0 1-27.136 0L128 169.792v638.72zM137.024 106.432l370.432 52.928a32 32 0 0 0 9.088 0l370.432-52.928A64 64 0 0 1 960 169.792v638.72a64 64 0 0 1-54.976 63.36l-388.48 55.488a32 32 0 0 1-9.088 0l-388.48-55.488A64 64 0 0 1 64 808.512v-638.72a64 64 0 0 1 73.024-63.36"></path><path fill="currentColor" d="M480 192h64v704h-64z"></path></symbol>
+        <symbol id="Notebook" viewBox="0 0 1024 1024"><path fill="currentColor" d="M192 128v768h640V128zm-32-64h704a32 32 0 0 1 32 32v832a32 32 0 0 1-32 32H160a32 32 0 0 1-32-32V96a32 32 0 0 1 32-32"></path><path fill="currentColor" d="M672 128h64v768h-64zM96 192h128q32 0 32 32t-32 32H96q-32 0-32-32t32-32m0 192h128q32 0 32 32t-32 32H96q-32 0-32-32t32-32m0 192h128q32 0 32 32t-32 32H96q-32 0-32-32t32-32m0 192h128q32 0 32 32t-32 32H96q-32 0-32-32t32-32"></path></symbol>
+        <symbol id="User" viewBox="0 0 1024 1024"><path fill="currentColor" d="M512 512a192 192 0 1 0 0-384 192 192 0 0 0 0 384m0 64a256 256 0 1 1 0-512 256 256 0 0 1 0 512m320 320v-96a96 96 0 0 0-96-96H288a96 96 0 0 0-96 96v96a32 32 0 1 1-64 0v-96a160 160 0 0 1 160-160h448a160 160 0 0 1 160 160v96a32 32 0 1 1-64 0"></path></symbol>
+        <symbol id="Key" viewBox="0 0 1024 1024"><path fill="currentColor" d="M448 456.064V96a32 32 0 0 1 32-32.064L672 64a32 32 0 0 1 0 64H512v128h160a32 32 0 0 1 0 64H512v128a256 256 0 1 1-64 8.064M512 896a192 192 0 1 0 0-384 192 192 0 0 0 0 384"></path></symbol>
+        <symbol id="ArrowDown" viewBox="0 0 1024 1024"><path fill="currentColor" d="M831.872 340.864 512 652.672 192.128 340.864a30.59 30.59 0 0 0-42.752 0 29.12 29.12 0 0 0 0 41.6L489.664 714.24a32 32 0 0 0 44.672 0l340.288-331.712a29.12 29.12 0 0 0 0-41.728 30.59 30.59 0 0 0-42.752 0z"></path></symbol>
+        <symbol id="View" viewBox="0 0 1024 1024"><path fill="currentColor" d="M512 160c320 0 512 352 512 352S832 864 512 864 0 512 0 512s192-352 512-352m0 64c-225.28 0-384.128 208.064-436.8 288 52.608 79.872 211.456 288 436.8 288 225.28 0 384.128-208.064 436.8-288-52.608-79.872-211.456-288-436.8-288m0 64a224 224 0 1 1 0 448 224 224 0 0 1 0-448m0 64a160.19 160.19 0 0 0-160 160c0 88.192 71.744 160 160 160s160-71.808 160-160-71.744-160-160-160"></path></symbol>
+        <symbol id="Hide" viewBox="0 0 1024 1024"><path fill="currentColor" d="M876.8 156.8c0-9.6-3.2-16-9.6-22.4s-12.8-9.6-22.4-9.6-16 3.2-22.4 9.6L736 220.8c-64-32-137.6-51.2-224-60.8-160 16-288 73.6-377.6 176S0 496 0 512s48 73.6 134.4 176c22.4 25.6 44.8 48 73.6 67.2l-86.4 89.6c-6.4 6.4-9.6 12.8-9.6 22.4s3.2 16 9.6 22.4 12.8 9.6 22.4 9.6 16-3.2 22.4-9.6l704-710.4c3.2-6.4 6.4-12.8 6.4-22.4m-646.4 528Q115.2 579.2 76.8 512q43.2-72 153.6-172.8C304 272 400 230.4 512 224c64 3.2 124.8 19.2 176 44.8l-54.4 54.4C598.4 300.8 560 288 512 288c-64 0-115.2 22.4-160 64s-64 96-64 160c0 48 12.8 89.6 35.2 124.8L256 707.2c-9.6-6.4-19.2-16-25.6-22.4m140.8-96Q352 555.2 352 512c0-44.8 16-83.2 48-112s67.2-48 112-48c28.8 0 54.4 6.4 73.6 19.2zM889.599 336c-12.8-16-28.8-28.8-41.6-41.6l-48 48c73.6 67.2 124.8 124.8 150.4 169.6q-43.2 72-153.6 172.8c-73.6 67.2-172.8 108.8-284.8 115.2-51.2-3.2-99.2-12.8-140.8-28.8l-48 48c57.6 22.4 118.4 38.4 188.8 44.8 160-16 288-73.6 377.6-176S1024 528 1024 512s-48.001-73.6-134.401-176"></path><path fill="currentColor" d="M511.998 672c-12.8 0-25.6-3.2-38.4-6.4l-51.2 51.2c28.8 12.8 57.6 19.2 89.6 19.2 64 0 115.2-22.4 160-64 41.6-41.6 64-96 64-160 0-32-6.4-64-19.2-89.6l-51.2 51.2c3.2 12.8 6.4 25.6 6.4 38.4 0 44.8-16 83.2-48 112s-67.2 48-112 48"></path></symbol>
+        <symbol id="Lock" viewBox="0 0 1024 1024"><path fill="currentColor" d="M224 448a32 32 0 0 0-32 32v384a32 32 0 0 0 32 32h576a32 32 0 0 0 32-32V480a32 32 0 0 0-32-32zm0-64h576a96 96 0 0 1 96 96v384a96 96 0 0 1-96 96H224a96 96 0 0 1-96-96V480a96 96 0 0 1 96-96"></path><path fill="currentColor" d="M512 544a32 32 0 0 1 32 32v192a32 32 0 1 1-64 0V576a32 32 0 0 1 32-32m192-160v-64a192 192 0 1 0-384 0v64zM512 64a256 256 0 0 1 256 256v128H256V320A256 256 0 0 1 512 64"></path></symbol>
+    </svg>
+    <div class="shell">
+        <aside>
+            <div class="brand"><svg class="icon" aria-hidden="true"><use href="#Sunny"/></svg><span>SolarNotes 管理后台</span></div>
+            <nav aria-label="后台导航">
+                <a class="nav-item" href="body-management-prototype.html" title="天体管理" aria-label="天体管理"><svg class="icon" aria-hidden="true"><use href="#Moon"/></svg><span>天体管理</span></a>
+                <a class="nav-item" href="book-management-prototype.html" title="书籍管理" aria-label="书籍管理"><svg class="icon" aria-hidden="true"><use href="#Reading"/></svg><span>书籍管理</span></a>
+                <a class="nav-item" href="catalogue-management-prototype.html" title="目录管理" aria-label="目录管理"><svg class="icon" aria-hidden="true"><use href="#Notebook"/></svg><span>目录管理</span></a>
+                <button type="button" class="nav-item" id="account-toggle" title="账号管理" aria-label="账号管理" aria-expanded="true" aria-controls="account-items">
+                    <svg class="icon" aria-hidden="true"><use href="#User"/></svg><span>账号管理</span><svg class="icon chevron" aria-hidden="true"><use href="#ArrowDown"/></svg>
+                </button>
+                <div id="account-items" class="subnav">
+                    <a class="nav-item" href="#page-title" aria-label="修改密码" title="修改密码" aria-current="page"><svg class="icon" aria-hidden="true"><use href="#Key"/></svg><span>修改密码</span></a>
+                </div>
+            </nav>
+        </aside>
+        <div class="workspace">
+            <header class="topbar">
+                <div class="crumbs" aria-label="当前位置"><span>管理后台</span><i aria-hidden="true">/</i><span>账号管理</span><i aria-hidden="true">/</i><strong>修改密码</strong></div>
+                <div class="account"><span class="avatar"><svg class="icon" aria-hidden="true"><use href="#User"/></svg></span><span class="username">admin</span></div>
+            </header>
+            <main>
+                <div class="heading">
+                    <span class="lock-tile"><svg class="icon" aria-hidden="true"><use href="#Lock"/></svg></span>
+                    <div><h1 id="page-title" tabindex="-1">修改密码</h1><p>为当前账号 admin 设置新的登录密码。</p></div>
+                </div>
+                <form id="password-form" class="card" novalidate aria-labelledby="page-title">
+                    <div class="fields">
+                        <div class="field">
+                            <label for="current-password">原密码</label>
+                            <div class="input-wrap">
+                                <input id="current-password" type="password" autocomplete="current-password" spellcheck="false" required placeholder="请输入原密码" aria-describedby="current-hint current-password-error">
+                                <button class="eye" type="button" aria-controls="current-password" aria-label="显示原密码" title="显示原密码"><svg class="icon" aria-hidden="true"><use href="#View"/></svg></button>
+                            </div>
+                            <p class="hint" id="current-hint">初始演示密码为 <code>SolarDemo1</code>。</p>
+                            <p class="error" id="current-password-error" aria-live="polite" hidden></p>
+                        </div>
+                        <div class="field">
+                            <label for="new-password">新密码</label>
+                            <div class="input-wrap">
+                                <input id="new-password" type="password" autocomplete="new-password" spellcheck="false" required placeholder="请输入新密码" aria-describedby="new-hint new-password-error">
+                                <button class="eye" type="button" aria-controls="new-password" aria-label="显示新密码" title="显示新密码"><svg class="icon" aria-hidden="true"><use href="#View"/></svg></button>
+                            </div>
+                            <p class="hint" id="new-hint">使用 6–20 个字符。</p>
+                            <p class="error" id="new-password-error" aria-live="polite" hidden></p>
+                        </div>
+                        <div class="field">
+                            <label for="confirm-password">确认新密码</label>
+                            <div class="input-wrap">
+                                <input id="confirm-password" type="password" autocomplete="new-password" spellcheck="false" required placeholder="请再次输入新密码" aria-describedby="confirm-password-error">
+                                <button class="eye" type="button" aria-controls="confirm-password" aria-label="显示确认新密码" title="显示确认新密码"><svg class="icon" aria-hidden="true"><use href="#View"/></svg></button>
+                            </div>
+                            <p class="error" id="confirm-password-error" aria-live="polite" hidden></p>
+                        </div>
+                    </div>
+                    <div class="footer">
+                        <p id="result" class="status" role="status" aria-live="polite"></p>
+                        <div class="buttons">
+                            <button class="btn" type="reset">清空</button>
+                            <button class="btn primary" id="save" type="submit">确认修改</button>
+                        </div>
+                    </div>
+                </form>
+                <p class="preview-note">交互原型 · 仅在当前页面模拟修改</p>
+            </main>
+        </div>
+    </div>
+    <script>
+        const form = document.getElementById('password-form')
+        const menu = document.getElementById('account-toggle')
+        const save = document.getElementById('save')
+        const result = document.getElementById('result')
+        const current = document.getElementById('current-password')
+        const next = document.getElementById('new-password')
+        const confirmation = document.getElementById('confirm-password')
+        const fields = [current, next, confirmation]
+        const eyes = Array.from(form.querySelectorAll('.eye'))
+        let demoPassword = 'SolarDemo1'
+        let saving = false
+
+        menu.addEventListener('click', function () {
+            const open = menu.getAttribute('aria-expanded') === 'true'
+            menu.setAttribute('aria-expanded', String(!open))
+            document.getElementById('account-items').hidden = open
+        })
+
+        function showError(input, message) {
+            const error = document.getElementById(input.id + '-error')
+            error.textContent = message
+            error.hidden = message === ''
+            input.setAttribute('aria-invalid', String(message !== ''))
+            input.parentElement.classList.toggle('invalid', message !== '')
+        }
+
+        function validationMessage(input) {
+            if (input.value.trim() === '') {
+                if (input === confirmation) return '请再次输入新密码。'
+                return '请输入' + input.labels[0].textContent + '。'
+            }
+            if (input === next) {
+                const length = Array.from(next.value).length
+                if (length < 6 || length > 20) return '新密码长度须为 6–20 个字符。'
+            }
+            if (input === confirmation && confirmation.value !== next.value) return '两次输入的新密码不一致。'
+            return ''
+        }
+
+        function reveal(button, visible) {
+            const input = document.getElementById(button.getAttribute('aria-controls'))
+            input.type = visible ? 'text' : 'password'
+            const action = (visible ? '隐藏' : '显示') + input.labels[0].textContent
+            button.setAttribute('aria-label', action)
+            button.title = action
+            button.querySelector('use').setAttribute('href', visible ? '#Hide' : '#View')
+        }
+
+        for (const eye of eyes) {
+            eye.addEventListener('click', function () {
+                const input = document.getElementById(eye.getAttribute('aria-controls'))
+                reveal(eye, input.type === 'password')
+            })
+        }
+
+        for (const input of fields) {
+            input.addEventListener('input', function () {
+                result.textContent = ''
+                if (input.getAttribute('aria-invalid') === 'true') showError(input, validationMessage(input))
+                if (input === next && confirmation.value !== '') showError(confirmation, validationMessage(confirmation))
+            })
+            input.addEventListener('blur', function () {
+                if (input === current && current.getAttribute('aria-invalid') === 'true') return
+                if (input.value !== '') showError(input, validationMessage(input))
+            })
+        }
+
+        form.addEventListener('reset', function () {
+            result.textContent = ''
+            for (const input of fields) showError(input, '')
+            for (const eye of eyes) reveal(eye, false)
+            current.focus()
+        })
+
+        form.addEventListener('submit', async function (event) {
+            event.preventDefault()
+            if (saving) return
+            result.textContent = ''
+            let firstError = null
+            for (const input of fields) {
+                const message = validationMessage(input)
+                showError(input, message)
+                if (firstError === null && message !== '') firstError = input
+            }
+            if (firstError !== null) {
+                firstError.focus()
+                return
+            }
+
+            saving = true
+            form.setAttribute('aria-busy', 'true')
+            for (const control of form.elements) control.disabled = true
+            save.textContent = '正在修改…'
+            await new Promise(function (done) { window.setTimeout(done, 300) })
+            const matches = current.value === demoPassword
+            if (matches) demoPassword = next.value
+            saving = false
+            form.removeAttribute('aria-busy')
+            for (const control of form.elements) control.disabled = false
+            save.textContent = '确认修改'
+            if (!matches) {
+                showError(current, '原密码不正确，请重新输入。')
+                current.focus()
+                return
+            }
+            form.reset()
+            document.getElementById('current-hint').textContent = '请使用上次设置的演示密码，刷新页面可还原初始密码。'
+            result.textContent = '密码已修改。'
+        })
+    </script>
+</body>
+</html>

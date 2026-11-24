@@ -114,6 +114,22 @@ function hasValidAdminAccessToken(admin) {
     return admin.access_token !== ''
 }
 
+/**
+ * 提交当前管理员的原密码和新密码.
+ * @param {string} currentPassword 原始输入的原密码.
+ * @param {string} newPassword 原始输入的新密码.
+ * @returns {Promise<void>} 后端确认写入后完成.
+ */
+async function changeAdminPassword(currentPassword, newPassword) {
+    await request.post('/v1/admin/password/change', {
+        admin: {
+            current_password: currentPassword,
+            new_password: newPassword,
+        },
+    })
+}
+
 export {
     loginAdmin,
+    changeAdminPassword,
 }

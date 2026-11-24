@@ -54,6 +54,14 @@ const routes = [
                 },
             },
             {
+                path: 'account/password',
+                name: 'changePassword',
+                component: () => import('@/views/ChangePasswordPage.vue'),
+                meta: {
+                    title: '修改密码',
+                },
+            },
+            {
                 path: 'notes',
                 name: 'noteList',
                 component: () => import('@/views/PlaceholderPage.vue'),
