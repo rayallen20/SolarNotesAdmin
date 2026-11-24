@@ -100,9 +100,10 @@
                                 text
                                 class="logout-button"
                                 aria-label="退出登录"
+                                :icon="SwitchButton"
+                                :loading="logoutPending"
+                                :disabled="logoutPending"
                             >
-                                <el-icon><SwitchButton></SwitchButton></el-icon>
-
                                 <span class="logout-label">退出登录</span>
                             </el-button>
                         </template>
@@ -121,9 +122,12 @@
 
 <script setup>
 import {Key, Notebook, Reading, Sunny, SwitchButton, User} from "@element-plus/icons-vue";
-import {useRoute, useRouter} from "vue-router";
+import {isNavigationFailure, useRoute, useRouter} from "vue-router";
 import useUserStore from "@/stores/user";
-import {computed} from "vue";
+import {computed, ref} from "vue";
+import {ElMessage} from "element-plus";
+import {logoutAdmin} from "@/api/admin";
+import {isAuthError} from "@/utils/apiError";
 import BodyIcon from "@/components/BodyIcon.vue";
 
 defineOptions({
@@ -146,6 +150,9 @@ const router = useRouter()
  * 用户状态管理实例
  * */
 const userStore = /** @type {import('@/stores/user').UserStore} */ (useUserStore())
+
+/** @type {import('vue').Ref<boolean>} 是否正在处理顶栏的退出请求. */
+const logoutPending = ref(false)
 
 /**
  * 当前页面的标题
@@ -212,12 +219,64 @@ function getActiveMenuPath() {
 }
 
 /**
- * 本函数用于清空本地存储中的用户信息并跳转到登录页
- * @returns {Promise<void>}
- * */
+ * 处理顶栏的退出确认, 并阻止重复提交.
+ * @returns {Promise<void>} 退出操作结束.
+ */
 async function logout() {
+    if (logoutPending.value === true) {
+        return
+    }
+
+    logoutPending.value = true
+    try {
+        await logoutSession(userStore.token)
+    } finally {
+        logoutPending.value = false
+    }
+}
+
+/**
+ * 撤销本次确认对应的会话并返回登录页.
+ * @param {string} submittedToken 用户确认退出时的令牌.
+ * @returns {Promise<void>} 请求和页面反馈均处理完成.
+ */
+async function logoutSession(submittedToken) {
+    /** @type {boolean} 是否需要提示用户服务端撤销结果尚未确认. */
+    let revocationUnconfirmed = false
+    if (submittedToken !== '') {
+        try {
+            await logoutAdmin()
+        } catch (error) {
+            if (isAuthError(error) === true) {
+                // 公共鉴权拦截器已处理该请求对应的会话.
+                return
+            }
+            revocationUnconfirmed = true
+        }
+    }
+
+    if (userStore.token !== submittedToken) {
+        // 等待响应期间本页已更换会话.
+        return
+    }
+
     userStore.clearSession()
-    await router.replace({name: 'login'})
+    if (revocationUnconfirmed === true) {
+        ElMessage.warning('本机已退出，未能确认服务器会话是否已撤销')
+    }
+
+    try {
+        const failure = await router.replace({name: 'login'})
+        if (isNavigationFailure(failure) === false || router.currentRoute.value.name === 'login') {
+            return
+        }
+    } catch {
+        // 导航失败时给出当前部署下的登录地址.
+    }
+    if (userStore.token === '') {
+        const loginPath = router.resolve({name: 'login'}).href
+        ElMessage.error('未能打开登录页，请手动访问 ' + loginPath)
+    }
 }
 </script>
 

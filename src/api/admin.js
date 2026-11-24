@@ -129,7 +129,16 @@ async function changeAdminPassword(currentPassword, newPassword) {
     })
 }
 
+/**
+ * 请求服务端撤销当前管理员会话.
+ * @returns {Promise<void>} 服务端确认撤销后完成.
+ */
+async function logoutAdmin() {
+    await request.post('/v1/admin/logout')
+}
+
 export {
     loginAdmin,
     changeAdminPassword,
+    logoutAdmin,
 }
